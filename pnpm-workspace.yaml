@@ -1,6 +1,20 @@
+# Listed explicitly, not as `packages/*`.
+#
+# The cloud worker is not part of this repository — it lives in the private
+# swizzy-ai/morgana-server. A glob would pick it up whenever the directory
+# happens to be on disk, and the consequences are not obvious: `pnpm -r` would
+# include a package the lockfile deliberately omits, every command would notice
+# the mismatch and try to reinstall wrangler and its tree, and `pnpm install`
+# would quietly add the backend's dependencies back to a public lockfile.
+#
+# Naming the four published packages makes the boundary explicit and keeps it
+# from eroding. ci.yml fails if the worker is ever committed or referenced.
 packages:
-  - packages/*
+  - packages/sdk
+  - packages/sdk-compile
+  - packages/morgana-agents
+  - packages/morgana-cli
   - examples/*
+
 allowBuilds:
   esbuild: true
-  workerd: true
