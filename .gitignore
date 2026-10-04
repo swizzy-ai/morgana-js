@@ -39,3 +39,7 @@ session-ses_*.md
 # worker's own tests are meant to run. It is simply not tracked, and ci.yml
 # fails if it reappears in a commit.
 packages/morgana-server/
+
+# Internal handoff notes. The repository is public; this records unpublished
+# state, live infrastructure detail and decisions not meant to be public.
+HANDOFF.md
