@@ -1,0 +1,51 @@
+{
+  "name": "@morgana/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The Morgana CLI — build and deploy a Morgana project.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/morgana-cli"
+  },
+  "homepage": "https://github.com/SwizzyAI/morgana-js/tree/main/packages/morgana-cli#readme",
+  "bugs": {
+    "url": "https://github.com/SwizzyAI/morgana-js/issues"
+  },
+  "keywords": [
+    "morgana",
+    "cli",
+    "deploy",
+    "edge"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "morgana": "./dist/morgana.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@morgana/agents": "workspace:^",
+    "@morgana/sdk": "workspace:^",
+    "@morgana/sdk-compile": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.5.1",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "name": "@morgana/sdk",
+  "version": "0.3.0",
+  "type": "module",
+  "description": "The Morgana framework developer interface \u2014 types-first: contexts, object handles, contracts, and configs.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/SwizzyAI/morgana-js/tree/main/packages/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/SwizzyAI/morgana-js/issues"
+  },
+  "keywords": [
+    "morgana",
+    "sdk",
+    "types",
+    "framework",
+    "edge"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./generator": {
+      "types": "./dist/generator.d.ts",
+      "import": "./dist/generator.js",
+      "require": "./dist/generator.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

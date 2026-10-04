@@ -1,0 +1,104 @@
+# CI for the framework.
+#
+#   check     the cloud worker is not in this repository, typecheck every
+#             package, run every test, and prove the demo compiles
+#   guard     the backend cannot be committed here by accident
+#
+# The worker — `morgana-server` — is the hosted backend and lives in the private
+# swizzy-ai/morgana-server, with its own CI. It is not part of what we publish,
+# so it is not built, tested or bundled here, and the `verify` job that used to
+# deploy the demo to a local worker has moved there. Nothing in this workflow
+# needs a Cloudflare account.
+#
+# Publishing is deliberately absent. That is a human decision.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push supersedes the old run; don't spend minutes on commits nobody will
+# look at.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pin the toolchain so a green run is reproducible rather than "green on the
+  # day it happened to be green".
+  NODE_VERSION: '24'
+
+jobs:
+  check:
+    name: typecheck + test + bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        # Explicit, and before typecheck and test, because both consume other
+        # packages' dist/ — `@morgana/agents` resolves to `dist/index.js`, which
+        # is gitignored and absent from a clean checkout. `pnpm -r` also runs
+        # packages concurrently, so a pre-hook that rebuilt a shared dependency
+        # would delete it out from under another package's tests.
+        run: pnpm -r run build
+
+      - name: Typecheck
+        run: pnpm -r run typecheck
+
+      - name: Test
+        run: pnpm -r run test
+
+      - name: The demo compiles
+        working-directory: examples/sdk-compile-demo
+        run: node build.mjs
+
+
+  guard:
+    name: the backend is not in this repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The worker must not be tracked here
+        # It lives in the private swizzy-ai/morgana-server. `.gitignore` stops an
+        # ordinary `git add`, but not `git add -f`, and a force-added worker would
+        # ship the backend's authentication design and its infrastructure
+        # identifiers to everyone who clones. This is the check that makes the
+        # split hold rather than merely being intended.
+        run: |
+          if git ls-files --error-unmatch packages/morgana-server >/dev/null 2>&1; then
+            echo "::error::packages/morgana-server is tracked here. It belongs in the private swizzy-ai/morgana-server."
+            exit 1
+          fi
+          if [ -e packages/morgana-server ]; then
+            echo "::error::packages/morgana-server exists on disk. It is gitignored so it stays local, but the directory must not be committed."
+            exit 1
+          fi
+          echo "  worker is absent, as intended"
+
+      - name: The lockfile must not carry the backend's dependencies
+        # `pnpm install` re-adds the worker to the lockfile on any machine that
+        # still has the directory on disk, because pnpm globs `packages/*` and
+        # caches workspace state in node_modules. That silently reintroduces
+        # wrangler, hono and the whole QuickJS tree to a public repository — not
+        # the worker's source, but the shape of its stack.
+        run: |
+          if grep -qE 'packages/morgana-server|^  wrangler@|hono@4' pnpm-lock.yaml; then
+            echo "::error::pnpm-lock.yaml references the backend. Regenerate it from a tree without packages/morgana-server:"
+            echo "::error::  rm -rf node_modules pnpm-lock.yaml && pnpm install"
+            exit 1
+          fi
+          echo "  lockfile is clean"

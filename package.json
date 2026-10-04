@@ -1,0 +1,17 @@
+{
+  "name": "morgana-js",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:sdk": "pnpm --filter @morgana/sdk test",
+    "build:sdk": "pnpm --filter @morgana/sdk run build",
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "rm -rf dist"
+  },
+  "packageManager": "pnpm@11.13.0",
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

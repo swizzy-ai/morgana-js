@@ -1,0 +1,41 @@
+node_modules/
+/build/
+dist/
+coverage/
+.DS_Store
+*.log
+bun.lock
+.env*
+!.env.example
+.morgana/
+.wrangler/
+*.out
+package-lock.json
+.data/
+.data-acl/
+.data-chtest/
+*.db
+*.db-shm
+*.db-wal
+
+# verify.mjs failure screenshot
+verify-failure.png
+examples/sdk-compile-demo/verify-failure.png
+
+# local channel-test scratch
+.data-chtest/
+.data-acl/
+
+# the off-machine archive built by tools/archive.py — it contains .git, so
+# committing it would nest a repository inside this one
+*.zip
+
+# tool session transcripts — working notes, not project material
+session-ses_*.md
+
+# The cloud worker is not part of what we publish. Its source lives in the
+# private swizzy-ai/morgana-server, and it stays on disk here so this is still
+# a working pnpm workspace — `pnpm -r` picks it up locally, which is where the
+# worker's own tests are meant to run. It is simply not tracked, and ci.yml
+# fails if it reappears in a commit.
+packages/morgana-server/

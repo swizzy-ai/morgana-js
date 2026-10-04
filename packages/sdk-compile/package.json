@@ -1,0 +1,59 @@
+{
+  "name": "@morgana/sdk-compile",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SDK-first compiler: compile-lane actions build an IR, the rest ship to their lane. No morgana-core runtime dependency.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/sdk-compile"
+  },
+  "homepage": "https://github.com/SwizzyAI/morgana-js/tree/main/packages/sdk-compile#readme",
+  "bugs": {
+    "url": "https://github.com/SwizzyAI/morgana-js/issues"
+  },
+  "keywords": [
+    "morgana",
+    "compiler",
+    "esbuild",
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@morgana/sdk": "workspace:^",
+    "esbuild": "^0.28.2",
+    "typescript": "~5.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.4.0",
+    "vitest": "^4.1.10"
+  }
+}
