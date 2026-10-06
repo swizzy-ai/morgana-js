@@ -240,6 +240,28 @@ export type {
   LogHandle,
 } from './contexts/server'
 
+// Server objects — the generic `customServerObject` factory + op context
+export type {
+  ServerObjectColumnDef,
+  ServerObjectBehaviorFn,
+  ServerObjectLinks,
+  ServerObjectDef,
+  ServerObjectDefinition,
+} from './server-objects'
+export { customServerObject } from './server-objects'
+export type {
+  ServerObjectContext,
+  ServerObjectInstanceHandle,
+} from './contexts/server-object'
+
+// Cron — runtime schedules (`ctx.server.cron`)
+export type {
+  CronScheduleSpec,
+  CronSchedule,
+  CronHandle,
+} from './cron'
+export { isValidCronExpression } from './cron'
+
 // Client lane — the page's UI surface
 export type {
   StateHandle,
