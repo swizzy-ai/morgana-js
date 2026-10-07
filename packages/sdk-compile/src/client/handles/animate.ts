@@ -138,11 +138,13 @@ export function presetKeyframes(
       // A half-cycle drift. With `alternate` + `loop` the browser swings it
       // out and back forever — no JS loop, no timer, no rescheduling. The
       // distance is already resolved to px from base-grid units or a named
-      // measure, so author code never carries a raw CSS length.
+      // measure, so author code never carries a raw CSS length. Opacity stays
+      // at 1 throughout: this is a positional drift, not an exit — fading to
+      // 0 made the element blink near-invisible for half of every cycle.
       const [x, y] = String((opts as { axis?: unknown }).axis ?? 'x') === 'y' ? [0, 1] : [1, 0]
       return [
         { opacity: '1', transform: 'none' },
-        { opacity: '0', transform: `translate(${x * d}px, ${y * d}px)` },
+        { opacity: '1', transform: `translate(${x * d}px, ${y * d}px)` },
       ]
     }
     case 'smooth':

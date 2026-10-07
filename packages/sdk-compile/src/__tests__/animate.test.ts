@@ -66,6 +66,13 @@ describe('animate math', () => {
     expect(String(presetKeyframes('spin', 8, { turns: 2 })?.[1]?.['transform'])).toContain('720deg')
     expect(String(presetKeyframes('sway', 8)?.[1]?.['transform'])).toContain('translate(8px, 0px)')
     expect(String(presetKeyframes('sway', 8, { axis: 'y' })?.[1]?.['transform'])).toContain('translate(0px, 8px)')
+    // Sway is a positional drift, not an exit — both keyframes hold opacity 1.
+    // Fading the far keyframe to 0 blinked the element near-invisible for half
+    // of every cycle (taskboard motion demo: green box flickering, not sliding).
+    for (const axis of [undefined, { axis: 'y' }] as const) {
+      const kf = presetKeyframes('sway', 8, axis ?? {}) ?? []
+      expect(kf.map((k) => k['opacity'])).toEqual(['1', '1'])
+    }
     expect(presetDefaults('sway')).toEqual({ duration: 1200, easing: 'ease-in-out', fill: 'none' })
     expect(presetKeyframes('nope', 8)).toBeNull()
   })
