@@ -122,18 +122,23 @@ function inputMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Toggle / checkbox / radio ───────────────────────────────────────────────
 
-function toggleMethods(ctx: HandleCtx): Record<string, unknown> {
+/** Exported for tests — the delegation contract (flip + exactly one `changed`) lives here. */
+export function toggleMethods(ctx: HandleCtx): Record<string, unknown> {
   const setChecked = (on: boolean): void => {
     ctx.setProp('checked', on)
-    if (!ctx.el) return
-    const track = ctx.el.querySelector('[data-part="track"]')
-    ctx.el.setAttribute('data-checked', on ? 'true' : 'false')
-    if (track) {
-      track.setAttribute('aria-checked', on ? 'true' : 'false')
-      track.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    if (ctx.el) {
+      const track = ctx.el.querySelector('[data-part="track"]')
+      ctx.el.setAttribute('data-checked', on ? 'true' : 'false')
+      if (track) track.setAttribute('aria-checked', on ? 'true' : 'false')
+      const input = ctx.el.querySelector('input[type="checkbox"],input[type="radio"]') as HTMLInputElement | null
+      if (input) input.checked = on
     }
-    const input = ctx.el.querySelector('input[type="checkbox"],input[type="radio"]') as HTMLInputElement | null
-    if (input) input.checked = on
+    // A programmatic write announces itself directly. It must NOT simulate a
+    // click on the track: the document delegation reads that synthetic click
+    // as a user gesture and flips the attribute straight back (check() stuck
+    // every target at false, silently). User clicks still travel the
+    // delegation path, which emits its own `changed`.
+    ctx.emit('changed', { checked: on, value: on })
   }
   const isChecked = (): boolean => {
     if (ctx.el?.getAttribute('data-checked') === 'true') return true
