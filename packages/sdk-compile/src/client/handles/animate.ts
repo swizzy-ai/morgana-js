@@ -201,6 +201,27 @@ function reducedMotion(): boolean {
   }
 }
 
+/**
+ * Logged once per page load, so a statically dead demo explains itself.
+ * Reduced motion is the only path that settles every preset without moving
+ * anything — without this line the page looks broken (taskboard motion demo:
+ * both boxes frozen, zero console output) when the OS is simply asking for
+ * stillness.
+ */
+let notedReducedMotion = false
+function noteReducedMotion(): void {
+  if (notedReducedMotion) return
+  notedReducedMotion = true
+  try {
+    console.info(
+      '[Morgana] prefers-reduced-motion is on — animations settle without moving. ' +
+        'Turn animation effects back on in the OS to see motion.',
+    )
+  } catch {
+    // No console (embedded webview): staying silent beats throwing.
+  }
+}
+
 type AnimatableElement = Element & { animate?: (...args: unknown[]) => { finished?: Promise<void>; cancel?: () => void } }
 
 /**
@@ -235,7 +256,11 @@ function run(ctx: HandleCtx, name: string, keyframes: KeyframeMap[], opts: Anima
     }
   }
   const el = (ctx.el ?? null) as AnimatableElement | null
-  if (!el || typeof el.animate !== 'function' || reducedMotion()) {
+  if (reducedMotion()) {
+    noteReducedMotion()
+    return settleSkipped(settle)
+  }
+  if (!el || typeof el.animate !== 'function') {
     return settleSkipped(settle)
   }
   // Clear the previous run this module started. A finished run with
