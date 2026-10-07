@@ -156,6 +156,25 @@ describe('animate driver', () => {
     await expect(animate('nope')).rejects.toThrow('unknown animation')
   })
 
+  it('clears finished runs so a settled exit cannot pin the next entrance', async () => {
+    const cancelled: string[] = []
+    const calls: Array<{ el: unknown; timing: unknown }> = []
+    const emitted: Array<{ event: string; payload: unknown }> = []
+    const stale = { playState: 'finished', cancel: () => cancelled.push('stale') }
+    const running = { playState: 'running', cancel: () => cancelled.push('running') }
+    const el = {
+      ...(fakeEl(Promise.resolve(), calls) as Record<string, unknown>),
+      getAnimations: () => [stale, running],
+    }
+    const ctx = fakeCtx(calls, emitted, el)
+    const handle: Record<string, unknown> = {}
+    ;(ctx as unknown as { handle: unknown }).handle = handle
+    extendAnimate(ctx)
+    await (handle['animate'] as { slideIn(o?: Record<string, unknown>): Promise<void> }).slideIn({ from: 'right' })
+    expect(cancelled).toEqual(['stale'])
+    expect(emitted).toEqual([{ event: 'animated', payload: { animation: 'slideIn', cancelled: false } }])
+  })
+
   it('skips motion under prefers-reduced-motion but still settles', async () => {
     const g = globalThis as Record<string, unknown>
     const prev = g['matchMedia']

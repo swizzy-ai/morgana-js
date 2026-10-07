@@ -197,6 +197,27 @@ function run(ctx: HandleCtx, name: string, keyframes: KeyframeMap[], opts: Anima
     settle(false)
     return Promise.resolve()
   }
+  // Clear finished runs first. A finished run with `fill: forwards` (every
+  // exit preset) keeps applying its end state underneath whatever starts
+  // next — without this, slide-out-then-slide-in leaves the element stuck
+  // at the exit offset once the entrance finishes. Only finished runs are
+  // cleared; a running loop (pulse, spin) survives.
+  try {
+    const existing = (el as unknown as { getAnimations?: () => Array<{ playState?: string; cancel?: () => void }> }).getAnimations
+    if (typeof existing === 'function') {
+      for (const a of existing.call(el) ?? []) {
+        if (a && a.playState === 'finished') {
+          try {
+            a.cancel?.()
+          } catch {
+            // One stale effect failing to clear must not stop the new run.
+          }
+        }
+      }
+    }
+  } catch {
+    // getAnimations is not universal — its absence just means no clearing.
+  }
   const def = presetDefaults(name)
   const timing: Record<string, unknown> = {
     duration: typeof opts.duration === 'number' && opts.duration >= 0 ? opts.duration : def.duration,
