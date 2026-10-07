@@ -429,21 +429,40 @@ const server = http.createServer(async (req, res) => {
   return send(res, 200, fs.readFileSync(full), MIME[path.extname(full)] ?? 'application/octet-stream')
 })
 
-// Port is a parameter now, not a module-level read of process.env, so
-// `--port` and a second instance on another port both work.
-const listenPort = port
-await new Promise((resolve, reject) => {
-  server.once('error', reject)
-  server.listen(listenPort, () => {
-    server.removeListener('error', reject)
-    say(`morgana host on http://localhost:${listenPort}/  (entry: ${manifest.entry ?? 'home'})`)
-    say(`  pages:   ${(manifest.pages ?? []).map((p) => p.name).join(', ') || '(none)'}`)
-    say(`  actions: ${enabledActions.join(', ') || '(none)'}`)
-    say(`  routes:  ${apis.map((a) => `${a.method} ${a.path}`).join(', ') || '(none)'}`)
-    say(`  stores:  ${stores.map((s) => s.name).join(', ') || '(none)'}`)
-    resolve()
-  })
-})
+// The requested port is a wish, not a promise: a stale instance (or anything
+// else on the box) holding it used to kill the boot with EADDRINUSE and leave
+// the user staring at a dead terminal. Walk upward from the request instead,
+// so `morgana dev` always lands somewhere usable and says where.
+const MAX_PORT_TRIES = 10
+let listenPort = port
+for (let attempt = 0; ; attempt++) {
+  try {
+    await new Promise((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(listenPort, () => {
+        server.removeListener('error', reject)
+        resolve()
+      })
+    })
+    break
+  } catch (err) {
+    if (err?.code === 'EADDRINUSE' && attempt < MAX_PORT_TRIES - 1) {
+      warn(`port ${listenPort} is busy — trying ${listenPort + 1}`)
+      listenPort += 1
+      continue
+    }
+    throw err
+  }
+}
+if (listenPort !== port) {
+  say(`morgana host on http://localhost:${listenPort}/  (wanted ${port}, entry: ${manifest.entry ?? 'home'})`)
+} else {
+  say(`morgana host on http://localhost:${listenPort}/  (entry: ${manifest.entry ?? 'home'})`)
+}
+say(`  pages:   ${(manifest.pages ?? []).map((p) => p.name).join(', ') || '(none)'}`)
+say(`  actions: ${enabledActions.join(', ') || '(none)'}`)
+say(`  routes:  ${apis.map((a) => `${a.method} ${a.path}`).join(', ') || '(none)'}`)
+say(`  stores:  ${stores.map((s) => s.name).join(', ') || '(none)'}`)
 
 // A channel stream is a long-lived response, so without this the process
 // refuses to exit with one open — and a shutdown that hangs is worse than a
@@ -458,5 +477,5 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, shutdown)
 }
 
-return { server, shutdown, runAction }
+return { server, shutdown, runAction, port: listenPort }
 }

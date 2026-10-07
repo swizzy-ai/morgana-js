@@ -9,6 +9,7 @@
  * Adding a command means adding a row here and a module under `src/commands/`.
  * Nothing registers at runtime.
  */
+import { UsageError } from './args.mjs'
 
 /** Flags shared by every command that talks to the worker. */
 export const TARGET_FLAGS = {
@@ -30,6 +31,23 @@ export const MINIFY_FLAGS = {
 /** The resolved minify request, or `undefined` to mean "whatever the config says". */
 export function minifyRequested(args) {
   return args.values.minify === undefined ? undefined : args.values.minify === true
+}
+
+/**
+ * Which port `morgana dev` should listen on, in priority order: `--port`/`-P`,
+ * a bare positional (`morgana dev 3000`), `$PORT`, then the default.
+ *
+ * A bare positional used to fall through silently to 4317, so `morgana dev
+ * 3000` looked accepted and then served on the wrong port. Anything present
+ * but not a valid TCP port is a UsageError rather than a shrug.
+ */
+export function resolveDevPort(args, { str, positional }) {
+  const raw = str(args, 'port') || positional(args, 0, '') || process.env.PORT || 4317
+  const port = Number(raw)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new UsageError(`bad port "${raw}" — use 1-65535, e.g. morgana dev --port 3000`)
+  }
+  return port
 }
 
 export const COMMANDS = {
@@ -55,13 +73,13 @@ export const COMMANDS = {
 
   dev: {
     describe: 'compile, serve dist/ locally, and recompile on change',
-    usage: 'morgana dev [--port <n>] [--no-watch]',
+    usage: 'morgana dev [port] [--port <n>] [--no-watch]',
     flags: {
       ...MINIFY_FLAGS,
       port: { type: 'string', short: 'P', describe: 'port (default 4317, or $PORT)' },
       watch: { type: 'boolean', describe: 'recompile on change (--no-watch to disable)' },
     },
-    async run(args, { str, bool }) {
+    async run(args, { str, bool, positional }) {
       const { dev } = await import('./commands/dev.mjs')
       const { build } = await import('./commands/build.mjs')
       const dir = process.cwd()
@@ -69,7 +87,7 @@ export const COMMANDS = {
       // Compile first so `morgana dev` on a clean checkout does something useful
       // rather than telling the user to go and run build themselves.
       await build({ dir, minify: minifyRequested(args) ?? false })
-      const handle = await dev({ dir, port: Number(str(args, 'port') || process.env.PORT || 4317) })
+      const handle = await dev({ dir, port: resolveDevPort(args, { str, positional }) })
 
       if (!bool(args, 'watch', true)) return handle
       const { watch } = await import('node:fs')
