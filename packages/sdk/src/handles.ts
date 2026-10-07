@@ -235,6 +235,8 @@ export interface AnimateOptions {
   delay?: number
   /** Repeat: `true` loops forever, a number loops that many times. Default 1. */
   loop?: boolean | number
+  /** Ping-pong each iteration out-and-back instead of restarting. Default false. */
+  alternate?: boolean
   /** What the element holds outside the run. Exits default `forwards`, entrances `backwards`. */
   fill?: 'none' | 'forwards' | 'backwards' | 'both'
   /** How far motion presets travel. Default 2 (two grid units). */
@@ -255,6 +257,12 @@ export interface SpinOptions extends AnimateOptions {
   turns?: number
 }
 
+/** `sway(...)` — a half-cycle drift; with `alternate` it swings out and back. */
+export interface SwayOptions extends AnimateOptions {
+  /** Axis of travel. Default 'x'. */
+  axis?: 'x' | 'y'
+}
+
 /**
  * The names `animate(name)` accepts — the `make()` animation vocabulary, so
  * the compile-time words and the runtime call speak one language.
@@ -271,7 +279,7 @@ export const ANIMATE_PRESETS = [
   'slideUp', 'slideDown', 'slideLeft', 'slideRight',
   'slideIn', 'slideOut',
   'scaleIn', 'scaleOut',
-  'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+  'pulse', 'bounce', 'spin', 'smooth', 'bouncy', 'sway',
 ] as const
 export type AnimatePreset = (typeof ANIMATE_PRESETS)[number]
 
@@ -309,6 +317,7 @@ export interface AnimateApi {
   spin(opts?: SpinOptions): Promise<void>
   smooth(opts?: AnimateOptions): Promise<void>
   bouncy(opts?: AnimateOptions): Promise<void>
+  sway(opts?: SwayOptions): Promise<void>
 }
 
 export interface ObjectHandle<P extends Record<string, any> = AnyProps> {

@@ -28,6 +28,7 @@ import {
 const PRESETS = [
   'fadeIn', 'fadeOut', 'slideUp', 'slideDown', 'slideLeft', 'slideRight',
   'slideIn', 'slideOut', 'scaleIn', 'scaleOut', 'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+  'sway',
 ]
 
 describe('animate math', () => {
@@ -61,8 +62,11 @@ describe('animate math', () => {
     const out = presetKeyframes('slideOut', 8, { to: 'right' }) ?? []
     expect(String(out[0]?.['transform'])).toBe('none')
     expect(String(out[1]?.['transform'])).toContain('translate(8px, 0px)')
-    // … spin honors turns, unknown presets are null.
+    // … spin honors turns, sway drifts along its axis, unknown presets are null.
     expect(String(presetKeyframes('spin', 8, { turns: 2 })?.[1]?.['transform'])).toContain('720deg')
+    expect(String(presetKeyframes('sway', 8)?.[1]?.['transform'])).toContain('translate(8px, 0px)')
+    expect(String(presetKeyframes('sway', 8, { axis: 'y' })?.[1]?.['transform'])).toContain('translate(0px, 8px)')
+    expect(presetDefaults('sway')).toEqual({ duration: 1200, easing: 'ease-in-out', fill: 'none' })
     expect(presetKeyframes('nope', 8)).toBeNull()
   })
 
@@ -156,23 +160,81 @@ describe('animate driver', () => {
     await expect(animate('nope')).rejects.toThrow('unknown animation')
   })
 
-  it('clears finished runs so a settled exit cannot pin the next entrance', async () => {
+  it('cancels only the tracked run — no getAnimations scan', async () => {
     const cancelled: string[] = []
+    const scanned: string[] = []
     const calls: Array<{ el: unknown; timing: unknown }> = []
     const emitted: Array<{ event: string; payload: unknown }> = []
-    const stale = { playState: 'finished', cancel: () => cancelled.push('stale') }
-    const running = { playState: 'running', cancel: () => cancelled.push('running') }
+    let releaseFirst!: () => void
+    const firstFinished = new Promise<void>((r) => {
+      releaseFirst = r
+    })
+    let n = 0
     const el = {
-      ...(fakeEl(Promise.resolve(), calls) as Record<string, unknown>),
-      getAnimations: () => [stale, running],
+      animate: (kf: unknown, timing: unknown) => {
+        calls.push({ el: kf, timing })
+        n += 1
+        const tag = n === 1 ? 'first' : 'next'
+        return {
+          finished: n === 1 ? firstFinished : Promise.resolve(),
+          cancel: () => cancelled.push(tag),
+        }
+      },
+      // If the driver scanned the element, this would record it.
+      getAnimations: () => {
+        scanned.push('scan')
+        return []
+      },
     }
     const ctx = fakeCtx(calls, emitted, el)
     const handle: Record<string, unknown> = {}
     ;(ctx as unknown as { handle: unknown }).handle = handle
     extendAnimate(ctx)
-    await (handle['animate'] as { slideIn(o?: Record<string, unknown>): Promise<void> }).slideIn({ from: 'right' })
-    expect(cancelled).toEqual(['stale'])
-    expect(emitted).toEqual([{ event: 'animated', payload: { animation: 'slideIn', cancelled: false } }])
+    const animate = handle['animate'] as {
+      slideIn(o?: Record<string, unknown>): Promise<void>
+      slideOut(o?: Record<string, unknown>): Promise<void>
+    }
+    const p1 = animate.slideIn({ from: 'right' })
+    expect(scanned).toEqual([])
+    // Starting the next run cancels the still-tracked previous one, directly.
+    const p2 = animate.slideOut({ to: 'right' })
+    expect(cancelled).toEqual(['first'])
+    expect(scanned).toEqual([])
+    releaseFirst()
+    await p1
+    await p2
+    expect(calls).toHaveLength(2)
+    expect(emitted).toEqual([
+      { event: 'animated', payload: { animation: 'slideOut', cancelled: false } },
+      { event: 'animated', payload: { animation: 'slideIn', cancelled: false } },
+    ])
+    // The timing carries the ping-pong direction when requested.
+    await animate.slideIn({ from: 'right', alternate: true })
+    expect(calls[2]?.timing).toMatchObject({ direction: 'alternate' })
+  })
+
+  it('a skipped run settles across a macrotask, not synchronously', async () => {
+    // A skip that resolves synchronously lets a consumer `await` it in a
+    // tight microtask loop that never crosses a task boundary — starving
+    // timers, I/O and the page load. The skip must yield.
+    const emitted: Array<{ event: string; payload: unknown }> = []
+    const ctx = fakeCtx([], emitted, null)
+    const handle: Record<string, unknown> = {}
+    ;(ctx as unknown as { handle: unknown }).handle = handle
+    extendAnimate(ctx)
+    const animate = handle['animate'] as { pulse(): Promise<void> }
+    let settled = false
+    const p = animate.pulse().then(() => {
+      settled = true
+    })
+    // Awaiting a microtask must NOT settle it — the yield is a macrotask.
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    expect(emitted).toEqual([])
+    await p
+    expect(settled).toBe(true)
+    expect(emitted).toEqual([{ event: 'animated', payload: { animation: 'pulse', cancelled: false } }])
   })
 
   it('skips motion under prefers-reduced-motion but still settles', async () => {
@@ -231,7 +293,7 @@ describe('compiled animate surface', () => {
         '  handler: async (ctx) => {',
         '    const a = ctx.ui.get("k_box").animate',
         '    const want = ["fadeIn","fadeOut","slideUp","slideDown","slideLeft","slideRight",',
-        '      "slideIn","slideOut","scaleIn","scaleOut","pulse","bounce","spin","smooth","bouncy","to"]',
+        '      "slideIn","slideOut","scaleIn","scaleOut","pulse","bounce","spin","smooth","bouncy","sway","to"]',
         '    window.__t = { callable: typeof a }',
         '    for (const p of want) window.__t[p] = typeof a[p]',
         '    await a.pulse({ duration: 5 })',
@@ -279,7 +341,8 @@ describe('compiled animate surface', () => {
       expect(out['callable']).toBe('function')
       for (const p of [
         'fadeIn', 'fadeOut', 'slideUp', 'slideDown', 'slideLeft', 'slideRight',
-        'slideIn', 'slideOut', 'scaleIn', 'scaleOut', 'pulse', 'bounce', 'spin', 'smooth', 'bouncy', 'to',
+        'slideIn', 'slideOut', 'scaleIn', 'scaleOut', 'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+        'sway', 'to',
       ]) {
         expect(out[p], `animate.${p}`).toBe('function')
       }

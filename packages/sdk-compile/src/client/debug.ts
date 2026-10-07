@@ -14,13 +14,13 @@ export function debugPart(): string[] {
     'window.__morgana_index=function(el){return indexElement(el);};',
     'window.__morgana_forget=function(el){forgetElement(el);};',
     '// Event log inspection: every dispatch + action lifecycle entry.',
-    'window.__morgana_log=function(){return __eventLog.slice();};',
+    'window.__morgana_log=function(){return getEventLog();};',
     // Distinct from the transport's `window.__morgana_events`. These two
     // collided: the transport published an object and this then overwrote it
     // with a function, so `subscribe` silently became a call to a log reader and
     // every channel subscription died without an error. Both are named
     // `__morgana_*` for consistency with the hooks above, so the distinguishing
     // word has to carry the meaning: this one reads what has been seen.
-    'window.__morgana_seenEvents=function(){var seen={};for(var i=0;i<__eventLog.length;i++){seen[__eventLog[i].name]=true;}return Object.keys(seen).sort();};',
+    'window.__morgana_seenEvents=function(){var log=getEventLog();var seen={};for(var i=0;i<log.length;i++){seen[log[i].name]=true;}return Object.keys(seen).sort();};',
   ];
 }

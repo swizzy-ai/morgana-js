@@ -227,7 +227,7 @@ describe('compileProject', () => {
       expect(html).toContain('Hello')
       const client = readFileSync(path.join(dir, 'dist', 'assets', 'client.js'), 'utf8')
       expect(client).toContain('"checkout"')
-      expect(client).toContain('__bindings')
+      expect(client).toContain('__handlers')
       // The live runtime module ships with the page: handles, pages, dom.
       expect(client).toContain('__morgana_runtime')
       expect(client).toContain('makeUi')

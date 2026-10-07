@@ -30,7 +30,7 @@ export interface RuntimeDeps {
   dispatchPageEvent(event: string, origin: string, el: Element | null, payload: unknown): void
   logEvent(entry: Record<string, unknown>): unknown
   makeTheme(): { get(): { mode: string }; set(mode: string): { mode: string } }
-  onPageEvent(fn: (event: string, origin: string, el: Element | null, payload: unknown) => void): () => void
+  onPageEvent(event: string, fn: (origin: string, el: Element | null, payload: unknown) => void): () => void
   navigate(url: string, opts?: { params?: Record<string, string>; transition?: string }): void
   /** Emit a `prop:changed` page event, for `on: 'id.prop.changed'` bindings. */
   dispatchPropChange?(origin: string, prop: string, value: unknown, oldValue: unknown, el: Element | null): void
@@ -457,11 +457,10 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       },
       when(event: EventName, handler: Handler) {
         if (typeof event !== 'string') throw new Error('[Morgana] when() takes an event name')
-        return deps.onPageEvent((name, origin, target, payload) => {
-          if (name !== event) return
+        return deps.onPageEvent(event, (origin, target, payload) => {
           if (origin !== id && origin !== '') return
           void handler({
-            name,
+            name: event,
             origin,
             element: target,
             payload,
@@ -808,8 +807,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
         void handler({ name: `state:${path}`, origin: 'state', element: null, payload: { path: p, value, oldValue, root }, timestamp: Date.now() })
       })
     }
-    if (typeof event === 'string') return deps.onPageEvent((name, origin, el, payload) => {
-      if (name === event) void handler({ name, origin, element: el, payload, timestamp: Date.now() })
+    if (typeof event === 'string') return deps.onPageEvent(event, (origin, el, payload) => {
+      void handler({ name: event, origin, element: el, payload, timestamp: Date.now() })
     })
     throw new Error('[Morgana] when() takes an event name or "state:<path>"')
   }
@@ -829,8 +828,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
 
   ui['events'] = {
     emit: (event: string, payload?: unknown) => deps.dispatchPageEvent(event, '', null, payload ?? {}),
-    on: (event: string, handler: Handler) => deps.onPageEvent((name, origin, el, payload) => {
-      if (name === event) void handler({ name, origin, element: el, payload, timestamp: Date.now() })
+    on: (event: string, handler: Handler) => deps.onPageEvent(event, (origin, el, payload) => {
+      void handler({ name: event, origin, element: el, payload, timestamp: Date.now() })
     }),
     // subscribe: local page events stay on the page bus; `channel:<name>`
     // crosses the network through the transport. Both paths return a real
@@ -845,10 +844,9 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       const onFrame = scope && typeof scope === 'object'
         ? (scope as { onFrame?: (frame: unknown) => void }).onFrame
         : undefined
-      return deps.onPageEvent((name, origin, el, payload) => {
-        if (name !== event) return
-        if (onFrame) onFrame({ stream: `page:${name}`, event: name, data: payload, timestamp: Date.now() })
-        if (handler) void handler({ name, origin, element: el, payload, timestamp: Date.now() })
+      return deps.onPageEvent(event, (origin, el, payload) => {
+        if (onFrame) onFrame({ stream: `page:${event}`, event, data: payload, timestamp: Date.now() })
+        if (handler) void handler({ name: event, origin, element: el, payload, timestamp: Date.now() })
       })
     },
     // observe: same as subscribe, but also receives a descriptor, so a caller
@@ -857,9 +855,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       if (typeof event !== 'string' || event === '') {
         throw new Error('[Morgana] events.observe() takes an event name')
       }
-      return deps.onPageEvent((name, origin, el, payload) => {
-        if (name !== event) return
-        void handler({ name, origin, element: el, payload, target: el, timestamp: Date.now() })
+      return deps.onPageEvent(event, (origin, el, payload) => {
+        void handler({ name: event, origin, element: el, payload, target: el, timestamp: Date.now() })
       })
     },
     // The ring buffer bus.ts maintains, finally read.

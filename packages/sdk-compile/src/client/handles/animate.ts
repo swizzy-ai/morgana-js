@@ -18,6 +18,10 @@ export interface AnimateRunOptions {
   easing?: string
   delay?: number
   loop?: boolean | number
+  /** Ping-pong each iteration out-and-back instead of restarting. */
+  alternate?: boolean
+  /** Sway axis. Horizontal by default. */
+  axis?: string
   fill?: 'none' | 'forwards' | 'backwards' | 'both'
   distance?: unknown
   turns?: number
@@ -130,6 +134,17 @@ export function presetKeyframes(
       const turns = typeof opts.turns === 'number' && Number.isFinite(opts.turns) ? opts.turns : 1
       return [{ transform: 'rotate(0)' }, { transform: `rotate(${turns * 360}deg)` }]
     }
+    case 'sway': {
+      // A half-cycle drift. With `alternate` + `loop` the browser swings it
+      // out and back forever — no JS loop, no timer, no rescheduling. The
+      // distance is already resolved to px from base-grid units or a named
+      // measure, so author code never carries a raw CSS length.
+      const [x, y] = String((opts as { axis?: unknown }).axis ?? 'x') === 'y' ? [0, 1] : [1, 0]
+      return [
+        { opacity: '1', transform: 'none' },
+        { opacity: '0', transform: `translate(${x * d}px, ${y * d}px)` },
+      ]
+    }
     case 'smooth':
       return slide(0, Math.max(1, Math.round(d * 0.5)), true)
     case 'bouncy':
@@ -148,6 +163,8 @@ export function presetDefaults(preset: string): { duration: number; easing: stri
       return { duration: 800, easing: 'cubic-bezier(.28,.84,.42,1)', fill: 'none' }
     case 'spin':
       return { duration: 1000, easing: 'linear', fill: 'none' }
+    case 'sway':
+      return { duration: 1200, easing: 'ease-in-out', fill: 'none' }
     case 'fadeOut':
     case 'slideOut':
     case 'scaleOut':
@@ -171,6 +188,7 @@ const WORD_TO_PRESET: Record<string, string> = {
   spin: 'spin',
   smooth: 'smooth',
   bouncy: 'bouncy',
+  sway: 'sway',
 }
 
 function reducedMotion(): boolean {
@@ -181,7 +199,29 @@ function reducedMotion(): boolean {
   }
 }
 
-type AnimatableElement = Element & { animate?: (...args: unknown[]) => { finished?: Promise<void> } }
+type AnimatableElement = Element & { animate?: (...args: unknown[]) => { finished?: Promise<void>; cancel?: () => void } }
+
+/**
+ * The run this module started per element. Cancelling the tracked run
+ * directly is O(1) — it replaces the old scan of `el.getAnimations()`, which
+ * walked every animation on the element on every call just to find the one
+ * finished run to clear.
+ */
+const running = new WeakMap<object, { cancel?: () => void }>()
+
+/** Settle without moving anything, across a macrotask boundary. */
+function settleSkipped(settle: (cancelled: boolean) => void): Promise<void> {
+  // A skipped run must still yield: an already-resolved promise would let a
+  // consumer `await` it in a tight loop that never crosses a task boundary,
+  // starving timers, I/O and the page load itself. One macrotask keeps every
+  // awaiting loop cooperative.
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      settle(false)
+      resolve()
+    }, 0)
+  })
+}
 
 /** Run keyframes on the handle's element; always settles, always emits. */
 function run(ctx: HandleCtx, name: string, keyframes: KeyframeMap[], opts: AnimateRunOptions = {}): Promise<void> {
@@ -194,29 +234,26 @@ function run(ctx: HandleCtx, name: string, keyframes: KeyframeMap[], opts: Anima
   }
   const el = (ctx.el ?? null) as AnimatableElement | null
   if (!el || typeof el.animate !== 'function' || reducedMotion()) {
-    settle(false)
-    return Promise.resolve()
+    return settleSkipped(settle)
   }
-  // Clear finished runs first. A finished run with `fill: forwards` (every
-  // exit preset) keeps applying its end state underneath whatever starts
-  // next — without this, slide-out-then-slide-in leaves the element stuck
-  // at the exit offset once the entrance finishes. Only finished runs are
-  // cleared; a running loop (pulse, spin) survives.
+  // Clear the previous run this module started. A finished run with
+  // `fill: forwards` (every exit preset) keeps applying its end state
+  // underneath whatever starts next — without this, slide-out-then-slide-in
+  // leaves the element stuck at the exit offset once the entrance finishes.
+  // Only our own tracked run is touched; anything else on the element (a
+  // running pulse, a spin loop) survives.
   try {
-    const existing = (el as unknown as { getAnimations?: () => Array<{ playState?: string; cancel?: () => void }> }).getAnimations
-    if (typeof existing === 'function') {
-      for (const a of existing.call(el) ?? []) {
-        if (a && a.playState === 'finished') {
-          try {
-            a.cancel?.()
-          } catch {
-            // One stale effect failing to clear must not stop the new run.
-          }
-        }
+    const prev = running.get(el)
+    if (prev) {
+      try {
+        prev.cancel?.()
+      } catch {
+        // One stale effect failing to clear must not stop the new run.
       }
+      running.delete(el)
     }
   } catch {
-    // getAnimations is not universal — its absence just means no clearing.
+    // A hostile element must not stop the new run.
   }
   const def = presetDefaults(name)
   const timing: Record<string, unknown> = {
@@ -225,22 +262,27 @@ function run(ctx: HandleCtx, name: string, keyframes: KeyframeMap[], opts: Anima
     delay: typeof opts.delay === 'number' && opts.delay > 0 ? opts.delay : 0,
     fill: opts.fill ?? def.fill,
     iterations: normalizeIterations(opts.loop),
+    direction: opts.alternate === true ? 'alternate' : 'normal',
   }
-  let anim: { finished?: Promise<void> }
+  let anim: { finished?: Promise<void>; cancel?: () => void }
   try {
-    anim = (el.animate as (...args: unknown[]) => { finished?: Promise<void> })(keyframes, timing)
+    anim = (el.animate as (...args: unknown[]) => { finished?: Promise<void>; cancel?: () => void })(keyframes, timing)
   } catch {
-    settle(false)
-    return Promise.resolve()
+    return settleSkipped(settle)
+  }
+  running.set(el, anim)
+  const done = (cancelled: boolean): void => {
+    if (running.get(el) === anim) running.delete(el)
+    settle(cancelled)
   }
   return Promise.resolve(anim?.finished).then(
     () => {
-      settle(false)
+      done(false)
     },
     () => {
       // Cancelled (element removed mid-flight): still settle so `await`
       // never hangs, and still emit so `on: '<id>.animated'` chains proceed.
-      settle(true)
+      done(true)
     },
   )
 }
@@ -272,6 +314,7 @@ export function extendAnimate(ctx: HandleCtx): void {
   for (const preset of [
     'fadeIn', 'fadeOut', 'slideUp', 'slideDown', 'slideLeft', 'slideRight',
     'slideIn', 'slideOut', 'scaleIn', 'scaleOut', 'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+    'sway',
   ]) {
     api[preset] = (opts: AnimateRunOptions = {}): Promise<void> => runPreset(ctx, preset, opts)
   }

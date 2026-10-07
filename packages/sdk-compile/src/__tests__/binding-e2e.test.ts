@@ -48,9 +48,11 @@ async function build(actions: Record<string, string>, seed = SEED): Promise<{
   for (const [name, src] of Object.entries(actions)) write(`src/actions/browser/${name}.ts`, src)
   const result = await compileProject({ dir, outDir: path.join(dir, 'dist') })
   const clientJs = fs.readFileSync(path.join(dir, 'dist', 'assets', 'client.js'), 'utf8')
-  // Bindings ship in the client bundle, not the manifest — read them from where
-  // they actually run, by bracket-matching the emitted literal.
-  const marker = 'var __bindings = '
+  // Binding records ship in the client bundle, not the manifest — read them
+  // from where they actually run, by bracket-matching the emitted literal.
+  // Dispatch reads the compiled `__handlers` registry; `__bindingDefs` is
+  // the introspection copy with the same records.
+  const marker = 'var __bindingDefs = '
   const start = clientJs.indexOf(marker)
   let raw: string | undefined
   if (start >= 0) {
@@ -143,12 +145,15 @@ describe('a selector that names nothing real is caught at build time', () => {
 })
 
 describe('the client can actually match a scoped binding', () => {
-  it('the shipped bus filters on origin and prop', async () => {
+  it('the shipped bus routes by key, with origin and prop guards unrolled', async () => {
     const { clientJs } = await build({ a: action('a', 'cta.label.changed') })
-    // Without these two guards a scoped binding would fire for everything, which
-    // is the bug the origin field exists to fix.
-    expect(clientJs).toContain('b.origin && b.origin !== (target||"")')
-    expect(clientJs).toContain('p !== b.prop')
+    // A scan of the flat binding list would fire scoped bindings for
+    // everything — the origin field exists so each event carries its own
+    // guards instead.
+    expect(clientJs).toContain('__handlers')
+    expect(clientJs).toContain('ev.origin===')
+    expect(clientJs).toContain('ev.payload&&ev.payload.prop===')
+    expect(clientJs).not.toContain('__bindings.length')
   }, 60_000)
 
   it('a prop change dispatches prop:changed', async () => {

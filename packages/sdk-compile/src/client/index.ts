@@ -15,7 +15,7 @@ import { transportPart } from './transport';
 export async function renderClientJs(
   projectDir: string,
   actions: BundleOptions[],
-  bindings: Array<{ event: string; action: string }> = [],
+  bindings: Array<{ event: string; action: string; origin?: string; prop?: string }> = [],
   minify = false,
   customObjectsJs: string | null = null,
 ): Promise<string> {
