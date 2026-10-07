@@ -29,7 +29,7 @@ import { say, warn } from '../ui.mjs'
  * Returns the running server so the caller can shut it down; this never returns
  * on its own, because a dev server that exits is not a dev server.
  */
-export async function dev({ dir = process.cwd(), port = Number(process.env.PORT ?? 4317) } = {}) {
+export async function dev({ dir = process.cwd(), port = Number(process.env.PORT ?? 4317), desktop } = {}) {
   const dist = path.join(dir, 'dist')
   const dataDir = process.env.MORGANA_DATA ?? path.join(dir, '.data')
 
@@ -58,7 +58,10 @@ function readJsonSafe(rel, fallback) {
 }
 
 function send(res, status, body, type = 'text/plain; charset=utf-8') {
-  res.writeHead(status, { 'content-type': type })
+  // A dev server must never serve stale bytes: every rebuild changes dist/,
+  // and a cached page or client.js means testing yesterday's build. Production
+  // caching belongs to the deployed worker, not here.
+  res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' })
   res.end(body)
 }
 
@@ -73,7 +76,11 @@ if (!fs.existsSync(dist)) {
 }
 
 const manifest = readJson('manifest.json')
-const apis = readJsonSafe('server/apis.json', [])
+const serverApis = readJsonSafe('server/apis.json', [])
+// Desktop http routes live in their own partition so the cloud never sees
+// them, but this host serves both — the installed app is a full host.
+const desktopApis = readJsonSafe('desktop/apis.json', [])
+const apis = [...serverApis, ...desktopApis]
 const triggers = readJsonSafe('server/triggers.json', [])
 const stores = readJsonSafe('server/stores.json', [])
 // Public vars ship in the manifest; private vars come from this process's env
@@ -102,8 +109,14 @@ const actionModules = new Map()
 
 async function getAction(name) {
   if (!actionModules.has(name)) {
-    const file = path.join(dist, 'server', 'actions', `${name}.js`)
-    if (!fs.existsSync(file)) {
+    // Server first, desktop second: a server module and a desktop module may
+    // never share a name (the compiler rejects the collision), so order is
+    // a fallback, not a shadow.
+    const file = [
+      path.join(dist, 'server', 'actions', `${name}.js`),
+      path.join(dist, 'desktop', 'actions', `${name}.js`),
+    ].find((f) => fs.existsSync(f))
+    if (!file) {
       throw Object.assign(new Error(`Action "${name}" is not deployed`), { code: 'ACTION_MISSING' })
     }
     actionModules.set(name, await import(pathToFileURL(file).href))
@@ -186,7 +199,7 @@ function channelRefusal(rules, channel, req) {
   }
 }
 
-const enabledActions = (manifest.actions ?? []).map((a) => (typeof a === 'string' ? a : a?.name)).filter(Boolean)
+const enabledActions = [...(manifest.actions ?? []), ...(manifest.desktopActions ?? [])].map((a) => (typeof a === 'string' ? a : a?.name)).filter(Boolean)
 
 /**
  * Run a deployed action. `params` becomes ctx.args, exactly as the browser's
@@ -202,6 +215,8 @@ async function runAction(name, params) {
     declaredStores: stores.map((s) => s.name),
     enabledActions,
     runAction,
+    // Opaque — built by the backend package, carried verbatim (see host-context).
+    desktop,
     base: '',
     // The same hub the SSE route reads, so a publish from an action reaches
     // the pages holding that channel open.
@@ -443,5 +458,5 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, shutdown)
 }
 
-return { server, shutdown }
+return { server, shutdown, runAction }
 }

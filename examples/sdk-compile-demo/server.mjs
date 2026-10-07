@@ -44,7 +44,8 @@ function readJsonSafe(rel, fallback) {
 }
 
 function send(res, status, body, type = 'text/plain; charset=utf-8') {
-  res.writeHead(status, { 'content-type': type })
+  // Same rule as `morgana dev`: a local host must never serve stale bytes.
+  res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' })
   res.end(body)
 }
 
