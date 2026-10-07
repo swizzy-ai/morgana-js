@@ -25,6 +25,10 @@
   "bin": {
     "morgana": "./dist/morgana.js"
   },
+  "exports": {
+    ".": "./dist/morgana.js",
+    "./host": "./dist/host.js"
+  },
   "files": [
     "dist"
   ],

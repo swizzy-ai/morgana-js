@@ -165,6 +165,19 @@ export interface DesktopPlatform {
   icon?: string
 }
 
+/**
+ * Window chrome for an installed desktop binary. Every field optional;
+ * absent means a plain framed window at the backend default size.
+ */
+export interface DesktopWindow {
+  width?: number
+  height?: number
+  frameless?: boolean
+  transparent?: boolean
+  resizable?: boolean
+  title?: string
+}
+
 /** An app declared in the config — the primary definition; pages attach by name. */
 export interface AppDefinition {
   /** Human-readable name (falls back to the config key). */
@@ -176,6 +189,8 @@ export interface AppDefinition {
   type?: AppType
   /** Desktop identity. Only read when `type` is `'desktop'`. */
   platform?: DesktopPlatform
+  /** Window chrome. Only read when `type` is `'desktop'`. Absent = plain framed window. */
+  window?: DesktopWindow
 }
 
 /**
@@ -183,6 +198,24 @@ export interface AppDefinition {
  * runtime via `ctx.apps.app(name).addPage(page)` / `PageHandle.app(name)`, or
  * by setting `PageProps.app`.
  */
+
+/**
+ * The desktop lane's project-level declaration.
+ *
+ * `os` is the capability list the app may use. A desktop action reaching for
+ * a group outside this list gets a named error, not undefined — the same rule
+ * the OS-permission model will enforce at pack time. `backend` names the
+ * package that implements dist/desktop/ (default
+ * @morgana/desktop-electron); `morgana desktop` resolves it from the
+ * project, never from the CLI's own dependencies, so a future backend swaps
+ * in with one config line.
+ */
+export interface DesktopConfig {
+  /** Backend package implementing the desktop contract. */
+  backend?: string
+  /** OS capability groups the app may use: 'fs' | 'clipboard' | 'notify' | 'shell'. */
+  os?: string[]
+}
 
 export interface MorganaConfig {
   /** Project name (matches package.json / morgana.json). */
@@ -207,6 +240,11 @@ export interface MorganaConfig {
   hooks?: Hook[]
   /** Apps to deploy — keyed by app name. Pages are added to the app by name. */
   apps?: Record<string, AppDefinition>
+  /**
+   * The desktop lane's project-level declaration — backend package plus the
+   * OS capability list the app may use. Absent means no desktop lane.
+   */
+  desktop?: DesktopConfig
   /**
    * Declarative `make()` token changes — extend/override/remove transformer
    * tokens before the compile phase bakes them into the browser runtime.

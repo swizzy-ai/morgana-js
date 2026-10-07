@@ -9,9 +9,12 @@
     "start": "node server.mjs",
     "smoke": "node smoke.mjs",
     "bench": "node bench.mjs",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "devDependencies": {
+    "typescript": "~5.8.2",
     "vitest": "^4.1.11"
   },
   "dependencies": {

@@ -43,6 +43,7 @@ export async function build({ dir, minify } = {}) {
   say(row('entry', result.entry || '(none)'))
   say(row('compile actions', result.compileActions.join(', ') || '(none)'))
   say(row('server actions', result.serverActions.join(', ') || '(none)'))
+  say(row('desktop actions', result.desktopActions.join(', ') || '(none)'))
   say(row('minify', result.minify ? 'on' : 'off'))
   // Yellow, and after the facts rather than among them. These do not stop the
   // build, and several of them are the reason a project works at all, so they

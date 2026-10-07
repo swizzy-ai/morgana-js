@@ -12,8 +12,8 @@ import path from 'node:path'
 import ts from 'typescript'
 import type { Hook, MorganaConfig } from '@morgana/sdk'
 
-export type ActionLane = 'server' | 'client' | 'compile'
-export type FactoryKind = 'server' | 'client' | 'plain-handle' | 'plain-run'
+export type ActionLane = 'server' | 'client' | 'compile' | 'desktop'
+export type FactoryKind = 'server' | 'client' | 'desktop' | 'plain-handle' | 'plain-run'
 
 export interface SdkActionMeta {
   name: string
@@ -126,7 +126,7 @@ function propOf(obj: ts.ObjectLiteralExpression, name: string): ts.Expression | 
 }
 
 interface FactoryFound {
-  kind: 'server' | 'client'
+  kind: 'server' | 'client' | 'desktop'
   configNode?: ts.ObjectLiteralExpression
   handlerNode: ts.Node
   handlerSrc: string
@@ -192,10 +192,10 @@ function findFactories(sf: ts.SourceFile): Array<{ name: string; found: FactoryF
       const init = decl.initializer
       if (!ts.isCallExpression(init) || !ts.isIdentifier(init.expression)) continue
       const callee = init.expression.text
-      if (callee !== 'defineServerAction' && callee !== 'defineClientAction') continue
+      if (callee !== 'defineServerAction' && callee !== 'defineClientAction' && callee !== 'defineDesktopAction') continue
       const arg = init.arguments[0]
       if (!arg || !ts.isObjectLiteralExpression(arg)) continue
-      const kind = callee === 'defineServerAction' ? 'server' : 'client'
+      const kind = callee === 'defineServerAction' ? 'server' : callee === 'defineDesktopAction' ? 'desktop' : 'client'
       const configRaw = propOf(arg, 'config')
       const configNode =
         configRaw && ts.isObjectLiteralExpression(configRaw) ? configRaw : undefined
@@ -257,16 +257,18 @@ function extractContract(sf: ts.SourceFile, checker: ts.TypeChecker): { input?: 
   return out
 }
 
-function laneOfFile(file: string, factoryKind: 'server' | 'client' | null): ActionLane {
+function laneOfFile(file: string, factoryKind: 'server' | 'client' | 'desktop' | null): ActionLane {
   const parts = file.split(/[\\/]/)
   if (parts.includes('compile')) return 'compile'
   if (factoryKind === 'client') return 'client'
   if (factoryKind === 'server') return 'server'
+  if (factoryKind === 'desktop') return 'desktop'
   // A plain handler has no factory to say which lane it is, so the directory
   // decides. `browser` is still read so an existing project's folder keeps
   // working after the rename to `client`.
   if (parts.includes('client') || parts.includes('browser')) return 'client'
   if (parts.includes('server')) return 'server'
+  if (parts.includes('desktop')) return 'desktop'
   return 'server'
 }
 
@@ -450,7 +452,7 @@ export function scanProject(opts: { dir: string; actionsDirs?: string[] }): Proj
       actions.push({
         name,
         file,
-        lane: laneOfFile(file, null) === 'client' ? 'client' : 'server',
+        lane: laneOfFile(file, null) === 'client' ? 'client' : laneOfFile(file, null) === 'desktop' ? 'desktop' : 'server',
         factory: plain.kind,
         on: [],
         enabled: true,

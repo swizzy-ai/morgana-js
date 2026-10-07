@@ -159,6 +159,7 @@ class Queue {
  * @param {string[]} opts.declaredStores           from dist/server/stores.json
  * @param {string[]} opts.enabledActions           action names this host may run
  * @param {(name: string) => Promise<unknown>} [opts.runAction] action → action
+ * @param {{ os: unknown, app: unknown, objects: unknown }} [opts.desktop] opaque desktop surface (built by the backend package) attached verbatim as ctx.desktop
  * @param {string} [opts.base]                     public base URL for assets
  * @param {string} [opts.dataDir]                  durable root (agents.json lives here)
  */
@@ -242,6 +243,10 @@ export async function makeHostContext(opts) {
 
   const ctx = {
     args,
+    // The desktop lane. Opaque on purpose: this host knows "actions", never
+    // "sheets" or "windows" — the backend package builds ctx.desktop (os, app,
+    // objects) and this host only carries it. Absent on the cloud/web lanes.
+    ...(opts.desktop ? { desktop: opts.desktop } : {}),
     ai,
     log,
     vars: { ...(config.vars?.public ?? {}), ...(config.vars?.private ?? {}) },

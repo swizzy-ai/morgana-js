@@ -16,5 +16,15 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  // This config is shared base options + workspace path aliases — NOT a
+  // project. Every package and example has its own tsconfig with a tight
+  // `include`, and CI typechecks those. Without these excludes, any tool
+  // that runs `tsc -p tsconfig.json` at the root (editors, agents) sweeps
+  // in files that are deliberately not part of any checked project:
+  //   examples/            — checked by examples/*/tsconfig.json instead
+  //   packages/morgana-server — the private worker; not in this repo's
+  //                             workspace and its deps are not installed
+  //   */dist               — build output, never typecheck input
+  "exclude": ["node_modules", "examples", "packages/morgana-server", "**/dist"]
 }

@@ -8,6 +8,11 @@
  *   server/actions/<name>.js
  *   server/apis.json       (http routes only)
  *   server/triggers.json   (every other trigger: cron + backend events)
+ *   desktop/actions/<name>.js   (desktop-lane actions, Node ESM)
+ *   desktop/apis.json            (http routes of desktop actions)
+ *   desktop/triggers.json        (cron + backend-event triggers of desktop actions)
+ *   desktop/app.json             (backend package, os capabilities, app identity)
+ *   objects.json                 (server-object catalog with standalone op source)
  *   server/stores.json
  *   manifest.json
  */
@@ -17,6 +22,7 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import type { ProjectIR } from './ir'
 import type { HttpRoute, Trigger } from './routes'
+import type { DiscoveredServerObject } from './server-objects'
 
 export interface EmitInputs {
   ir: ProjectIR
@@ -27,6 +33,22 @@ export interface EmitInputs {
   clientJs: string
   css: string
   serverActions: Array<{ name: string; code: string }>
+  /**
+   * Desktop action modules, bundled for Node. Written to
+   * desktop/actions/ only when non-empty (or desktop is set) — see below.
+   */
+  desktopActions?: Array<{ name: string; code: string }>
+  /** Http routes whose action is desktop-lane — served by the app host, never deployed. */
+  desktopApis?: HttpRoute[]
+  /** Cron/backend-event triggers whose action is desktop-lane. */
+  desktopTriggers?: Trigger[]
+  /**
+   * The desktop declaration for desktop/app.json. Undefined means the
+   * project does not declare the lane and dist/desktop/ is skipped entirely.
+   */
+  desktop?: { backend: string; os: string[]; apps: Array<{ name: string; displayName?: string; bundleId: string; icon?: string; window?: { width?: number; height?: number; frameless?: boolean; transparent?: boolean; resizable?: boolean; title?: string } }> }
+  /** Server-object catalog for objects.json — written only when non-empty. */
+  serverObjects?: DiscoveredServerObject[]
   apis: HttpRoute[]
   triggers: Trigger[]
   warnings: string[]
@@ -105,6 +127,26 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     'server/stores.json',
     `${JSON.stringify([...inputs.ir.stores.values()], null, 2)}\n`,
   )
+  // The desktop partition — backend-agnostic by design: any backend package
+  // (Electron now, a Rust shell later) boots from these files. Written only
+  // when the project declares the lane, so every other project builds
+  // byte-identically to before it existed.
+  const desktopActions = inputs.desktopActions ?? []
+  const hasDesktop = desktopActions.length > 0 || inputs.desktop !== undefined
+  if (hasDesktop) {
+    for (const a of desktopActions) {
+      write(`desktop/actions/${a.name}.js`, a.code)
+    }
+    write('desktop/apis.json', `${JSON.stringify(inputs.desktopApis ?? [], null, 2)}\n`)
+    write('desktop/triggers.json', `${JSON.stringify(inputs.desktopTriggers ?? [], null, 2)}\n`)
+    const decl = inputs.desktop ?? { backend: '@morgana/desktop-electron', os: [], apps: [] }
+    write('desktop/app.json', `${JSON.stringify(decl, null, 2)}\n`)
+  }
+  // The object catalog both lanes read. The desktop host boots its local
+  // object runtime from it; the cloud object pipeline reads the same file.
+  if (inputs.serverObjects?.length) {
+    write('objects.json', `${JSON.stringify(inputs.serverObjects, null, 2)}\n`)
+  }
 
   // Hash the emitted artefacts, not just their shape: flipping `minify` or
   // editing a browser handler changes the output while leaving every page and
@@ -121,6 +163,19 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
         triggers: inputs.triggers,
         stores: [...inputs.ir.stores.values()],
         minify: inputs.minify ?? false,
+        // In the hash only when present: adding always-present keys would
+        // change every existing project's hash for no reason.
+        ...(hasDesktop || (inputs.serverObjects?.length ?? 0) > 0
+          ? {
+              desktop: {
+                actions: inputs.desktopActions ?? [],
+                apis: inputs.desktopApis ?? [],
+                triggers: inputs.desktopTriggers ?? [],
+                app: inputs.desktop ?? null,
+                objects: inputs.serverObjects ?? [],
+              },
+            }
+          : {}),
       }),
     )
     .digest('hex')
@@ -142,6 +197,12 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
           pages: a.pages,
         })),
         actions: inputs.serverActions.map((a) => a.name),
+        // Desktop actions are NEVER in actions: the cloud deploys that list.
+        // The desktop host reads this list instead. Omitted when the lane is
+        // absent, so existing manifests keep their shape exactly.
+        ...(hasDesktop
+          ? { desktopActions: (inputs.desktopActions ?? []).map((a) => a.name) }
+          : {}),
         // Declared channels and their access rules, so a subscription is answered from
         // the build rather than from a config lookup. Omitted when the project
         // declares none, which the worker reads as "no channel has a rule" — the

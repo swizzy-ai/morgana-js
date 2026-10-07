@@ -32,6 +32,7 @@ console.log('pages:         ', result.pages.join(', ') || '(none)')
 console.log('entry:         ', result.entry || '(none)')
 console.log('compile actions:', result.compileActions.join(', ') || '(none)')
 console.log('server actions: ', result.serverActions.join(', ') || '(none)')
+console.log('desktop actions:', result.desktopActions.join(', ') || '(none)')
 console.log('minify:        ', result.minify ? 'on' : 'off')
 for (const w of result.warnings) console.log('warning:       ', w)
 

@@ -13,6 +13,9 @@
  *                             events, emit, request/respond — the full HTTP
  *                             surface lives under ctx.server)
  *      defineClientAction  — ClientContext (ui objects/state/theme, …)
+ *      defineDesktopAction — DesktopContext (the server spine plus
+ *                             ctx.desktop: os, app, objects — the installed
+ *                             app as a host)
  *    `config.on` is what makes an action event-based ('store.…record.created',
  *    'cron(every 1h)', 'http.get /api/widgets'). Without config it's a plain
  *    generic action, invoked on demand via ctx.actions.run.
@@ -28,6 +31,7 @@
 
 import type { ServerContext } from './contexts/server'
 import type { ClientContext } from './contexts/client'
+import type { DesktopContext } from './contexts/desktop'
 import type { ServerApiCors } from './config'
 
 /** Optional config — event/route wiring. Empty means a plain generic action. */
@@ -63,5 +67,8 @@ export function defineServerAction<Ctx extends ServerContext = ServerContext>(de
 }
 
 export function defineClientAction<Ctx extends ClientContext = ClientContext>(def: ActionDef<Ctx>): ActionDef<Ctx> {
+  return def
+}
+export function defineDesktopAction<Ctx extends DesktopContext = DesktopContext>(def: ActionDef<Ctx>): ActionDef<Ctx> {
   return def
 }

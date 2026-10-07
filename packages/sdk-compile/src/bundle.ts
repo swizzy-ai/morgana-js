@@ -7,6 +7,8 @@
  *
  *   compile  platform:node  format:cjs   evaluated in-process (no temp files)
  *   server   platform:node  format:esm   one self-contained file per action
+ *   desktop  platform:node  format:esm   one self-contained file per action
+ *                                        (runs in Node — no builtin warning)
  *   browser  platform:browser format:iife one pass over every browser action
  *
  * `@morgana/sdk` is never resolved from the project — author projects don't
@@ -468,6 +470,45 @@ export async function bundleServerAction(opts: BundleOptions, warnings: string[]
     plugins: [warnNodeBuiltins(warnings ?? [])],
   })
   return `${COMPILED_MARKER}\n${code}`
+}
+// ── desktop lane ──────────────────────────────────────────────────────────
+
+/**
+ * Bundle a desktop action into one self-contained ESM module exporting the
+ * conventional `handle(ctx)` / `run(input)` the host dispatches on.
+ *
+ * Same profile as the server lane (platform node, format esm) and the same
+ * SDK plugin — but deliberately no node-builtins warning. A desktop action
+ * runs in the installed app's Node main process, so a builtin import is the
+ * runtime, not a deploy hazard.
+ */
+export async function bundleDesktopAction(opts: BundleOptions): Promise<string> {
+  const picked = pickHandlerExpr('__m', opts.name, opts.factory)
+  const isPlainRun = opts.factory === 'plain-run'
+  const param = isPlainRun ? 'input' : 'ctx'
+  const fname = isPlainRun ? 'run' : 'handle'
+  const body = isPlainRun ? 'return __fn(input);' : 'return __fn(ctx);'
+
+  const code = await run(opts, {
+    stdin: {
+      contents: [
+        'import * as __m from ' + JSON.stringify(opts.file) + ';',
+        'var __fn = ' + picked + ';',
+        'if (typeof __fn !== "function") throw new Error(' + JSON.stringify(
+          'action "' + opts.name + '" exports no handler — use defineDesktopAction, or export function handle(ctx)',
+        ) + ');',
+        'export ' + (opts.async ? 'async ' : '') + 'function ' + fname + '(' + param + ') {',
+        '  ' + body,
+        '}',
+      ].join('\n'),
+      resolveDir: path.dirname(opts.file),
+      sourcefile: opts.name + '.morgana-entry.ts',
+      loader: 'ts',
+    },
+    platform: 'node',
+    format: 'esm',
+  })
+  return COMPILED_MARKER + '\n' + code
 }
 
 // ── page runtime ──────────────────────────────────────────────────────────

@@ -7,7 +7,7 @@
 # the mismatch and try to reinstall wrangler and its tree, and `pnpm install`
 # would quietly add the backend's dependencies back to a public lockfile.
 #
-# Naming the four published packages makes the boundary explicit and keeps it
+# Naming the five published packages makes the boundary explicit and keeps it
 # from eroding. ci.yml fails if the worker is ever committed or referenced.
 packages:
   - packages/sdk
@@ -15,7 +15,9 @@ packages:
   - packages/hotsheet
   - packages/morgana-agents
   - packages/morgana-cli
+  - packages/desktop-electron
   - examples/*
 
 allowBuilds:
+  electron: false
   esbuild: true

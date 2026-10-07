@@ -1,9 +1,10 @@
 import { defineConfig } from 'tsup'
 
 /**
- * Bundle the CLI to one file.
+ * Bundle the CLI — the binary plus the host library.
  *
- * `bin/morgana.mjs` is the entry; the commands under `src/` become internal
+ * `bin/morgana.mjs` is the binary entry; `src/host.mjs` is the library entry
+ * backend packages import (`@morgana/cli/host`). The commands under `src/` become internal
  * chunks of that one file rather than the 20-odd separate modules that used to
  * ship.
  *
@@ -35,7 +36,7 @@ import { defineConfig } from 'tsup'
  * runtime string the bundler cannot normalise. See the comment there.
  */
 export default defineConfig({
-  entry: { morgana: 'bin/morgana.mjs' },
+  entry: { morgana: 'bin/morgana.mjs', host: 'src/host.mjs' },
   outDir: 'dist',
   format: ['esm'],
   target: 'node22',

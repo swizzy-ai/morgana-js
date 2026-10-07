@@ -100,6 +100,62 @@ export const COMMANDS = {
     },
   },
 
+  package: {
+    describe: 'build a shippable package — web dist/ or the desktop installer',
+    usage: 'morgana package [web|desktop] [--dir <path>]',
+    flags: {
+      ...MINIFY_FLAGS,
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      outDir: { type: 'string', describe: 'installer project directory (desktop only)' },
+    },
+    async run(args, { str, positional }) {
+      const { packageTarget } = await import('./commands/package.mjs')
+      await packageTarget({
+        target: positional(args, 0, 'web'),
+        dir: str(args, 'dir') || process.cwd(),
+        minify: minifyRequested(args),
+        outDir: str(args, 'outDir'),
+      })
+    },
+  },
+
+  desktop: {
+    describe: 'open the desktop app — compiles, boots the host, opens the window',
+    usage: 'morgana desktop [--dir <path>] [--port <n>]',
+    flags: {
+      ...MINIFY_FLAGS,
+      port: { type: 'string', short: 'P', describe: 'port (default 4317, or $PORT)' },
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+    },
+    async run(args, { str }) {
+      const { desktop } = await import('./commands/desktop.mjs')
+      await desktop({
+        dir: str(args, 'dir') || process.cwd(),
+        port: Number(str(args, 'port') || process.env.PORT || 4317),
+        minify: minifyRequested(args),
+      })
+    },
+  },
+
+  desktop: {
+    describe: 'run or package the installed desktop app',
+    usage: 'morgana desktop [dev|package] [--dir <path>] [--port <n>]',
+    flags: {
+      ...MINIFY_FLAGS,
+      port: { type: 'string', short: 'P', describe: 'port (default 4317, or $PORT)' },
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+    },
+    async run(args, { str, positional }) {
+      const { desktop } = await import('./commands/desktop.mjs')
+      await desktop({
+        sub: positional(args, 0, 'dev'),
+        dir: str(args, 'dir') || process.cwd(),
+        port: Number(str(args, 'port') || process.env.PORT || 4317),
+        minify: minifyRequested(args),
+      })
+    },
+  },
+
   // The worker-facing commands (deploy, verify, login, logout, status) live in
   // `worker-commands.mjs` and are merged in by `bin/morgana.mjs`. One table,
   // two files — split for length, not for behaviour.

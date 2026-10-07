@@ -1,0 +1,58 @@
+{
+  "name": "@morgana/desktop-electron",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Desktop backend for Morgana — boots dist/desktop/ in Electron: window, os capabilities, local object runtime, installer project.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/desktop-electron"
+  },
+  "homepage": "https://github.com/SwizzyAI/morgana-js/tree/main/packages/desktop-electron#readme",
+  "bugs": {
+    "url": "https://github.com/SwizzyAI/morgana-js/issues"
+  },
+  "keywords": [
+    "morgana",
+    "desktop",
+    "electron"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@morgana/cli": "workspace:^",
+    "@morgana/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "electron": "^33.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

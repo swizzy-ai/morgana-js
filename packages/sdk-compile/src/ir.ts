@@ -54,6 +54,8 @@ export interface AppNode {
   type?: 'web' | 'desktop'
   /** Desktop identity — only meaningful when `type` is `'desktop'`. */
   platform?: { bundleId: string; icon?: string }
+  /** Window chrome — only meaningful when `type` is `'desktop'`. */
+  window?: { width?: number; height?: number; frameless?: boolean; transparent?: boolean; resizable?: boolean; title?: string }
 }
 
 export interface StoreDecl {

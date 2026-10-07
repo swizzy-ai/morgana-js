@@ -18,6 +18,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
+import esbuild from 'esbuild'
 
 export interface DiscoveredServerObject {
   /** Object type name — the `name` literal. */
@@ -31,6 +32,14 @@ export interface DiscoveredServerObject {
   computed: unknown
   /** Op names — the keys of the `ops` object literal. */
   ops: string[]
+
+  /**
+   * Standalone op source by op name — TypeScript stripped, module imports
+   * unusable. The desktop host compiles each entry with new Function and
+   * calls it with the op ctx, so a body may only reference its own params,
+   * its ctx, and globals.
+   */
+  opSrc: Record<string, string>
 }
 
 /** Directories scanned for server objects, in priority order. */
@@ -142,7 +151,104 @@ function findDefinitions(sf: ts.SourceFile): Array<{ exportName: string; arg: ts
   return out
 }
 
-function readDefinition(file: string, exportName: string, arg: ts.ObjectLiteralExpression, dir: string): DiscoveredServerObject {
+/**
+ * Standalone op source — see opSrc on DiscoveredServerObject.
+ *
+ * An op runs far from its module (the desktop host compiles the string with
+ * new Function; later the cloud object pipeline evals it), so its body may
+ * only reference its own params, its ctx, and globals. Anything else is a
+ * ReferenceError at runtime — which is why discovery checks the stripped
+ * source against the file's own imports and warns naming both.
+ */
+
+/** Local names bound by value imports (import type never reaches runtime). */
+function importedValueNames(sf: ts.SourceFile): Set<string> {
+  const names = new Set<string>()
+  for (const st of sf.statements) {
+    if (!ts.isImportDeclaration(st) || st.importClause?.isTypeOnly) continue
+    const clause = st.importClause
+    if (!clause) continue
+    if (clause.name) names.add(clause.name.text)
+    const nb = clause.namedBindings
+    if (nb && ts.isNamespaceImport(nb)) names.add(nb.name.text)
+    else if (nb && ts.isNamedImports(nb)) {
+      for (const el of nb.elements) names.add(el.name.text)
+    }
+  }
+  return names
+}
+
+/** A top-level function name or const arrow the shorthand may point at. */
+function findLocalFunction(sf: ts.SourceFile, name: string): ts.Node | null {
+  for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name?.text === name) return st
+    if (ts.isVariableStatement(st)) {
+      for (const decl of st.declarationList.declarations) {
+        if (!ts.isIdentifier(decl.name) || decl.name.text !== name || !decl.initializer) continue
+        const init = decl.initializer
+        if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) return init
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * One op as a standalone JS expression string, or null with a warning.
+ *
+ * Method shorthand (async append(ctx, p) {…}) is not an expression, so it is
+ * wrapped as an object member access. TypeScript is stripped with esbuild.
+ * Import usage is checked against the STRIPPED source, so type-only imports
+ * never warn — only values that would ReferenceError at runtime.
+ */
+function opExpressionText(
+  opName: string,
+  prop: ts.PropertyAssignment | ts.MethodDeclaration | ts.ShorthandPropertyAssignment,
+  sf: ts.SourceFile,
+  rel: string,
+  warnings: string[],
+): string | null {
+  const fail = (why: string): null => {
+    warnings.push('server object op "' + opName + '" in ' + rel + ' ' + why + ' — it keeps its name but ships no runnable source')
+    return null
+  }
+  let expr: string
+  if (ts.isMethodDeclaration(prop)) {
+    expr = '({' + prop.getText() + '})[' + JSON.stringify(opName) + ']'
+  } else if (ts.isShorthandPropertyAssignment(prop)) {
+    const target = findLocalFunction(sf, prop.name.text)
+    if (!target) return fail('is a shorthand for something declared outside this file')
+    expr = '(' + target.getText() + ')'
+  } else {
+    const init = prop.initializer
+    if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
+      expr = init.getText()
+    } else if (ts.isIdentifier(init)) {
+      const target = findLocalFunction(sf, init.text)
+      if (!target) return fail('points at "' + init.text + '", which is declared outside this file')
+      expr = '(' + target.getText() + ')'
+    } else {
+      return fail('is not a function')
+    }
+  }
+  let js: string
+  try {
+    js = esbuild.transformSync(expr, { loader: 'ts' }).code.trim().replace(/;+$/g, '')
+  } catch (err) {
+    return fail('does not strip cleanly (' + (err instanceof Error ? err.message : String(err)) + ')')
+  }
+  for (const name of importedValueNames(sf)) {
+    if (new RegExp('\\b' + name + '\\b').test(js)) {
+      warnings.push(
+        'server object op "' + opName + '" in ' + rel + ' uses imported name "' + name + '" — standalone op source cannot see module imports, so this fails at runtime. Inline the helper.',
+      )
+      break
+    }
+  }
+  return js
+}
+
+function readDefinition(file: string, exportName: string, arg: ts.ObjectLiteralExpression, dir: string, sf: ts.SourceFile, warnings: string[]): DiscoveredServerObject {
   const rel = path.relative(dir, file)
   const nameRaw = propOf(arg, 'name')
   if (!nameRaw || !ts.isStringLiteralLike(nameRaw) || !nameRaw.text) {
@@ -161,9 +267,13 @@ function readDefinition(file: string, exportName: string, arg: ts.ObjectLiteralE
     throw new Error(`server object "${nameRaw.text}" in ${rel} has no \`ops: { … }\` object literal`)
   }
   const ops: string[] = []
+  const opSrc: Record<string, string> = {}
   for (const prop of opsRaw.properties) {
     if (ts.isPropertyAssignment(prop) || ts.isMethodDeclaration(prop) || ts.isShorthandPropertyAssignment(prop)) {
-      ops.push(prop.name.getText().replace(/^['"]|['"]$/g, ''))
+      const opName = prop.name.getText().replace(/^['"]|['"]$/g, '')
+      ops.push(opName)
+      const src = opExpressionText(opName, prop, sf, rel, warnings)
+      if (src) opSrc[opName] = src
     }
   }
   if (!ops.length) {
@@ -177,6 +287,7 @@ function readDefinition(file: string, exportName: string, arg: ts.ObjectLiteralE
     links: readValue('links') ?? {},
     computed: readValue('computed') ?? {},
     ops,
+    opSrc,
   }
 }
 
@@ -207,7 +318,7 @@ export function discoverServerObjects(dir: string, warnings: string[] = [], expl
           `${path.relative(dir, file)} defines ${found.length} server objects — one object per file, split it up`,
         )
       }
-      const decl = readDefinition(file, found[0]!.exportName, found[0]!.arg, dir)
+      const decl = readDefinition(file, found[0]!.exportName, found[0]!.arg, dir, sf, warnings)
       const prev = seen.get(decl.name)
       if (prev) {
         throw new Error(

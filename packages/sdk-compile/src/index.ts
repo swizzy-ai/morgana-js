@@ -16,6 +16,7 @@ import {
   loadCustomObjectDefinitions,
   bundleCustomObjects,
 } from './custom-objects'
+import { discoverServerObjects } from './server-objects'
 import { createEmptyIR, type ProjectIR } from './ir'
 import {
   buildBrowserCompileCtx,
@@ -23,7 +24,7 @@ import {
   createCompileState,
   type CompileState,
 } from './compile-ctx'
-import { bundleBrowserActions, bundleCompileAction, bundleServerAction } from './bundle'
+import { bundleBrowserActions, bundleCompileAction, bundleServerAction, bundleDesktopAction } from './bundle'
 import { renderClientJs } from './client'
 import { deriveRoutes, EMITTABLE } from './routes'
 import { buildBindingGraph } from './bindings'
@@ -49,6 +50,8 @@ export interface CompileResult extends EmitResult {
   entry: string
   serverActions: string[]
   compileActions: string[]
+  /** Desktop-lane action names — bundled to dist/desktop/, never deployed to the cloud. */
+  desktopActions: string[]
   warnings: string[]
   /** Whether JS and CSS were minified — the resolved value, not the request. */
   minify: boolean
@@ -109,6 +112,18 @@ function seedFromConfig(ir: ProjectIR, config: MorganaConfig): void {
               },
             }
           : {}),
+        ...(type === 'desktop' && appDef.window
+          ? {
+              window: {
+                ...(appDef.window.width !== undefined ? { width: appDef.window.width } : {}),
+                ...(appDef.window.height !== undefined ? { height: appDef.window.height } : {}),
+                ...(appDef.window.frameless !== undefined ? { frameless: appDef.window.frameless } : {}),
+                ...(appDef.window.transparent !== undefined ? { transparent: appDef.window.transparent } : {}),
+                ...(appDef.window.resizable !== undefined ? { resizable: appDef.window.resizable } : {}),
+                ...(appDef.window.title ? { title: appDef.window.title } : {}),
+              },
+            }
+          : {}),
       })
     }
   }
@@ -128,6 +143,40 @@ function seedFromConfig(ir: ProjectIR, config: MorganaConfig): void {
         ir.transformerMutations.push({ domain, op: 'remove', key })
       }
     }
+  }
+}
+
+/**
+ * The desktop declaration for dist/desktop/app.json — backend package, OS
+ * capability list, and every type: 'desktop' app's install identity.
+ *
+ * Returns undefined when the project has neither desktop actions nor a
+ * desktop config block: emit then skips dist/desktop/ entirely, so such a
+ * project builds byte-identically to before the lane existed.
+ */
+function buildDesktopDecl(
+  config: MorganaConfig,
+  desktopActions: SdkActionMeta[],
+  warnings: string[],
+): { backend: string; os: string[]; apps: Array<{ name: string; displayName?: string; bundleId: string; icon?: string; window?: { width?: number; height?: number; frameless?: boolean; transparent?: boolean; resizable?: boolean; title?: string } }> } | undefined {
+  const hasActions = desktopActions.length > 0
+  if (!hasActions && !config.desktop) return undefined
+  const apps = Object.entries(config.apps ?? {})
+    .filter((entry) => entry[1]?.type === 'desktop')
+    .map(([name, def]) => ({
+      name,
+      ...(def.displayName ? { displayName: def.displayName } : {}),
+      bundleId: def.platform?.bundleId ?? 'com.morgana.' + name,
+      ...(def.platform?.icon ? { icon: def.platform.icon } : {}),
+      ...(def.window ? { window: { ...def.window } } : {}),
+    }))
+  if (hasActions && !apps.length) {
+    warnings.push('desktop actions exist but config.apps declares no type: "desktop" app — using a default install identity')
+  }
+  return {
+    backend: config.desktop?.backend ?? '@morgana/desktop-electron',
+    os: [...(config.desktop?.os ?? [])],
+    apps,
   }
 }
 
@@ -214,6 +263,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const runtimeActions = scan.actions.filter((a) => !compileNames.has(a.name) && a.enabled !== false)
   const serverActions = runtimeActions.filter((a) => a.lane === 'server')
   const clientActions = runtimeActions.filter((a) => a.lane === 'client')
+  const desktopActions = runtimeActions.filter((a) => a.lane === 'desktop')
 
   // Bindings are resolved against the compiled graph, so `on:` can be scoped to
   // an object and validated. This runs after the compile lane, which is why the
@@ -229,6 +279,16 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // A selector naming a missing object, or an event nothing emits, is a mistake
   // worth surfacing — but not worth failing a build over, so it is a loud warning.
   warnings.push(...bindingErrors)
+  // The desktop lane ships its own partition: a desktop action's http routes
+  // and triggers belong to dist/desktop/, not dist/server/. Partitioned here
+  // — after derivation, so frontend bindings still resolve against the full
+  // graph — by the lane of the action each entry runs.
+  const laneOfAction = new Map(runtimeActions.map((a) => [a.name, a.lane]))
+  const isDesktopRun = (name: string): boolean => laneOfAction.get(name) === 'desktop'
+  const serverApis = apis.filter((r) => !isDesktopRun(r.action))
+  const desktopApis = apis.filter((r) => isDesktopRun(r.action))
+  const serverTriggers = triggers.filter((t) => !isDesktopRun(t.run))
+  const desktopTriggers = triggers.filter((t) => isDesktopRun(t.run))
 
   const pages: Record<string, string> = {}
   for (const page of ir.pages.values()) {
@@ -279,6 +339,22 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // After the real ones, so a generated action can never shadow a user's.
   if (accessModule) serverModules.push(accessModule);
 
+  // The desktop lane bundles with the Node profile and no builtin warning —
+  // the app IS Node, so node:fs is the runtime rather than a deploy hazard.
+  const desktopModules = await Promise.all(
+    desktopActions.map(async (a) => ({
+      name: a.name,
+      code: await bundleDesktopAction({
+        projectDir: dir,
+        file: a.file,
+        name: a.name,
+        factory: a.factory,
+        async: a.handlerAsync,
+        minify,
+      }),
+    })),
+  )
+
   const names = Object.keys(pages)
   const entry = scan.config.entry && names.includes(scan.config.entry)
     ? scan.config.entry
@@ -288,6 +364,15 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   if (scan.config.entry && !names.includes(scan.config.entry)) {
     warnings.push(`config entry "${scan.config.entry}" matches no compiled page`)
   }
+
+  // Server objects are discovered for the object pipeline — cloud and
+  // desktop both read dist/objects.json, and only the desktop host runs the
+  // local object runtime in v1. Emitted only when the project declares
+  // objects, so a project with none builds byte-identically to before.
+  const objectWarnings: string[] = []
+  const discoveredObjects = discoverServerObjects(dir, objectWarnings)
+  warnings.push(...objectWarnings)
+  const desktopDecl = buildDesktopDecl(scan.config, desktopActions, warnings)
 
   const emitted = emitDist(outDir, {
     ir,
@@ -304,8 +389,8 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     clientJs,
     css,
     serverActions: serverModules,
-    apis,
-    triggers,
+    apis: serverApis,
+    triggers: serverTriggers,
     warnings,
     minify,
     customObjects: discovered,
@@ -314,6 +399,11 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     // is `ir.channels` rather than anything in the config: a channel is declared
     // where it is created, the same place its shape and scope are.
     channels: Object.fromEntries(ir.channels),
+    desktopActions: desktopModules,
+    desktopApis,
+    desktopTriggers,
+    desktop: desktopDecl,
+    serverObjects: discoveredObjects,
   })
 
   return {
@@ -322,6 +412,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     customObjects: discovered.map((d) => d.name),
     entry,
     serverActions: serverModules.map((m) => m.name),
+    desktopActions: desktopModules.map((m) => m.name),
     compileActions: compileActions.map((a) => a.name),
     warnings,
     minify,
