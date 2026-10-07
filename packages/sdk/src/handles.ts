@@ -215,6 +215,102 @@ export type MakeToken =
   | 'fade-in' | 'fade-out' | 'slide-up' | 'slide-down' | 'scale-in' | 'scale-out' | 'pulse' | 'bounce' | 'spin' | 'smooth' | 'bouncy'
   | 'spa' // pages only — turns the page into an SPA shell
 
+// ── Animation — the imperative runtime surface ─────────────────────────────
+
+/**
+ * Distance for motion presets. Numbers are base-grid units (default
+ * 4px-per-unit), strings are named measures (`ctx.ui.measure.define`) — no
+ * raw CSS in author code. A `'12px'` string is still accepted as an escape
+ * hatch, for values the system cannot express.
+ */
+export type AnimateDistance = Dim | (string & {})
+
+/** Timing for one animation run. Durations are milliseconds. */
+export interface AnimateOptions {
+  /** Per-run duration in ms. Defaults: 350 entrances/exits, 800 pulse/bounce, 1000 spin. */
+  duration?: number
+  /** Any CSS easing string. Entrances default `ease-out`, exits `ease-in`, spin `linear`. */
+  easing?: string
+  /** Start delay in ms. Default 0. */
+  delay?: number
+  /** Repeat: `true` loops forever, a number loops that many times. Default 1. */
+  loop?: boolean | number
+  /** What the element holds outside the run. Exits default `forwards`, entrances `backwards`. */
+  fill?: 'none' | 'forwards' | 'backwards' | 'both'
+  /** How far motion presets travel. Default 2 (two grid units). */
+  distance?: AnimateDistance
+}
+
+/** Direction for the generic slide presets. */
+export type SlideDirection = 'left' | 'right' | 'up' | 'down'
+
+/** `slideIn({ from })` / `slideOut({ to })` — entrance/exit from one edge. */
+export interface SlideOptions extends AnimateOptions {
+  from?: SlideDirection
+  to?: SlideDirection
+}
+
+/** `spin({ turns })` — full rotations, default 1. */
+export interface SpinOptions extends AnimateOptions {
+  turns?: number
+}
+
+/**
+ * The names `animate(name)` accepts — the `make()` animation vocabulary, so
+ * the compile-time words and the runtime call speak one language.
+ */
+export const ANIMATE_WORDS = [
+  'fade-in', 'fade-out', 'slide-up', 'slide-down', 'scale-in', 'scale-out',
+  'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+] as const
+export type AnimateWord = (typeof ANIMATE_WORDS)[number]
+
+/** Every preset method on the `animate` namespace. */
+export const ANIMATE_PRESETS = [
+  'fadeIn', 'fadeOut',
+  'slideUp', 'slideDown', 'slideLeft', 'slideRight',
+  'slideIn', 'slideOut',
+  'scaleIn', 'scaleOut',
+  'pulse', 'bounce', 'spin', 'smooth', 'bouncy',
+] as const
+export type AnimatePreset = (typeof ANIMATE_PRESETS)[number]
+
+/**
+ * Imperative animation — Web Animations under the hood. Every call returns a
+ * promise that resolves when the run finishes (or is skipped), and every run
+ * emits `<id>.animated` with `{ animation, cancelled }`, so exits can be
+ * awaited before the follow-up act:
+ *
+ *   await card.animate.slideOut({ to: 'right', distance: 6, duration: 200 })
+ *   await ctx.actions.run('deleteTask', { id })
+ *
+ * Three forms: typed presets (`animate.slideLeft(...)`), the `make()`
+ * vocabulary by name (`animate('pulse', ...)`), and raw keyframes
+ * (`animate.to([...], {...})`). Respects `prefers-reduced-motion` by
+ * resolving immediately without moving anything.
+ */
+export interface AnimateApi {
+  /** A `make()` animation word by name (`'fade-in'`, `'pulse'`, …). */
+  (name: AnimateWord | (string & {}), opts?: AnimateOptions): Promise<void>
+  /** Raw keyframes straight through to the engine — the preset escape hatch. */
+  to(keyframes: Keyframe[], opts?: AnimateOptions): Promise<void>
+  fadeIn(opts?: AnimateOptions): Promise<void>
+  fadeOut(opts?: AnimateOptions): Promise<void>
+  slideUp(opts?: AnimateOptions): Promise<void>
+  slideDown(opts?: AnimateOptions): Promise<void>
+  slideLeft(opts?: AnimateOptions): Promise<void>
+  slideRight(opts?: AnimateOptions): Promise<void>
+  slideIn(opts?: SlideOptions): Promise<void>
+  slideOut(opts?: SlideOptions): Promise<void>
+  scaleIn(opts?: AnimateOptions): Promise<void>
+  scaleOut(opts?: AnimateOptions): Promise<void>
+  pulse(opts?: AnimateOptions): Promise<void>
+  bounce(opts?: AnimateOptions): Promise<void>
+  spin(opts?: SpinOptions): Promise<void>
+  smooth(opts?: AnimateOptions): Promise<void>
+  bouncy(opts?: AnimateOptions): Promise<void>
+}
+
 export interface ObjectHandle<P extends Record<string, any> = AnyProps> {
   readonly name: string
   readonly type: string
@@ -283,7 +379,14 @@ export interface ObjectHandle<P extends Record<string, any> = AnyProps> {
   track(event: string, opts?: TrackOptions): EventSource
   /** Emit an event directly on this object handle. */
   emit?(event: string, payload?: any): void
-  animate(name: string, opts?: Record<string, unknown>): void
+  /**
+   * Animate this object — presets (`animate.slideLeft(...)`), the `make()`
+   * words by name (`animate('pulse', ...)`), or raw keyframes
+   * (`animate.to([...], ...)`). Always returns a promise; always emits
+   * `<id>.animated` on settle. Compile-lane calls are accepted and ignored —
+   * declaration-time animation is `make()` words, not this.
+   */
+  animate: AnimateApi
 }
 
 // ── Typed handles — the airtight per-family surface (props.ts) ──────────────

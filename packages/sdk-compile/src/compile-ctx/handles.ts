@@ -2,6 +2,7 @@
  * Recording object handles: nodes, placement, props.
  */
 import type { CustomObjectDefinition, MorganaConfig } from '@morgana/sdk';
+import { ANIMATE_PRESETS } from '@morgana/sdk';
 import type { BindingRecord, ObjNode, ProjectIR } from '../ir';
 import { resolveMakeToken } from './tokens';
 
@@ -312,9 +313,25 @@ export function makeHandle(state: CompileState, node: ObjNode): Record<string, u
       node.tracked.push(event)
       return { name: event, origin: { name: node.id } }
     },
-    animate: () => {},
+    animate: makeCompileAnimate(),
   }
   return handle
+}
+
+/**
+ * Compile-lane `animate` — accepted and ignored, with the same shape as the
+ * browser namespace (callable, presets, `.to`), so a shared action module
+ * typechecks and runs in both lanes. Declaration-time animation is `make()`
+ * words; this exists so `handle.animate.fadeIn()` in a compile action is a
+ * no-op rather than a crash.
+ */
+function makeCompileAnimate(): unknown {
+  const noop = (): Promise<void> => Promise.resolve()
+  const api = (_name: string, _opts?: Record<string, unknown>): Promise<void> => Promise.resolve()
+  const apiWithPresets = api as unknown as Record<string, unknown>
+  apiWithPresets.to = noop
+  for (const preset of ANIMATE_PRESETS) apiWithPresets[preset] = noop
+  return apiWithPresets
 }
 
 export function lookupHandle(state: CompileState, kind: string, name: string): unknown {

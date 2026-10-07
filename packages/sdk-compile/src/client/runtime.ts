@@ -473,11 +473,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
         if (typeof event === 'string' && !meta.tracked.includes(event)) meta.tracked.push(event)
         return { name: event, origin: { name: id } }
       },
-      animate() {
-        throw new Error(
-          `[Morgana] animate() is not implemented for "${id}" — set a style prop or drive it from state.`,
-        )
-      },
+      // `animate` is layered on by extendAnimate (handles/animate.ts), which
+      // runs for every handle in extendHandle below — no base stub needed.
       emit(event: string, payload?: unknown) {
         deps.dispatchPageEvent(event, id, el, payload ?? {})
       },
@@ -520,6 +517,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       emit: (event: string, payload?: unknown) => deps.dispatchPageEvent(event, id, el, payload ?? {}),
       handle,
       reevaluate,
+      unit: 4,
+      measures: (manifest().style.measures ?? {}) as Record<string, number>,
     })
 
     handles.set(id, handle)

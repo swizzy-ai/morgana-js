@@ -19,11 +19,23 @@ export interface HandleCtx {
   handle: Record<string, unknown>
   /** Re-run derived (function-valued) props. */
   reevaluate(): void
+  /** Base-grid px-per-unit for Dim resolution (animation distances). */
+  unit?: number
+  /** Named measure values in grid units, for Dim resolution. */
+  measures?: Record<string, number>
 }
 
-/** Apply an extension map onto a handle, in place. */
+/**
+ * Apply an extension map onto a handle, in place.
+ *
+ * Descriptors, not entries: some extensions declare accessor properties
+ * (`get value()` on inputs), and `Object.entries` would invoke the getter
+ * once and store the snapshot — every later read would return the value the
+ * field had when the handle was built. That is how an input kept submitting
+ * its first value forever.
+ */
 export function extend(ctx: HandleCtx, methods: Record<string, unknown>): void {
-  for (const [k, v] of Object.entries(methods)) ctx.handle[k] = v
+  Object.defineProperties(ctx.handle, Object.getOwnPropertyDescriptors(methods))
 }
 
 /** Text content of an element, or ''. */

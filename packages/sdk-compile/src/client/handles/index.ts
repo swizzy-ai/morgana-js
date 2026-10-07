@@ -11,6 +11,7 @@ import { extendOverlay } from './overlay'
 import { extendInputs } from './inputs'
 import { extendFeedback } from './feedback'
 import { extendData } from './data'
+import { extendAnimate } from './animate'
 
 export type { HandleCtx }
 export { extend }
@@ -21,4 +22,5 @@ export function extendHandle(ctx: HandleCtx): void {
   extendInputs(ctx)
   extendFeedback(ctx)
   extendData(ctx)
+  extendAnimate(ctx)
 }

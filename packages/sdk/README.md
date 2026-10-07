@@ -91,6 +91,35 @@ rather than a stand-in. That is why `src/` is in `files`. A tarball without it
 fails with *"cannot locate the @morgana/sdk source entry"* while the package is
 plainly installed.
 
+## Animating objects
+
+Two layers, split by lane. `make()` words (`make('fade-in')`) declare motion
+at compile time and bake it into the stylesheet. `handle.animate` drives
+motion at runtime, from a browser action:
+
+```ts
+// Typed presets — autocomplete knows every one.
+await card.animate.slideOut({ to: 'right', distance: 6, duration: 200 })
+await ctx.actions.run('deleteTask', { id })
+
+// The make() words by name, for the same vocabulary in both lanes.
+card.animate('pulse', { duration: 400 })
+
+// Raw keyframes straight through — the escape hatch.
+await card.animate.to(
+  [{ transform: 'rotate(0)' }, { transform: 'rotate(180deg)' }],
+  { duration: 500, easing: 'ease-in-out' },
+)
+```
+
+Every call returns a promise that resolves when the run finishes (or is
+skipped), and every run emits `<id>.animated` with `{ animation, cancelled }`
+— so `config: { on: 'card.animated' }` chains after motion. Distances are
+`Dim`: numbers are grid units, strings are named measures, no `px` in author
+code. `prefers-reduced-motion` resolves immediately without moving anything.
+In the compile lane `animate` is accepted and ignored — declaration-time
+motion is `make()` words.
+
 ## Licence
 
 Apache-2.0

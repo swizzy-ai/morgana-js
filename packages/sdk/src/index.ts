@@ -102,6 +102,14 @@ export type {
   AnyProps,
   MakeToken,
   ObjectHandle,
+  AnimateDistance,
+  AnimateOptions,
+  SlideDirection,
+  SlideOptions,
+  SpinOptions,
+  AnimateWord,
+  AnimatePreset,
+  AnimateApi,
   BreakpointsApi,
   BoxHandle,
   TextHandle,
@@ -209,6 +217,9 @@ export {
   TEXT_ALIGNS,
 } from './props'
 
+// Animation vocabulary (runtime — the client driver resolves these same names)
+export { ANIMATE_WORDS, ANIMATE_PRESETS } from './handles'
+
 // Icons — the named icon vocabulary (ctx.ui.icons)
 export type { IconDef, IconLibraryRef, IconsApi } from './icons'
 
@@ -239,6 +250,24 @@ export type {
   EmitHandle,
   LogHandle,
 } from './contexts/server'
+// Desktop lane — the installed app as a host (`ctx.desktop`)
+export type {
+  DesktopOsGroup,
+  DesktopOsFs,
+  DesktopOsClipboard,
+  DesktopOsNotify,
+  DesktopOsShell,
+  DesktopOsDialog,
+  DesktopOsWindow,
+  DesktopOsHandle,
+  DesktopAppInfo,
+  DesktopObjectTypeDef,
+  DesktopObjectInstance,
+  DesktopObjectsHandle,
+  DesktopApi,
+  DesktopContext,
+  DesktopObjectOpContext,
+} from './contexts/desktop'
 
 // Server objects — the generic `customServerObject` factory + op context
 export type {
@@ -337,9 +366,9 @@ export {
 
 
 // Config — the single morgana.config.ts
-export type { MorganaConfig, ConfigVars, Hook, ServerApiRoute, ServerApiCors, ServerApiMethod, TransformerConfigChanges, TransformerDomainChanges, AppDefinition, AiProviderConfig } from './config'
+export type { MorganaConfig, ConfigVars, Hook, ServerApiRoute, ServerApiCors, ServerApiMethod, TransformerConfigChanges, TransformerDomainChanges, AppDefinition, DesktopWindow, AiProviderConfig, DesktopConfig } from './config'
 export { defineConfig } from './config'
 
 // Action factories — generic/event actions + compile-time actions
 export type { ActionConfig, ActionDef } from './actions'
-export { defineServerAction, defineClientAction } from './actions'
+export { defineServerAction, defineClientAction, defineDesktopAction } from './actions'
