@@ -11,7 +11,7 @@ export const CREATABLE_KINDS = [
   'page',
   'box', 'container', 'grid', 'card', 'group', 'stage',
   'vstack', 'hstack',
-  'tabs', 'accordion', 'dialog', 'dropdown', 'tooltip', 'popover',
+  'tabs', 'accordion', 'dialog', 'dropdown', 'tooltip', 'popover', 'drawer',
   'form', 'login', 'signup', 'slot',
   'header', 'main', 'footer', 'nav', 'section', 'article',
   'text', 'markdown', 'code', 'label',

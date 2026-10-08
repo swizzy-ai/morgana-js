@@ -186,3 +186,35 @@ export function renderPopover(ir: ProjectIR, node: RenderNode): string {
   html += '</div></div>'
   return html
 }
+
+export function renderDrawer(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  const attrList = baseAttrs(node)
+  const open = props['open'] === true
+  if (!open) attrList.push('style="display:none"')
+  const placement = typeof props['placement'] === 'string' ? props['placement'] : 'end'
+  const size = typeof props['size'] === 'string' ? props['size'] : 'md'
+  attrList.push('role="dialog" aria-modal="true"')
+  attrList.push(`data-placement="${escAttr(placement)}"`)
+  attrList.push(`data-size="${escAttr(size)}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'open', 'title', 'description', 'size', 'dismissible'])
+  attrList.push(...carryProps(props, skip))
+  const dismissible = props['dismissible'] !== false
+
+  // Same parts as dialog (overlay/content/header/description/dismiss) so the
+  // existing overlay delegation closes it unchanged — only the anchoring CSS
+  // differs (edge panel instead of centered card).
+  let html = `<div ${attrList.join(' ')}>`
+  html += `<div data-part="overlay"${dismissible ? ' data-close="true"' : ''}></div>`
+  html += '<div data-part="content">'
+  if (props['title'] !== undefined && props['title'] !== null && props['title'] !== '') {
+    html += `<div data-part="header">${escHtml(String(props['title']))}</div>`
+  }
+  if (props['description'] !== undefined && props['description'] !== null && props['description'] !== '') {
+    html += `<div data-part="description">${escHtml(String(props['description']))}</div>`
+  }
+  html += node.children.map((c) => renderNode(ir, c)).join('')
+  if (dismissible) html += '<button type="button" data-part="dismiss" aria-label="Close">×</button>'
+  html += '</div></div>'
+  return html
+}

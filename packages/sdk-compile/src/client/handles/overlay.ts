@@ -293,8 +293,31 @@ function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function drawerMethods(ctx: HandleCtx): Record<string, unknown> {
+  return {
+    open: () => setOpen(ctx, true),
+    close: () => setOpen(ctx, false),
+    toggle: () => setOpen(ctx, !isOpen(ctx)),
+    isOpen: () => isOpen(ctx),
+    setTitle: (title: string) => {
+      ctx.setProp('title', title)
+      const node = ctx.el?.querySelector('[data-part="header"]')
+      if (node) node.textContent = String(title ?? '')
+    },
+    setPlacement: (placement: string) => {
+      ctx.setProp('placement', placement)
+      ctx.el?.setAttribute('data-placement', String(placement))
+    },
+    setSize: (size: string) => {
+      ctx.setProp('size', size)
+      ctx.el?.setAttribute('data-size', String(size))
+    },
+  }
+}
+
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   dialog: dialogMethods,
+  drawer: drawerMethods,
   dropdown: dropdownMethods,
   popover: popoverMethods,
   menu: menuMethods,

@@ -315,6 +315,15 @@ export interface PopoverProps extends SharedProps {
   closeOnOutside?: boolean
 }
 
+export interface DrawerProps extends SharedProps {
+  title?: string
+  description?: string
+  placement?: 'start' | 'end' | 'top' | 'bottom'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  open?: boolean
+  dismissible?: boolean
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -427,6 +436,7 @@ export type KnownObjectHandleProps =
   | DialogProps
   | AccordionProps
   | PopoverProps
+  | DrawerProps
   | SelectProps
   | TabsProps
   | BadgeProps

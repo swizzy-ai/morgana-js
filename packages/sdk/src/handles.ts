@@ -36,6 +36,7 @@ import type {
   AccordionProps,
   AccordionItem,
   PopoverProps,
+  DrawerProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -597,6 +598,19 @@ export interface PopoverHandle extends ObjectHandle<PopoverProps> {
   isOpen(): boolean
   setTitle(title: string): void
   setContent(content: string): void
+  setPlacement(placement: string): void
+  setSize(size: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Drawer Handle ───────────────────────────────────────────────────────────
+
+export interface DrawerHandle extends ObjectHandle<DrawerProps> {
+  open(): void
+  close(): void
+  toggle(): void
+  isOpen(): boolean
+  setTitle(title: string): void
   setPlacement(placement: string): void
   setSize(size: string): void
   track(event: string, opts?: TrackOptions): EventSource
