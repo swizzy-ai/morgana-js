@@ -24,6 +24,7 @@ import type {
   ButtonProps,
   ImageProps,
   InputProps,
+  SliderProps,
   LinkProps,
   PageProps,
   TextProps,
@@ -426,6 +427,16 @@ export interface InputHandle extends ObjectHandle<InputProps> {
   validate(): boolean
   setError(error: string | null): void
   track(event: InputTrackableEvent | (string & {}), opts?: TrackOptions): EventSource
+}
+
+export interface SliderHandle extends ObjectHandle<SliderProps> {
+  getValue(): number
+  setValue(value: number): void
+  increment(delta?: number): void
+  decrement(delta?: number): void
+  setStep(step: number): void
+  setSize(size: string): void
+  track(event: string, opts?: TrackOptions): EventSource
 }
 
 export interface ImageHandle extends ObjectHandle<ImageProps> {

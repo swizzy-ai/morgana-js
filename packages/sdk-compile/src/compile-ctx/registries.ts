@@ -16,6 +16,7 @@ export const CREATABLE_KINDS = [
   'header', 'main', 'footer', 'nav', 'section', 'article',
   'text', 'markdown', 'code', 'label',
   'button', 'input', 'textarea', 'select', 'checkbox', 'radio', 'switch', 'toggle',
+  'slider',
   'list', 'lister', 'table', 'chart', 'badge', 'avatar',
   'alert', 'progress', 'skeleton', 'separator',
   'image', 'video', 'audio',

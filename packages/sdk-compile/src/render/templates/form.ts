@@ -214,3 +214,35 @@ export function renderToggle(ir: ProjectIR, node: RenderNode): string {
   html += '</div>'
   return html
 }
+
+export function renderSlider(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const min = Number(props['min'] ?? 0)
+  const max = Number(props['max'] ?? 100)
+  const step = Number(props['step'] ?? 1) || 1
+  const raw = Number(props['value'] ?? min)
+  const clamped = Math.max(min, Math.min(max, Number.isFinite(raw) ? raw : min))
+  const snapped = Math.round((clamped - min) / step) * step + min
+  const value = Math.max(min, Math.min(max, snapped))
+  const vertical = props['orientation'] === 'vertical'
+  const disabled = props['disabled'] === true
+  const showValue = props['showValue'] === true
+  if (disabled) attrList.push('data-disabled="true"')
+  if (vertical) attrList.push('data-vertical="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'min', 'max', 'step', 'orientation', 'disabled', 'size', 'variant', 'showValue'])
+  attrList.push(...carryProps(props, skip))
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 0
+
+  // One object, three parts: the track/fill divs carry our styling (same
+  // system as progress fill), the native range input carries keyboard and
+  // form semantics. The input is transparent over the track — pointer hits
+  // the thumb, styling comes from our divs.
+  let html = `<div ${attrList.join(' ')} data-value="${value}" data-min="${min}" data-max="${max}">`
+  html += `<div data-part="track"><div data-part="fill" style="width:${Math.round(pct * 10) / 10}%"></div></div>`
+  html += `<input type="range" data-part="input" min="${min}" max="${max}" step="${step}" value="${value}"${disabled ? ' disabled' : ''} />`
+  if (showValue) html += `<span data-part="value">${value}</span>`
+  html += '</div>'
+  return html
+}

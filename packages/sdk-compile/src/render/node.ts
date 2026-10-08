@@ -3,7 +3,7 @@
  */
 import { baseAttrs, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
 import { iconFor, withIcon } from './icons';
-import { renderButton, renderField, renderSelect, renderToggle } from './templates/form';
+import { renderButton, renderField, renderSelect, renderSlider, renderToggle } from './templates/form';
 import { renderChart, renderList, renderProgress, renderTable } from './templates/data';
 import { renderAlert, renderBadge, renderDialog, renderTabs } from './templates/overlay';
 import { renderImage } from './templates/media';
@@ -138,6 +138,8 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
     case 'checkbox':
     case 'radio':
       return renderToggle(ir, view)
+    case 'slider':
+      return renderSlider(ir, view)
     case 'list':
     case 'lister':
       return renderList(ir, view)

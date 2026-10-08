@@ -17,7 +17,7 @@ import type { ActionContract, AppEventName, AppEventPayload, EventScope } from '
 import type { BaseContext } from './base'
 import type { EventApi, EventSubscribeOptions } from '../events'
 import type {
-  BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle,
+  BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
   TableHandle, DialogHandle, AccordionHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
@@ -26,7 +26,7 @@ import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
-  BoxProps, ButtonProps, ImageProps, InputProps, LinkProps, PageProps, TextProps,
+  BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
   TableProps, DialogProps, AccordionProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
@@ -89,6 +89,7 @@ export interface UiApi {
   text: Creatable<TextProps, TextHandle>
   button: Creatable<ButtonProps, ButtonHandle>
   input: Creatable<InputProps, InputHandle>
+  slider: Creatable<SliderProps, SliderHandle>
   image: Creatable<ImageProps, ImageHandle>
   link: Creatable<LinkProps, LinkHandle>
   list: Creatable

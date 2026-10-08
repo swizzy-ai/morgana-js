@@ -162,6 +162,18 @@ export interface InputProps extends SharedProps {
   iconPosition?: 'left' | 'right'
 }
 
+export interface SliderProps extends SharedProps {
+  value?: number
+  min?: number
+  max?: number
+  step?: number
+  orientation?: 'horizontal' | 'vertical'
+  disabled?: boolean
+  size?: 'sm' | 'md' | 'lg'
+  variant?: 'outline' | 'solid'
+  showValue?: boolean
+}
+
 export interface ImageProps extends SharedProps {
   src?: string
   alt?: string
@@ -397,6 +409,7 @@ export type KnownObjectHandleProps =
   | TextProps
   | ButtonProps
   | InputProps
+  | SliderProps
   | ImageProps
   | LinkProps
   | PageProps
