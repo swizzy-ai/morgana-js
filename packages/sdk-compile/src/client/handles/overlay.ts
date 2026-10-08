@@ -80,6 +80,15 @@ function menuMethods(ctx: HandleCtx): Record<string, unknown> {
 
 function accordionMethods(ctx: HandleCtx): Record<string, unknown> {
   const keyOf = (node: Element): string => node.getAttribute('data-item-key') ?? ''
+  const multiple = (): boolean => ctx.getProp('multiple') === true
+  const collapsible = (): boolean => ctx.getProp('collapsible') !== false
+  const openKeys = (): string[] =>
+    triggers()
+      .filter((t) => t.getAttribute('data-open') === 'true')
+      .map(keyOf)
+  const syncValue = (): void => {
+    ctx.setProp('value', multiple() ? openKeys() : (openKeys()[0] ?? ''))
+  }
   const setItemOpen = (trigger: Element, open: boolean): void => {
     trigger.setAttribute('data-open', open ? 'true' : 'false')
     trigger.setAttribute('aria-expanded', open ? 'true' : 'false')
@@ -96,30 +105,91 @@ function accordionMethods(ctx: HandleCtx): Record<string, unknown> {
     open: (key?: string) => {
       const all = triggers()
       if (key === undefined) {
-        for (const t of all) setItemOpen(t, true)
-        return
+        // Open-all is only meaningful with multiple; otherwise open the first.
+        if (multiple()) for (const t of all) setItemOpen(t, true)
+        else if (all[0]) {
+          for (const t of all) setItemOpen(t, false)
+          setItemOpen(all[0], true)
+        }
+      } else {
+        if (!multiple()) for (const t of all) setItemOpen(t, false)
+        for (const t of all) if (keyOf(t) === String(key)) setItemOpen(t, true)
       }
-      for (const t of all) if (keyOf(t) === String(key)) setItemOpen(t, true)
+      syncValue()
+      ctx.emit('changed', { value: multiple() ? openKeys() : (openKeys()[0] ?? '') })
     },
     close: (key?: string) => {
       const all = triggers()
       if (key === undefined) {
+        if (!collapsible() && openKeys().length > 0) return
         for (const t of all) setItemOpen(t, false)
-        return
+      } else {
+        const target = all.find((t) => keyOf(t) === String(key))
+        if (!target) return
+        if (!collapsible() && target.getAttribute('data-open') === 'true' && openKeys().length <= 1) return
+        setItemOpen(target, false)
       }
-      for (const t of all) if (keyOf(t) === String(key)) setItemOpen(t, false)
+      syncValue()
+      ctx.emit('changed', { value: multiple() ? openKeys() : (openKeys()[0] ?? '') })
     },
     toggle: (key: string) => {
       const target = triggers().find((t) => keyOf(t) === String(key))
       if (!target) return
       const opening = target.getAttribute('data-open') !== 'true'
-      if (opening && ctx.getProp('multiple') !== true) {
+      if (opening && !multiple()) {
         for (const t of triggers()) setItemOpen(t, false)
       }
+      if (!opening && !collapsible() && openKeys().length <= 1) return
       setItemOpen(target, opening)
+      syncValue()
+      ctx.emit('changed', { key: String(key), open: opening, value: multiple() ? openKeys() : (openKeys()[0] ?? '') })
     },
     isOpen: (key: string) => triggers().find((t) => keyOf(t) === String(key))?.getAttribute('data-open') === 'true',
+    getOpenKeys: () => openKeys(),
     keys: () => triggers().map(keyOf),
+    // Structural props live on attributes the delegation reads (data-multiple,
+    // data-collapsible, data-prop-variant) — generic set() updates meta only,
+    // so these writers keep both in sync. Same rule as toggle check()/progress
+    // setValue(): handle-semantic props go through methods.
+    setMultiple: (on: boolean) => {
+      ctx.setProp('multiple', on)
+      ctx.el?.setAttribute('data-multiple', on ? 'true' : 'false')
+    },
+    setCollapsible: (on: boolean) => {
+      ctx.setProp('collapsible', on)
+      if (!ctx.el) return
+      if (on) ctx.el.removeAttribute('data-collapsible')
+      else ctx.el.setAttribute('data-collapsible', 'false')
+    },
+    setVariant: (variant: string) => {
+      ctx.setProp('variant', variant)
+      ctx.el?.setAttribute('data-prop-variant', String(variant))
+    },
+    setSize: (size: string) => {
+      ctx.setProp('size', size)
+      ctx.el?.setAttribute('data-prop-size', String(size))
+    },
+    setItems: (items: Array<{ key: string; title?: string; label?: string; content?: string; disabled?: boolean; defaultOpen?: boolean }>) => {
+      ctx.setProp('items', items)
+      if (!ctx.el) return
+      const esc = (s: string): string =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      ctx.el.innerHTML = (items ?? [])
+        .map((it) => {
+          const key = esc(String(it.key ?? it.title ?? ''))
+          const open = it.defaultOpen === true
+          return (
+            '<div data-part="accordion-item">' +
+            `<button type="button" data-part="accordion-trigger" data-item-key="${key}" data-open="${open ? 'true' : 'false'}"` +
+            `${it.disabled === true ? ' data-disabled="true"' : ''} aria-expanded="${open ? 'true' : 'false'}">` +
+            `<span data-part="accordion-title">${esc(String(it.title ?? it.label ?? key))}</span>` +
+            '<span data-part="chevron">&#x2304;</span></button>' +
+            `<div data-part="accordion-panel"${open ? '' : ' hidden'}>${esc(String(it.content ?? ''))}</div></div>`
+          )
+        })
+        .join('')
+      syncValue()
+    },
   }
 }
 

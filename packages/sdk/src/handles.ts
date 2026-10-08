@@ -32,6 +32,8 @@ import type {
   TableDensity,
   TableVariant,
   DialogProps,
+  AccordionProps,
+  AccordionItem,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -552,6 +554,25 @@ export interface DialogHandle extends ObjectHandle<DialogProps> {
   setTitle(title: string): void
   setDescription(description: string): void
   isOpen(): boolean
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Accordion Handle ────────────────────────────────────────────────────────
+
+export interface AccordionHandle extends ObjectHandle<AccordionProps> {
+  open(key?: string): void
+  close(key?: string): void
+  toggle(key: string): void
+  isOpen(key: string): boolean
+  /** Keys of currently open items. */
+  getOpenKeys(): string[]
+  /** Every item key, open or not. */
+  keys(): string[]
+  setItems(items: AccordionItem[]): void
+  setMultiple(multiple: boolean): void
+  setCollapsible(collapsible: boolean): void
+  setVariant(variant: string): void
+  setSize(size: string): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

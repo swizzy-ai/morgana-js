@@ -20,6 +20,29 @@ export function renderAccordion(ir: ProjectIR, node: RenderNode): string {
   attrList.push(...carryProps(props, skip))
 
   let html = `<div ${attrList.join(' ')}>`
+  // Items from props when the object has no placed children — the declarative
+  // form (`items: [{key, title, content}]`), mirroring select options and
+  // tabs items. Placed children win when both exist.
+  const propItems = node.children.length === 0 && Array.isArray(props['items'])
+    ? (props['items'] as Array<Record<string, unknown>>)
+    : null
+  const renderItem = (key: string, title: string, body: string, open: boolean, disabled: boolean): string => {
+    let item = '<div data-part="accordion-item">'
+    item += `<button type="button" data-part="accordion-trigger" data-item-key="${escAttr(key)}" data-open="${open ? 'true' : 'false'}"${disabled ? ' data-disabled="true"' : ''} aria-expanded="${open ? 'true' : 'false'}">`
+    item += `<span data-part="accordion-title">${escHtml(String(title))}</span>`
+    item += '<span data-part="chevron">&#x2304;</span>'
+    item += '</button>'
+    item += `<div data-part="accordion-panel"${open ? '' : ' hidden'}>${body}</div></div>`
+    return item
+  }
+  if (propItems) {
+    for (const it of propItems) {
+      const key = String(it['key'] ?? it['title'] ?? '')
+      const open = it['defaultOpen'] === true || it['open'] === true
+      const body = it['content'] !== undefined && it['content'] !== '' ? escHtml(String(it['content'])) : ''
+      html += renderItem(key, String(it['title'] ?? it['label'] ?? key), body, open, it['disabled'] === true)
+    }
+  } else {
   // Each child is one item: a trigger (from the item's title) and a panel.
   for (const childId of node.children) {
     const child = ir.objects.get(childId)
@@ -45,6 +68,7 @@ export function renderAccordion(ir: ProjectIR, node: RenderNode): string {
     }
     html += '</div></div>'
   }
+  } // end children-items branch (prop items rendered above)
   html += '</div>'
   return html
 }

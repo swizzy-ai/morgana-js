@@ -273,6 +273,26 @@ export interface DialogProps extends SharedProps {
   showFooter?: boolean
 }
 
+export interface AccordionItem {
+  key: string
+  title: string
+  content?: string
+  disabled?: boolean
+  defaultOpen?: boolean
+}
+
+export interface AccordionProps extends SharedProps {
+  /** Items render as trigger/panel pairs when the object has no placed children. */
+  items?: AccordionItem[]
+  /** Open item keys (controlled mirror — kept in sync by toggle/open/close). */
+  value?: string | string[]
+  multiple?: boolean
+  /** When false, the last open item refuses to close. Default true. */
+  collapsible?: boolean
+  variant?: 'outline' | 'subtle' | 'enclosed' | 'plain'
+  size?: 'sm' | 'md' | 'lg'
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -382,6 +402,7 @@ export type KnownObjectHandleProps =
   | PageProps
   | TableProps
   | DialogProps
+  | AccordionProps
   | SelectProps
   | TabsProps
   | BadgeProps
