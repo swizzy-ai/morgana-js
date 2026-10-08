@@ -305,6 +305,16 @@ export interface AccordionProps extends SharedProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
+export interface PopoverProps extends SharedProps {
+  title?: string
+  content?: string
+  triggerLabel?: string
+  placement?: 'top' | 'bottom' | 'left' | 'right'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  open?: boolean
+  closeOnOutside?: boolean
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -416,6 +426,7 @@ export type KnownObjectHandleProps =
   | TableProps
   | DialogProps
   | AccordionProps
+  | PopoverProps
   | SelectProps
   | TabsProps
   | BadgeProps

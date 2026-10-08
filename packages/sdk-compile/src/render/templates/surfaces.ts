@@ -148,3 +148,41 @@ export function renderTooltip(ir: ProjectIR, node: RenderNode): string {
   const icon = iconFor(ir, props)
   return icon.html ? withIcon(html, icon) : html
 }
+
+export function renderPopover(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  const attrList = baseAttrs(node)
+  const open = props['open'] === true
+  const placement = typeof props['placement'] === 'string' ? props['placement'] : 'bottom'
+  attrList.push(`data-open="${open ? 'true' : 'false'}"`)
+  attrList.push(`data-placement="${escAttr(placement)}"`)
+  if (props['closeOnOutside'] === false) attrList.push('data-close-on-outside="false"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'open', 'closeOnOutside', 'title', 'content', 'triggerLabel', 'trigger', 'label', 'icon', 'iconPosition'])
+  attrList.push(...carryProps(props, skip))
+
+  // Trigger: declared label, or the first placed child (dropdown precedent).
+  const triggerLabel = props['triggerLabel'] ?? props['trigger'] ?? props['label']
+  let html = `<div ${attrList.join(' ')}>`
+  html += `<button type="button" data-part="popover-trigger" aria-haspopup="dialog" aria-expanded="${open ? 'true' : 'false'}"${props['disabled'] === true ? ' data-disabled="true"' : ''}>`
+  if (triggerLabel !== undefined && triggerLabel !== null && triggerLabel !== '') {
+    html += escHtml(String(triggerLabel))
+  } else {
+    html += childTrigger(ir, node)
+  }
+  html += '</button>'
+
+  // Panel: title + content props, then any further placed children.
+  html += `<div data-part="popover-panel" role="dialog"${open ? '' : ' hidden'}>`
+  const title = props['title']
+  if (title !== undefined && title !== null && title !== '') {
+    html += `<div data-part="popover-title">${escHtml(String(title))}</div>`
+  }
+  const body = props['content']
+  if (body !== undefined && body !== null && body !== '') {
+    html += `<div data-part="popover-content">${escHtml(String(body))}</div>`
+  }
+  const rest = node.children.slice(triggerLabel !== undefined && triggerLabel !== null && triggerLabel !== '' ? 0 : 1)
+  html += rest.map((c) => renderNode(ir, c)).join('')
+  html += '</div></div>'
+  return html
+}

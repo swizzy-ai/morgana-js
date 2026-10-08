@@ -64,6 +64,56 @@ function dropdownMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function popoverMethods(ctx: HandleCtx): Record<string, unknown> {
+  const panel = (): Element | null => ctx.el?.querySelector('[data-part="popover-panel"]') ?? null
+  const paint = (open: boolean): void => {
+    ctx.setProp('open', open)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-open', open ? 'true' : 'false')
+    const trigger = ctx.el.querySelector('[data-part="popover-trigger"]')
+    trigger?.setAttribute('aria-expanded', open ? 'true' : 'false')
+    const p = panel()
+    if (p) {
+      if (open) p.removeAttribute('hidden')
+      else p.setAttribute('hidden', '')
+    }
+  }
+  return {
+    open: () => {
+      paint(true)
+      ctx.emit('changed', { open: true })
+    },
+    close: () => {
+      paint(false)
+      ctx.emit('changed', { open: false })
+    },
+    toggle: () => {
+      const opening = !isOpen(ctx)
+      paint(opening)
+      ctx.emit('changed', { open: opening })
+    },
+    isOpen: () => isOpen(ctx),
+    setTitle: (title: string) => {
+      ctx.setProp('title', title)
+      const node = ctx.el?.querySelector('[data-part="popover-title"]')
+      if (node) node.textContent = String(title ?? '')
+    },
+    setContent: (content: string) => {
+      ctx.setProp('content', content)
+      const node = ctx.el?.querySelector('[data-part="popover-content"]')
+      if (node) node.textContent = String(content ?? '')
+    },
+    setPlacement: (placement: string) => {
+      ctx.setProp('placement', placement)
+      ctx.el?.setAttribute('data-placement', String(placement))
+    },
+    setSize: (size: string) => {
+      ctx.setProp('size', size)
+      ctx.el?.setAttribute('data-prop-size', String(size))
+    },
+  }
+}
+
 function menuMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     open: () => setOpen(ctx, true),
@@ -246,6 +296,7 @@ function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   dialog: dialogMethods,
   dropdown: dropdownMethods,
+  popover: popoverMethods,
   menu: menuMethods,
   accordion: accordionMethods,
   tabs: tabsMethods,

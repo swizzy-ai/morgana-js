@@ -35,6 +35,7 @@ import type {
   DialogProps,
   AccordionProps,
   AccordionItem,
+  PopoverProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -583,6 +584,20 @@ export interface AccordionHandle extends ObjectHandle<AccordionProps> {
   setMultiple(multiple: boolean): void
   setCollapsible(collapsible: boolean): void
   setVariant(variant: string): void
+  setSize(size: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Popover Handle ──────────────────────────────────────────────────────────
+
+export interface PopoverHandle extends ObjectHandle<PopoverProps> {
+  open(): void
+  close(): void
+  toggle(): void
+  isOpen(): boolean
+  setTitle(title: string): void
+  setContent(content: string): void
+  setPlacement(placement: string): void
   setSize(size: string): void
   track(event: string, opts?: TrackOptions): EventSource
 }

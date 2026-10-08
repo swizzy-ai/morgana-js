@@ -8,7 +8,7 @@ import { renderChart, renderList, renderProgress, renderTable } from './template
 import { renderAlert, renderBadge, renderDialog, renderTabs } from './templates/overlay';
 import { renderImage } from './templates/media';
 import { renderForm, renderLabel } from './templates/form-surface';
-import { renderAccordion, renderDropdown, renderTooltip } from './templates/surfaces';
+import { renderAccordion, renderDropdown, renderPopover, renderTooltip } from './templates/surfaces';
 import {
   renderAvatar,
   renderBreadcrumbs,
@@ -163,6 +163,8 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderMenu(ir, view)
     case 'tooltip':
       return renderTooltip(ir, view)
+    case 'popover':
+      return renderPopover(ir, view)
     // ── Navigation ──
     case 'breadcrumbs':
       return renderBreadcrumbs(ir, view)
