@@ -47,6 +47,16 @@ export function renderStyleCss(ir: ProjectIR): string {
     'th[data-align="right"],td[data-align="right"]{text-align:right}',
     'th[data-align="left"],td[data-align="left"]{text-align:left}',
     '[data-kind="dialog"]{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center}',
+    // The overlay dims the page BEHIND the content: absolute, inset, no size
+    // of its own. Without this it is an in-flow flex item that paints over
+    // the content and eats the dismiss button's clicks (docs dialog: the ×
+    // was unclickable because the overlay intercepted pointer events).
+    '[data-kind="dialog"] [data-part="overlay"]{position:absolute;inset:0;background:rgba(17,24,39,.5)}',
+    '[data-kind="dialog"] [data-part="content"]{position:relative;background:var(--card,#fff);color:var(--foreground,#111827);border-radius:12px;padding:24px;min-width:min(420px,90vw);max-width:92vw;box-shadow:0 20px 50px rgba(0,0,0,.3)}',
+    '[data-kind="dialog"] [data-part="header"]{font-size:20px;font-weight:600;margin-bottom:8px;padding-right:28px}',
+    '[data-kind="dialog"] [data-part="description"]{font-size:14px;margin-bottom:16px}',
+    '[data-kind="dialog"] [data-part="footer"]{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}',
+    '[data-kind="dialog"] [data-part="dismiss"]{position:absolute;top:8px;right:12px;border:none;background:transparent;font-size:20px;cursor:pointer;color:inherit}',
     '[data-part="pagination"]{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0}',
     '[data-part="pagination"] button{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:6px;padding:4px 10px}',
     '[data-part="pagination"] button[data-current="true"]{background:var(--primary);color:var(--primary-foreground);border-color:transparent}',

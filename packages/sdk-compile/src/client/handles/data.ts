@@ -5,6 +5,7 @@
  * copy, so sorting and selection cannot disagree with what is on screen.
  */
 import { extend, type HandleCtx } from './shared'
+import { chartSvg } from '../../chart-svg'
 
 type Row = Record<string, unknown>
 
@@ -335,11 +336,36 @@ function chartMethods(ctx: HandleCtx): Record<string, unknown> {
       gridlines: ((p('gridlines') as string) ?? 'none') as 'none' | 'x' | 'y' | 'both',
     }
   }
+  /**
+   * Repaint the SVG from current props — the same builder the compile lane
+   * stamped (chart-svg.ts), so setKind/setSeries never disagree with build.
+   * An empty chart keeps its "No data" placeholder instead of going blank.
+   */
+  const repaint = (): void => {
+    if (!ctx.el) return
+    const st = chartState() as { kind: string; series: unknown; labels: unknown; palette: unknown }
+    const svg = chartSvg({ kind: st.kind, series: st.series, labels: st.labels, palette: st.palette })
+    ctx.el.innerHTML = svg === '' ? '<div data-part="empty">No data</div>' : svg
+  }
   return {
     chartState,
-    setKind: (kind: string) => ctx.setProp('chartKind', kind),
-    setLabels: (labels: string[]) => ctx.setProp('labels', labels),
-    setSeries: (series: number[][]) => ctx.setProp('series', series),
+    repaint,
+    setKind: (kind: string) => {
+      ctx.setProp('chartKind', kind)
+      repaint()
+    },
+    setLabels: (labels: string[]) => {
+      ctx.setProp('labels', labels)
+      repaint()
+    },
+    setSeries: (series: number[][]) => {
+      ctx.setProp('series', series)
+      repaint()
+    },
+    setPalette: (palette: string[]) => {
+      ctx.setProp('palette', palette)
+      repaint()
+    },
     getRenderer: () => (ctx.getProp('renderer') === 'chartjs' ? 'chartjs' : 'svg'),
     download: (format: 'svg' | 'png' = 'svg'): void => {
       const svg = ctx.el?.querySelector('svg')

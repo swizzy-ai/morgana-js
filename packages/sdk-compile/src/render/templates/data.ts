@@ -4,6 +4,7 @@
 import { baseAttrs, carryProps, escAttr, escHtml, type RenderNode } from '../html';
 import { renderNode } from '../node';
 import type { ProjectIR } from '../../ir';
+import { chartSvg } from '../../chart-svg';
 
 interface TableColumn {
   key: string
@@ -298,102 +299,21 @@ export function renderList(ir: ProjectIR, node: RenderNode): string {
   return `<div ${attrList.join(' ')}>${inner}</div>`
 }
 
-const CHART_PALETTE = ['#6366F1', '#A855F7', '#EC4899', '#10B981', '#F59E0B', '#0284C7']
-
 export function renderChart(ir: ProjectIR, node: RenderNode): string {
   const props = node.props
+  void ir
   const attrList = baseAttrs(node)
   attrList.push('role="img"')
   const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'kind', 'series', 'labels', 'points', 'palette'])
   attrList.push(...carryProps(props, skip))
-  const kind = typeof props['kind'] === 'string' ? props['kind'] : 'bar'
-  const series: number[][] = Array.isArray(props['series']) ? (props['series'] as number[][]) : []
-  const labels: string[] = Array.isArray(props['labels']) ? (props['labels'] as string[]) : []
-  const palette: string[] = Array.isArray(props['palette']) && (props['palette'] as unknown[]).length > 0 ? (props['palette'] as string[]) : CHART_PALETTE
-  const W = 400
-  const H = 220
-  const P = 28
-  const num = (n: number): string => String(Math.round(n * 10) / 10)
-
-  let svg = ''
-  if (kind === 'pie' || kind === 'donut') {
-    const values = series[0] ?? []
-    const total = values.reduce((a, b) => a + (Number(b) || 0), 0)
-    if (total <= 0 || values.length === 0) {
-      svg = ''
-    } else if (kind === 'donut') {
-      const R = 70
-      const C = 2 * Math.PI * R
-      let offset = 25
-      const circles = values.map((v, i) => {
-        const frac = Number(v) / total
-        const s = `<circle cx="200" cy="110" r="${R}" fill="none" stroke="${palette[i % palette.length]}" stroke-width="30" stroke-dasharray="${num(frac * C)} ${num(C)}" stroke-dashoffset="${num((-offset * C) / 100)}" transform="rotate(-90 200 110)" />`
-        offset += frac * 100
-        return s
-      })
-      svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="presentation">${circles.join('')}</svg>`
-    } else {
-      const cx = 200
-      const cy = 110
-      const R = 80
-      let angle = -Math.PI / 2
-      const paths = values.map((v, i) => {
-        const frac = Number(v) / total
-        const a0 = angle
-        angle += frac * Math.PI * 2
-        const a1 = angle
-        const large = frac > 0.5 ? 1 : 0
-        const x0 = cx + R * Math.cos(a0)
-        const y0 = cy + R * Math.sin(a0)
-        const x1 = cx + R * Math.cos(a1)
-        const y1 = cy + R * Math.sin(a1)
-        return `<path d="M ${num(cx)} ${num(cy)} L ${num(x0)} ${num(y0)} A ${R} ${R} 0 ${large} 1 ${num(x1)} ${num(y1)} Z" fill="${palette[i % palette.length]}" />`
-      })
-      svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="presentation">${paths.join('')}</svg>`
-    }
-  } else if (kind === 'line' || kind === 'area' || kind === 'scatter') {
-    const all = series.length > 0 ? series : []
-    const flat = all.flat().map(Number).filter(Number.isFinite)
-    const max = Math.max(1, ...flat)
-    const n = Math.max(...all.map((s) => s.length), 0)
-    const px = (i: number): number => (n <= 1 ? W / 2 : P + (i * (W - 2 * P)) / (n - 1))
-    const py = (v: number): number => H - P - (v / max) * (H - 2 * P)
-    if (kind === 'scatter') {
-      const pts: string[] = []
-      all.forEach((s, si) => {
-        s.forEach((v, i) => {
-          pts.push(`<circle cx="${num(px(i))}" cy="${num(py(Number(v) || 0))}" r="4" fill="${palette[si % palette.length]}" />`)
-        })
-      })
-      svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="presentation">${pts.join('')}</svg>`
-    } else {
-      const layers = all.map((s, si) => {
-        const line = s.map((v, i) => `${num(px(i))},${num(py(Number(v) || 0))}`).join(' ')
-        const color = palette[si % palette.length]
-        if (kind === 'area' && si === 0) {
-          return `<polygon points="${P},${H - P} ${line} ${W - P},${H - P}" fill="${color}" fill-opacity="0.25" /><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" />`
-        }
-        return `<polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" />`
-      })
-      svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="presentation">${layers.join('')}</svg>`
-    }
-  } else {
-    // bar (default)
-    const values = series[0] ?? []
-    const max = Math.max(1, ...values.map((v) => Number(v) || 0))
-    const n = values.length
-    const slot = n > 0 ? (W - 2 * P) / n : 0
-    const bars = values.map((v, i) => {
-      const num2 = Number(v) || 0
-      const h = (num2 / max) * (H - 2 * P)
-      const x = P + i * slot + slot * 0.2
-      const y = H - P - h
-      const label = labels[i] !== undefined ? `<text x="${num(x + slot * 0.3)}" y="${H - 8}" font-size="10" text-anchor="middle">${escHtml(String(labels[i]))}</text>` : ''
-      return `<rect x="${num(x)}" y="${num(y)}" width="${num(slot * 0.6)}" height="${num(h)}" rx="3" fill="${palette[i % palette.length]}" />${label}`
-    })
-    svg = n > 0 ? `<svg viewBox="0 0 ${W} ${H}" width="100%" role="presentation">${bars.join('')}</svg>` : ''
-  }
-
+  // One builder for both lanes (chart-svg.ts) — a kind that draws here
+  // redraws identically in the browser after setKind/setSeries.
+  const svg = chartSvg({
+    kind: typeof props['kind'] === 'string' ? props['kind'] : 'bar',
+    series: props['series'],
+    labels: props['labels'],
+    palette: props['palette'],
+  })
   if (!svg) return `<div ${attrList.join(' ')}><div data-part="empty">No data</div></div>`
   return `<div ${attrList.join(' ')}>${svg}</div>`
 }
