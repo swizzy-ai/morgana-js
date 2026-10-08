@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -100,6 +100,7 @@ export interface UiApi {
   accordion: Creatable<AccordionProps, AccordionHandle>
   popover: Creatable<PopoverProps, PopoverHandle>
   drawer: Creatable<DrawerProps, DrawerHandle>
+  toast: Creatable<ToastProps, ToastHandle>
   select: Creatable<SelectProps, SelectHandle>
   tabs: Creatable<TabsProps, TabsHandle>
   badge: Creatable<BadgeProps, BadgeHandle>

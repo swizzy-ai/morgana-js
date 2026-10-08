@@ -218,3 +218,16 @@ export function renderDrawer(ir: ProjectIR, node: RenderNode): string {
   html += '</div></div>'
   return html
 }
+
+export function renderToast(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const position = typeof props['position'] === 'string' ? props['position'] : 'bottom-end'
+  attrList.push(`data-position="${escAttr(position)}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'position', 'duration', 'max'])
+  attrList.push(...carryProps(props, skip))
+  // The region starts empty — notify() stamps toasts at runtime (list.append
+  // precedent: the store is the rendered children, never a parallel copy).
+  return `<div ${attrList.join(' ')} aria-live="polite"></div>`
+}

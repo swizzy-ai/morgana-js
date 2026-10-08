@@ -324,6 +324,14 @@ export interface DrawerProps extends SharedProps {
   dismissible?: boolean
 }
 
+export interface ToastProps extends SharedProps {
+  position?: 'top' | 'bottom' | 'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'
+  /** Default lifetime per toast in ms. 0 = sticky. Default 4000. */
+  duration?: number
+  /** Cap stacked toasts; oldest dismissed first. Default 5. */
+  max?: number
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -437,6 +445,7 @@ export type KnownObjectHandleProps =
   | AccordionProps
   | PopoverProps
   | DrawerProps
+  | ToastProps
   | SelectProps
   | TabsProps
   | BadgeProps

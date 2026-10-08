@@ -37,6 +37,7 @@ import type {
   AccordionItem,
   PopoverProps,
   DrawerProps,
+  ToastProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -613,6 +614,26 @@ export interface DrawerHandle extends ObjectHandle<DrawerProps> {
   setTitle(title: string): void
   setPlacement(placement: string): void
   setSize(size: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Toast Handle ────────────────────────────────────────────────────────────
+
+export interface ToastOptions {
+  title: string
+  description?: string
+  variant?: 'info' | 'warning' | 'success' | 'error' | 'neutral'
+  /** Lifetime in ms — overrides the region default. 0 = sticky. */
+  duration?: number
+}
+
+export interface ToastHandle extends ObjectHandle<ToastProps> {
+  /** Stamp a toast, returns its id. Oldest dismissed past `max`. */
+  notify(opts: ToastOptions): string
+  /** Dismiss one toast, or all when omitted. */
+  dismiss(id?: string): void
+  clear(): void
+  count(): number
   track(event: string, opts?: TrackOptions): EventSource
 }
 
