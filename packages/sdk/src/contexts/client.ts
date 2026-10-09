@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -132,8 +132,8 @@ export interface UiApi {
   section: Creatable
   article: Creatable
 
-  markdown: Creatable
-  code: Creatable
+  markdown: Creatable<MarkdownProps, MarkdownHandle>
+  code: Creatable<CodeProps, CodeHandle>
   label: Creatable<LabelProps, LabelHandle>
 
   textarea: Creatable<TextareaProps, TextareaHandle>
@@ -141,14 +141,14 @@ export interface UiApi {
 
   lister: Creatable
   avatar: Creatable<AvatarProps, AvatarHandle>
-  skeleton: Creatable
-  separator: Creatable
+  skeleton: Creatable<SkeletonProps, SkeletonHandle>
+  separator: Creatable<SeparatorProps, SeparatorHandle>
 
-  video: Creatable
-  audio: Creatable
+  video: Creatable<VideoProps, VideoHandle>
+  audio: Creatable<AudioProps, AudioHandle>
 
   menu: Creatable<MenuProps, MenuHandle>
-  breadcrumbs: Creatable
+  breadcrumbs: Creatable<BreadcrumbsProps, BreadcrumbsHandle>
 
   // ── Pages — strictly under the UI banner ─────────────────────────────────
   /** All pages, active page, and SPA routing strictly under the UI banner (`ctx.ui.pages`). */

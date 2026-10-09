@@ -278,6 +278,78 @@ function tableMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function mediaMethods(ctx: HandleCtx): Record<string, unknown> {
+  const media = (): HTMLMediaElement | null => {
+    const el = ctx.el
+    if (!el) return null
+    if (el.tagName === 'VIDEO' || el.tagName === 'AUDIO') return el as unknown as HTMLMediaElement
+    return el.querySelector('video,audio') as unknown as HTMLMediaElement | null
+  }
+  return {
+    play: () => {
+      try {
+        const p = media()?.play?.() as unknown as { catch?: (fn: () => void) => void } | undefined
+        // Empty-src playback rejects by design — a sourceless demo player
+        // must not turn an expected rejection into console noise.
+        p?.catch?.(() => {})
+      } catch {
+        // No media element (detached handle): nothing to play.
+      }
+    },
+    pause: () => {
+      media()?.pause?.()
+    },
+    setSrc: (src: string) => {
+      ctx.setProp('src', src)
+      const m = media()
+      if (m) {
+        m.setAttribute('src', String(src))
+        m.load?.()
+      }
+    },
+    setMuted: (muted: boolean) => {
+      ctx.setProp('muted', muted)
+      const m = media()
+      if (m) m.muted = muted
+    },
+  }
+}
+
+function breadcrumbsMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return {
+    setItems: (items: Array<{ label?: string; value?: string; href?: string }>) => {
+      ctx.setProp('items', items)
+      if (!ctx.el) return
+      const sep = esc(String(ctx.getProp('separator') ?? '/'))
+      const list = Array.isArray(items) ? items : []
+      ctx.el.innerHTML = list
+        .map((item, i) => {
+          if (!item || typeof item !== 'object') return ''
+          const label = esc(String(item.label ?? item.value ?? ''))
+          const isLast = i === list.length - 1
+          const href = !isLast && item.href ? String(item.href) : null
+          return (
+            (i > 0 ? `<span data-part="separator" aria-hidden="true">${sep}</span>` : '') +
+            '<span data-part="crumb" data-current="false">' +
+            (href ? `<a href="${esc(href)}">${label}</a>` : `<span>${label}</span>`) +
+            '</span>'
+          )
+        })
+        .join('')
+    },
+    setSeparator: (separator: string) => {
+      ctx.setProp('separator', separator)
+      if (!ctx.el) return
+      ctx.el.setAttribute('data-separator', String(separator))
+      for (const node of Array.from(ctx.el.querySelectorAll('[data-part="separator"]'))) {
+        node.textContent = String(separator)
+      }
+    },
+  }
+}
+
 function listMethods(ctx: HandleCtx): Record<string, unknown> {
   const items = (): Element[] => Array.from(ctx.el?.children ?? [])
   return {
@@ -395,6 +467,9 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   list: listMethods,
   lister: listMethods,
   chart: chartMethods,
+  video: mediaMethods,
+  audio: mediaMethods,
+  breadcrumbs: breadcrumbsMethods,
 }
 
 export function extendData(ctx: HandleCtx): void {

@@ -404,6 +404,64 @@ export interface LabelProps extends SharedProps {
   for?: string
 }
 
+export interface SeparatorProps extends SharedProps {
+  orientation?: 'horizontal' | 'vertical'
+  variant?: 'solid' | 'dashed' | 'dotted'
+}
+
+export interface SkeletonProps extends SharedProps {
+  width?: string | number
+  height?: string | number
+  radius?: string | number
+  animate?: boolean
+}
+
+export interface BreadcrumbItem {
+  label?: string
+  value?: string
+  href?: string
+}
+
+export interface BreadcrumbsProps extends SharedProps {
+  items?: BreadcrumbItem[]
+  separator?: string
+}
+
+export interface VideoProps extends SharedProps {
+  src?: string
+  poster?: string
+  controls?: boolean
+  autoPlay?: boolean
+  loop?: boolean
+  muted?: boolean
+  variant?: string
+}
+
+export interface AudioProps extends SharedProps {
+  src?: string
+  controls?: boolean
+  autoPlay?: boolean
+  loop?: boolean
+  muted?: boolean
+  variant?: string
+}
+
+export interface MarkdownProps extends SharedProps {
+  content?: string
+  text?: string
+}
+
+export interface CodeProps extends SharedProps {
+  content?: string
+  code?: string
+  text?: string
+  language?: string
+  variant?: string
+  showLineNumbers?: boolean
+  highlight?: string
+  wrap?: boolean
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -524,6 +582,14 @@ export type KnownObjectHandleProps =
   | AvatarProps
   | TextareaProps
   | LabelProps
+  | SeparatorProps
+  | SkeletonProps
+  | BreadcrumbsProps
+  | BreadcrumbItem
+  | VideoProps
+  | AudioProps
+  | MarkdownProps
+  | CodeProps
   | SelectProps
   | TabsProps
   | BadgeProps

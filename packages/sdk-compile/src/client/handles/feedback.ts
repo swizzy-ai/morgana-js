@@ -170,6 +170,44 @@ function toastMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function separatorMethods(ctx: HandleCtx): Record<string, unknown> {
+  return {
+    setOrientation: (orientation: string) => {
+      ctx.setProp('orientation', orientation)
+      ctx.el?.setAttribute('data-prop-orientation', String(orientation))
+    },
+    setVariant: (variant: string) => {
+      ctx.setProp('variant', variant)
+      ctx.el?.setAttribute('data-variant', String(variant))
+    },
+  }
+}
+
+function skeletonMethods(ctx: HandleCtx): Record<string, unknown> {
+  const dim = (v: unknown): string | null => {
+    if (v === undefined || v === null || v === '') return null
+    if (typeof v === 'number') return `${v * 4}px`
+    return String(v)
+  }
+  return {
+    setSize: (width: string | number, height?: string | number) => {
+      ctx.setProp('width', width)
+      if (height !== undefined) ctx.setProp('height', height)
+      if (!ctx.el) return
+      const w = dim(width)
+      const h = dim(height)
+      if (w) ctx.el.style.width = w
+      if (h) ctx.el.style.height = h
+    },
+    setAnimate: (on: boolean) => {
+      ctx.setProp('animate', on)
+      if (!ctx.el) return
+      if (on) ctx.el.removeAttribute('data-animate')
+      else ctx.el.setAttribute('data-animate', 'false')
+    },
+  }
+}
+
 function avatarMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setSrc: (src: string) => {
@@ -213,6 +251,8 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   alert: alertMethods,
   progress: progressMethods,
   avatar: avatarMethods,
+  separator: separatorMethods,
+  skeleton: skeletonMethods,
   toast: toastMethods,
 }
 

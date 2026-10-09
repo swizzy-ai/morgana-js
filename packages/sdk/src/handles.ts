@@ -46,6 +46,14 @@ import type {
   AvatarProps,
   TextareaProps,
   LabelProps,
+  SeparatorProps,
+  SkeletonProps,
+  BreadcrumbsProps,
+  BreadcrumbItem,
+  VideoProps,
+  AudioProps,
+  MarkdownProps,
+  CodeProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -707,6 +715,52 @@ export interface TextareaHandle extends ObjectHandle<TextareaProps> {
 export interface LabelHandle extends ObjectHandle<LabelProps> {
   setLabel(text: string): void
   setFor(target: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Static display handles ──────────────────────────────────────────────────
+// Separator, skeleton, breadcrumbs, markdown and code are compile-rendered
+// with no runtime state — the handle is the typed props plus tracking.
+
+export interface SeparatorHandle extends ObjectHandle<SeparatorProps> {
+  setOrientation(orientation: string): void
+  setVariant(variant: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface SkeletonHandle extends ObjectHandle<SkeletonProps> {
+  setSize(width: string | number, height?: string | number): void
+  setAnimate(on: boolean): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface BreadcrumbsHandle extends ObjectHandle<BreadcrumbsProps> {
+  setItems(items: BreadcrumbItem[]): void
+  setSeparator(separator: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface VideoHandle extends ObjectHandle<VideoProps> {
+  play(): void
+  pause(): void
+  setSrc(src: string): void
+  setMuted(muted: boolean): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface AudioHandle extends ObjectHandle<AudioProps> {
+  play(): void
+  pause(): void
+  setSrc(src: string): void
+  setMuted(muted: boolean): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface MarkdownHandle extends ObjectHandle<MarkdownProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface CodeHandle extends ObjectHandle<CodeProps> {
   track(event: string, opts?: TrackOptions): EventSource
 }
 
