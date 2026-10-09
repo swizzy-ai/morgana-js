@@ -56,11 +56,39 @@ function dialogMethods(ctx: HandleCtx): Record<string, unknown> {
 }
 
 function dropdownMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return {
     open: () => setOpen(ctx, true),
     close: () => setOpen(ctx, false),
     toggle: () => setOpen(ctx, !isOpen(ctx)),
     isOpen: () => isOpen(ctx),
+    setItems: (items: Array<Record<string, unknown>>) => {
+      ctx.setProp('items', items)
+      const panel = ctx.el?.querySelector('[data-part="dropdown-panel"]')
+      if (!panel) return
+      const active = String(ctx.getProp('value') ?? '')
+      panel.innerHTML = (items ?? [])
+        .map((item) => {
+          if (!item || typeof item !== 'object') return ''
+          if (item['separator'] === true) return '<div data-part="dropdown-separator"></div>'
+          const label = String(item['label'] ?? item['value'] ?? '')
+          const value = String(item['value'] ?? label)
+          const on = item['active'] === true || active === value
+          return (
+            `<a data-part="dropdown-item" data-value="${esc(value)}" href="${item['href'] ? esc(String(item['href'])) : '#'}"` +
+            `${item['disabled'] === true ? ' data-disabled="true"' : ''}${on ? ' data-active="true"' : ''}>${esc(label)}</a>`
+          )
+        })
+        .join('')
+    },
+    setValue: (value: string) => {
+      ctx.setProp('value', value)
+      for (const item of Array.from(ctx.el?.querySelectorAll('[data-part="dropdown-item"]') ?? [])) {
+        if (item.getAttribute('data-value') === String(value)) item.setAttribute('data-active', 'true')
+        else item.removeAttribute('data-active')
+      }
+    },
   }
 }
 
@@ -116,12 +144,13 @@ function popoverMethods(ctx: HandleCtx): Record<string, unknown> {
 
 function menuMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
-    open: () => setOpen(ctx, true),
-    close: () => setOpen(ctx, false),
-    toggle: () => setOpen(ctx, !isOpen(ctx)),
-    isOpen: () => isOpen(ctx),
+    ...dropdownMethods(ctx),
     selectItem: (value: string) => {
-      const item = ctx.el?.querySelector(`[data-part="dropdown-item"][data-value="${CSS.escape(String(value))}"]`)
+      // Compare attributes directly: values with quotes would break a selector.
+      const items = Array.from(ctx.el?.querySelectorAll('[data-part="dropdown-item"]') ?? [])
+      const item = items.find((n) => n.getAttribute('data-value') === String(value))
+      // A programmatic pick travels the click delegation, so close-on-select
+      // and the `selected` event behave exactly like a user pick.
       item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       return Boolean(item)
     },

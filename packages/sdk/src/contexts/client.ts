@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -101,6 +101,7 @@ export interface UiApi {
   popover: Creatable<PopoverProps, PopoverHandle>
   drawer: Creatable<DrawerProps, DrawerHandle>
   toast: Creatable<ToastProps, ToastHandle>
+  dropdown: Creatable<DropdownProps, DropdownHandle>
   select: Creatable<SelectProps, SelectHandle>
   tabs: Creatable<TabsProps, TabsHandle>
   badge: Creatable<BadgeProps, BadgeHandle>
@@ -119,7 +120,6 @@ export interface UiApi {
   card: Creatable
   group: Creatable
   stage: Creatable
-  dropdown: Creatable
   tooltip: Creatable
   login: Creatable
   signup: Creatable
@@ -147,7 +147,7 @@ export interface UiApi {
   video: Creatable
   audio: Creatable
 
-  menu: Creatable
+  menu: Creatable<MenuProps, MenuHandle>
   breadcrumbs: Creatable
 
   // ── Pages — strictly under the UI banner ─────────────────────────────────

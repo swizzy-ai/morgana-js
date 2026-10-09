@@ -39,6 +39,9 @@ import type {
   PopoverProps,
   DrawerProps,
   ToastProps,
+  DropdownProps,
+  DropdownItem,
+  MenuProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -638,6 +641,29 @@ export interface ToastHandle extends ObjectHandle<ToastProps> {
   dismiss(id?: string): void
   clear(): void
   count(): number
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Dropdown / Menu Handles ─────────────────────────────────────────────────
+
+export interface DropdownHandle extends ObjectHandle<DropdownProps> {
+  open(): void
+  close(): void
+  toggle(): void
+  isOpen(): boolean
+  setItems(items: DropdownItem[]): void
+  setValue(value: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface MenuHandle extends ObjectHandle<MenuProps> {
+  open(): void
+  close(): void
+  toggle(): void
+  isOpen(): boolean
+  /** Pick an item by value (clicks it, so selection flows through events). */
+  selectItem(value: string): boolean
+  setItems(items: DropdownItem[]): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

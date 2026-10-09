@@ -345,6 +345,29 @@ export interface ToastProps extends SharedProps {
   max?: number
 }
 
+export interface DropdownItem {
+  label?: string
+  value: string
+  href?: string
+  disabled?: boolean
+  active?: boolean
+  separator?: boolean
+}
+
+export interface DropdownProps extends SharedProps {
+  label?: string
+  trigger?: string
+  items?: DropdownItem[]
+  value?: string
+  open?: boolean
+  /** Close the panel when an item is picked. Default true. */
+  closeOnSelect?: boolean
+  placement?: string
+  disabled?: boolean
+}
+
+export interface MenuProps extends DropdownProps {}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -459,6 +482,8 @@ export type KnownObjectHandleProps =
   | PopoverProps
   | DrawerProps
   | ToastProps
+  | DropdownProps
+  | MenuProps
   | SelectProps
   | TabsProps
   | BadgeProps
