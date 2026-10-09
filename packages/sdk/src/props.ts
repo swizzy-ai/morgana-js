@@ -404,6 +404,28 @@ export interface LabelProps extends SharedProps {
   for?: string
 }
 
+export interface NumberInputProps extends SharedProps {
+  value?: number
+  min?: number
+  max?: number
+  step?: number
+  disabled?: boolean
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  variant?: 'outline' | 'subtle' | 'flushed'
+  placeholder?: string
+  name?: string
+}
+
+export interface PinInputProps extends SharedProps {
+  value?: string
+  length?: number
+  disabled?: boolean
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  mask?: boolean
+  /** One-time-code autocomplete hint. Default true. */
+  otp?: boolean
+}
+
 export interface SeparatorProps extends SharedProps {
   orientation?: 'horizontal' | 'vertical'
   variant?: 'solid' | 'dashed' | 'dotted'
@@ -582,6 +604,8 @@ export type KnownObjectHandleProps =
   | AvatarProps
   | TextareaProps
   | LabelProps
+  | NumberInputProps
+  | PinInputProps
   | SeparatorProps
   | SkeletonProps
   | BreadcrumbsProps

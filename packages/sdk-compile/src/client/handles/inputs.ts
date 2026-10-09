@@ -173,6 +173,94 @@ export function toggleMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+// ── Number input ──────────────────────────────────────────────────────────
+
+function numberInputMethods(ctx: HandleCtx): Record<string, unknown> {
+  const bounds = (): { min: number; max: number; step: number } => {
+    const rawMin = ctx.getProp('min')
+    const rawMax = ctx.getProp('max')
+    return {
+      min: rawMin === undefined ? -Infinity : Number(rawMin),
+      max: rawMax === undefined ? Infinity : Number(rawMax),
+      step: Number(ctx.getProp('step') ?? 1) || 1,
+    }
+  }
+  const clamp = (v: number): number => {
+    const { min, max, step } = bounds()
+    const c = Math.max(min, Math.min(max, Number.isFinite(v) ? v : 0))
+    return Math.round((c / step)) * step
+  }
+  const paint = (v: number): void => {
+    ctx.setProp('value', v)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-value', String(v))
+    const input = ctx.el.querySelector('input[type="number"]') as HTMLInputElement | null
+    if (input && input.value !== String(v)) input.value = String(v)
+  }
+  const current = (): number => {
+    const attr = ctx.el?.getAttribute('data-value')
+    if (attr !== null && attr !== undefined && attr !== '') return Number(attr)
+    return Number(ctx.getProp('value') ?? 0)
+  }
+  const stepBy = (dir: 1 | -1, delta?: number): number => {
+    const d = typeof delta === 'number' && Number.isFinite(delta) ? delta : bounds().step
+    const next = clamp(current() + dir * d)
+    paint(next)
+    ctx.emit('changed', { value: next })
+    return next
+  }
+  return {
+    getValue: () => current(),
+    setValue: (v: number) => {
+      const next = clamp(Number(v))
+      paint(next)
+      ctx.emit('changed', { value: next })
+    },
+    increment: (delta?: number) => stepBy(1, delta),
+    decrement: (delta?: number) => stepBy(-1, delta),
+    setStep: (step: number) => {
+      ctx.setProp('step', step)
+      const input = ctx.el?.querySelector('input[type="number"]') as HTMLInputElement | null
+      if (input) input.setAttribute('step', String(step))
+    },
+  }
+}
+
+// ── Pin input ─────────────────────────────────────────────────────────────
+
+function pinInputMethods(ctx: HandleCtx): Record<string, unknown> {
+  const cells = (): HTMLInputElement[] =>
+    Array.from(ctx.el?.querySelectorAll('input[data-part="cell"]') ?? []) as HTMLInputElement[]
+  const read = (): string => cells().map((c) => c.value).join('')
+  const paint = (value: string): void => {
+    ctx.setProp('value', value)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-value', value)
+    const list = cells()
+    list.forEach((c, i) => {
+      const ch = value[i] ?? ''
+      if (c.value !== ch) c.value = ch
+    })
+  }
+  return {
+    getValue: () => read(),
+    setValue: (value: string) => {
+      const v = String(value ?? '')
+      paint(v)
+      ctx.emit('changed', { value: v })
+    },
+    clear: () => {
+      paint('')
+      ctx.emit('changed', { value: '' })
+    },
+    focus: (index?: number) => {
+      const list = cells()
+      const target = list[typeof index === 'number' ? index : 0]
+      target?.focus?.()
+    },
+  }
+}
+
 // ── Slider ────────────────────────────────────────────────────────────────
 
 function sliderMethods(ctx: HandleCtx): Record<string, unknown> {
@@ -509,6 +597,8 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   switch: toggleMethods,
   checkbox: toggleMethods,
   radio: toggleMethods,
+  numberInput: numberInputMethods,
+  pinInput: pinInputMethods,
   slider: sliderMethods,
   form: formMethods,
   login: formMethods,

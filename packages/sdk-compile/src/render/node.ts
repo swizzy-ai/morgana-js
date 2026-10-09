@@ -3,7 +3,7 @@
  */
 import { baseAttrs, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
 import { iconFor, withIcon } from './icons';
-import { renderButton, renderField, renderSelect, renderSlider, renderToggle } from './templates/form';
+import { renderButton, renderField, renderNumberInput, renderPinInput, renderSelect, renderSlider, renderToggle } from './templates/form';
 import { renderChart, renderList, renderProgress, renderTable } from './templates/data';
 import { renderAlert, renderBadge, renderDialog, renderTabs } from './templates/overlay';
 import { renderImage } from './templates/media';
@@ -45,6 +45,8 @@ export const TAG_FOR_KIND: Record<string, string> = {
   button: 'button',
   input: 'input',
   textarea: 'textarea',
+  numberInput: 'div',
+  pinInput: 'div',
   select: 'select',
   checkbox: 'input',
   radio: 'input',
@@ -97,7 +99,7 @@ export const LAYOUT_PRIMITIVES = new Set([
  * and asserted against `CREATABLE_KINDS` so the two can never drift.
  */
 export const TEMPLATED_KINDS = new Set([
-  'button', 'input', 'textarea', 'select', 'checkbox', 'radio', 'switch', 'toggle',
+  'button', 'input', 'textarea', 'numberInput', 'pinInput', 'select', 'checkbox', 'radio', 'switch', 'toggle',
   'table', 'tabs', 'dialog', 'badge', 'alert', 'image', 'list', 'lister', 'chart', 'progress',
   'form', 'login', 'signup', 'label',
   'accordion', 'dropdown', 'menu', 'tooltip', 'popover', 'drawer', 'toast',
@@ -124,6 +126,10 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
     case 'input':
     case 'textarea':
       return renderField(ir, view)
+    case 'numberInput':
+      return renderNumberInput(ir, view)
+    case 'pinInput':
+      return renderPinInput(ir, view)
     case 'select':
       return renderSelect(ir, view)
     case 'table':

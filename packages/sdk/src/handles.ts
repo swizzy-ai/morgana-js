@@ -46,6 +46,8 @@ import type {
   AvatarProps,
   TextareaProps,
   LabelProps,
+  NumberInputProps,
+  PinInputProps,
   SeparatorProps,
   SkeletonProps,
   BreadcrumbsProps,
@@ -715,6 +717,27 @@ export interface TextareaHandle extends ObjectHandle<TextareaProps> {
 export interface LabelHandle extends ObjectHandle<LabelProps> {
   setLabel(text: string): void
   setFor(target: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Number Input Handle ─────────────────────────────────────────────────────
+
+export interface NumberInputHandle extends ObjectHandle<NumberInputProps> {
+  getValue(): number
+  setValue(value: number): void
+  increment(step?: number): void
+  decrement(step?: number): void
+  setStep(step: number): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Pin Input Handle ────────────────────────────────────────────────────────
+
+export interface PinInputHandle extends ObjectHandle<PinInputProps> {
+  getValue(): string
+  setValue(value: string): void
+  clear(): void
+  focus(index?: number): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

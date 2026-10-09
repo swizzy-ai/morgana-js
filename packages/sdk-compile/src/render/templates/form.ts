@@ -215,6 +215,58 @@ export function renderToggle(ir: ProjectIR, node: RenderNode): string {
   return html
 }
 
+export function renderNumberInput(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const min = props['min'] !== undefined ? Number(props['min']) : undefined
+  const max = props['max'] !== undefined ? Number(props['max']) : undefined
+  const step = Number(props['step'] ?? 1) || 1
+  const raw = Number(props['value'] ?? min ?? 0)
+  const lo = min ?? raw
+  const hi = max ?? raw
+  const value = Math.max(lo, Math.min(hi, Number.isFinite(raw) ? raw : lo))
+  const disabled = props['disabled'] === true
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'min', 'max', 'step', 'disabled', 'size', 'variant', 'placeholder'])
+  attrList.push(...carryProps(props, skip))
+
+  // Native number input carries keyboard/spinner semantics; the stepper
+  // buttons drive the same clamp through the methods (no parallel logic).
+  let html = `<div ${attrList.join(' ')} data-value="${value}"${min !== undefined ? ` data-min="${min}"` : ''}${max !== undefined ? ` data-max="${max}"` : ''}>`
+  html += `<button type="button" data-part="decrement" aria-label="Decrease"${disabled ? ' disabled' : ''}>−</button>`
+  const nameAttr = typeof props['name'] === 'string' && props['name'] !== '' ? ` name="${escAttr(String(props['name']))}"` : ''
+  const phAttr = typeof props['placeholder'] === 'string' && props['placeholder'] !== '' ? ` placeholder="${escAttr(String(props['placeholder']))}"` : ''
+  html += `<input type="number"${nameAttr}${phAttr} min="${min ?? ''}" max="${max ?? ''}" step="${step}" value="${value}"${disabled ? ' disabled' : ''} />`
+  html += `<button type="button" data-part="increment" aria-label="Increase"${disabled ? ' disabled' : ''}>+</button>`
+  html += '</div>'
+  return html
+}
+
+export function renderPinInput(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const length = Math.max(1, Math.min(12, Math.floor(Number(props['length'] ?? 4)) || 4))
+  const disabled = props['disabled'] === true
+  const mask = props['mask'] === true
+  const otp = props['otp'] !== false
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'length', 'disabled', 'size', 'mask', 'otp'])
+  attrList.push(...carryProps(props, skip))
+  const value = String(props['value'] ?? '')
+
+  // One native input per cell: mobile keyboards, autocomplete=one-time-code,
+  // and selection all work without reimplementation. The delegation advances.
+  let html = `<div ${attrList.join(' ')} data-length="${length}" data-value="${escAttr(value)}">`
+  for (let i = 0; i < length; i += 1) {
+    const ch = value[i] ?? ''
+    html += `<input data-part="cell" data-index="${i}" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="${otp && i === 0 ? 'one-time-code' : 'off'}" type="${mask ? 'password' : 'text'}" value="${escAttr(ch)}"${disabled ? ' disabled' : ''} />`
+  }
+  html += '</div>'
+  return html
+}
+
 export function renderSlider(ir: ProjectIR, node: RenderNode): string {
   const props = node.props
   void ir

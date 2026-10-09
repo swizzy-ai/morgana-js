@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -138,6 +138,8 @@ export interface UiApi {
 
   textarea: Creatable<TextareaProps, TextareaHandle>
   radio: Creatable<ToggleProps, ObjectHandle>
+  numberInput: Creatable<NumberInputProps, NumberInputHandle>
+  pinInput: Creatable<PinInputProps, PinInputHandle>
 
   lister: Creatable
   avatar: Creatable<AvatarProps, AvatarHandle>
