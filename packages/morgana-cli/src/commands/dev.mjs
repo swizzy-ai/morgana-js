@@ -21,6 +21,7 @@ import { pathToFileURL } from 'node:url'
 import { StoreEngine } from '../lib/store.mjs'
 import { makeHostContext } from '../lib/host-context.mjs'
 import { ChannelHub } from '../lib/channels.mjs'
+import { isPageResult } from '@morgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
 
 /**
@@ -201,6 +202,10 @@ function channelRefusal(rules, channel, req) {
 
 const enabledActions = [...(manifest.actions ?? []), ...(manifest.desktopActions ?? [])].map((a) => (typeof a === 'string' ? a : a?.name)).filter(Boolean)
 
+// Parsed server page graphs, shared across invocations. The JSON is immutable
+// in practice (rewritten only by rebuilds); hydration clones per request.
+const graphCache = new Map()
+
 /**
  * Run a deployed action. `params` becomes ctx.args, exactly as the browser's
  * `ctx.actions.run` and the http routes deliver it.
@@ -218,6 +223,10 @@ async function runAction(name, params) {
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',
+    // Request-time rendering reads here. Parsed graphs are cached per process;
+    // each invocation hydrates its own IR, so concurrent requests stay isolated.
+    dist,
+    graphCache,
     // The same hub the SSE route reads, so a publish from an action reaches
     // the pages holding that channel open.
     channels,
@@ -283,6 +292,10 @@ const server = http.createServer(async (req, res) => {
         const body = await readBody(req)
         for (const [k, v] of url.searchParams) if (!(k in body)) body[k] = v
         const result = await runAction(route.action, { ...body, ...params })
+        // An action returning a rendered page answers with the page itself —
+        // this is the action-as-router path. Everything else keeps the JSON
+        // envelope.
+        if (isPageResult(result)) return send(res, 200, result.html, MIME['.html'])
         return sendJson(res, 200, { success: true, data: { result } })
       } catch (err) {
         return sendJson(res, 500, { success: false, message: String(err?.message ?? err) })
@@ -444,8 +457,9 @@ const server = http.createServer(async (req, res) => {
   const hit = bare === '' ? undefined : pageRoutes.get(bare.toLowerCase())
   if (hit && hit.address !== '/') {
     if (!pathname.endsWith('/')) return redirect(`/${hit.address}/`)
-    // render:'server' pages are intercepted here in Phase 3; until then the
-    // prerendered file serves as the fallback.
+    // A render:'server' page owned by an http route never reaches here — step 1
+    // runs the action and answers with the rendered page. Reaching here means
+    // no action claimed the address, so the prerender serves as the fallback.
     if (serveFile(path.join(hit.address, 'index.html'))) return
   }
 

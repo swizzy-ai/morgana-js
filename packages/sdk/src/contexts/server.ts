@@ -17,6 +17,31 @@ import type { ActionContract, ActionInput, ActionOutput, ActionName, AppEventNam
 import type { AgentsHandle, ToolsHandle } from '../ai-agents'
 import type { BaseContext } from './base'
 import type { QueueHandle } from '../data'
+import type { ObjectHandle } from '../handles'
+
+/**
+ * The branded result of `ctx.ui.pages.render(name)`. The host sends it as
+ * text/html instead of the `{ success, data }` JSON envelope. Branded so a
+ * plain `{ html }` data object can never be mistaken for a page.
+ */
+export interface ServerPageResult {
+  __morganaPage: true
+  html: string
+}
+
+/**
+ * The request-time UI surface on server actions. Load-only: `get` looks up an
+ * object the compile lane defined (`ctx.ui.box(...)` creation stays in the
+ * compile lane), and `pages.render` renders the mutated page to HTML.
+ */
+export interface ServerUiApi {
+  /** Look up a compile-time object by id. Undefined when it does not exist. */
+  get<T extends ObjectHandle = ObjectHandle>(id: string): T | undefined
+  pages: {
+    /** Render the page to a branded result the host serves as text/html. */
+    render(name?: string): ServerPageResult
+  }
+}
 
 export interface ServerRequest {
   method: string
@@ -303,4 +328,10 @@ export interface ServerApi {
 export interface ServerContext<C extends ActionContract = ActionContract> extends BaseContext<C> {
   /** Every server/edge concern: collections, files, queue, events, HTTP… */
   server: ServerApi
+  /**
+   * Request-time UI: load a compile-time object, set data on it, render the
+   * page. Present on every server action; only `render: 'server'` pages are
+   * served from it, but `get` works wherever a page graph is loaded.
+   */
+  ui: ServerUiApi
 }

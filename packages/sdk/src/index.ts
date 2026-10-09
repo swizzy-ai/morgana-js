@@ -339,6 +339,8 @@ export type {
   ServerResponseInput,
   ServerApi,
   ServerContext,
+  ServerUiApi,
+  ServerPageResult,
   StoreColumnDef,
   StoreShape,
   StoreQueryOptions,

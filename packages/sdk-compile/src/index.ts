@@ -321,6 +321,15 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // A selector naming a missing object, or an event nothing emits, is a mistake
   // worth surfacing — but not worth failing a build over, so it is a loud warning.
   warnings.push(...bindingErrors)
+  // A render:'server' page no http route serves renders nothing per request —
+  // its address falls through to the prerender. Almost always a missing
+  // `on: 'http.get /<address>/'` on the owning action.
+  for (const page of ir.pages.values()) {
+    if (page.render !== 'server') continue
+    const url = page.address === '/' ? '/' : `/${page.address}/`
+    const owned = apis.some((r) => r.method === 'GET' && r.path.replace(/\/+$/g, '') === url.replace(/\/+$/g, ''));
+    if (!owned) warnings.push(`page "${page.name}" renders per request but no GET route serves ${url} — it will serve its prerender`)
+  }
   // The desktop lane ships its own partition: a desktop action's http routes
   // and triggers belong to dist/desktop/, not dist/server/. Partitioned here
   // — after derivation, so frontend bindings still resolve against the full
@@ -464,3 +473,10 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
 export { scanProject } from './extract'
 export type { SdkActionMeta } from './extract'
 export type { ProjectIR } from './ir'
+// Request-time rendering for `render: 'server'` pages — the host imports
+// these, users never do.
+export { createServerUi, isPageResult, pageResult } from './server-render'
+export type { ServerRenderCtx, ServerRenderDeps } from './server-render'
+export { extractPageGraph, hydratePageGraph } from './render/page-graph'
+export type { PageGraphJson } from './render/page-graph'
+export { renderPageHtml } from './render/page'

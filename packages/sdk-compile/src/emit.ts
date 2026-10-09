@@ -23,6 +23,7 @@ import { createHash } from 'node:crypto'
 import type { ProjectIR } from './ir'
 import type { HttpRoute, Trigger } from './routes'
 import type { DiscoveredServerObject } from './server-objects'
+import { extractPageGraph } from './render/page-graph'
 
 export interface EmitInputs {
   ir: ProjectIR
@@ -120,6 +121,11 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     const addr = inputs.ir.pages.get(name)?.address ?? `/${name}`
     const canonical = addr === '/' ? 'index.html' : `${addr}/index.html`
     if (canonical !== `pages/${name}.html`) write(canonical, html)
+    // Server pages ship their render graph: the request-time load-set-render
+    // path needs the object subgraph, and only it — never the whole project.
+    if (inputs.ir.pages.get(name)?.render === 'server') {
+      write(`server/pages/${name}.json`, `${JSON.stringify(extractPageGraph(inputs.ir, name))}\n`)
+    }
   }
   write('assets/client.js', inputs.clientJs)
   write('assets/style.css', inputs.css)

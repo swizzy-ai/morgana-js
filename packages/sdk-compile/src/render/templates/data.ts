@@ -30,7 +30,7 @@ function formatCellValue(format: unknown, value: unknown): string {
     case 'badge':
       return `<span data-part="cell-badge">${escHtml(String(value ?? ''))}</span>`
     case 'date': {
-      const d = value instanceof Date ? value : new Date(String(value ?? ''))
+      const d = value instanceof Date ? value : typeof value === 'number' ? new Date(value) : new Date(String(value ?? ''))
       return escHtml(Number.isNaN(d.getTime()) ? String(value ?? '') : d.toISOString().slice(0, 10))
     }
     case 'progress': {

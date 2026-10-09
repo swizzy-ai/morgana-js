@@ -11,6 +11,7 @@ import path from 'node:path'
 import { StoreEngine } from './store.mjs'
 import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
+import { createServerUi } from '@morgana/sdk-compile'
 
 /** @typedef {import('./store.mjs').StoreEngine} StoreEngine */
 
@@ -289,6 +290,83 @@ export async function makeHostContext(opts) {
         return runAction(name, params ?? {})
       },
     },
+    /**
+     * Request-time UI — the load half of server rendering. Object ids are
+     * project-global, so `get(id)` finds its page unambiguously by scanning
+     * the emitted server graphs. Parsed graphs are cached per process;
+     * hydration deep-clones, so concurrent requests never share state.
+     * The hydrated IRs live in this closure: one render per request, and the
+     * memo dies with it — fetch-once-per-visit, never across visits.
+     */
+    ui: (() => {
+      const pagesDir = opts.serverPagesDir ?? (opts.dist ? path.join(opts.dist, 'server', 'pages') : null)
+      const cache = opts.graphCache ?? new Map()
+      const reqIrs = new Map()
+      const listGraphs = () => {
+        if (!cache.has('__names')) {
+          let names = []
+          try {
+            if (pagesDir) names = fs.readdirSync(pagesDir).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5))
+          } catch {}
+          cache.set('__names', names)
+        }
+        return cache.get('__names')
+      }
+      const loadGraph = (pageName) => {
+        if (!pagesDir) return null
+        let g = cache.get(pageName)
+        if (g === undefined) {
+          const file = path.join(pagesDir, `${pageName}.json`)
+          try {
+            g = JSON.parse(fs.readFileSync(file, 'utf8'))
+          } catch {
+            g = null
+          }
+          cache.set(pageName, g)
+        }
+        return g
+      }
+      const forPage = (pageName) => {
+        let s = reqIrs.get(pageName)
+        if (!s) {
+          const g = loadGraph(pageName)
+          if (!g) return null
+          s = createServerUi(g, { runAction: (n, p) => ctx.actions.run(n, p) })
+          reqIrs.set(pageName, s)
+        }
+        return s
+      }
+      return {
+        get: (id) => {
+          for (const s of reqIrs.values()) {
+            const h = s.ui.get(id)
+            if (h !== undefined) return h
+          }
+          for (const name of listGraphs()) {
+            if (reqIrs.has(name)) continue
+            const s = forPage(name)
+            if (!s) continue
+            const h = s.ui.get(id)
+            if (h !== undefined) return h
+          }
+          return undefined
+        },
+        pages: {
+          render: (name) => {
+            if (name) {
+              const s = forPage(name)
+              if (!s) throw new Error(`no server graph for page "${name}" — is it render: 'server'?`)
+              return s.renderPage(name)
+            }
+            const keys = [...reqIrs.keys()]
+            if (keys.length !== 1) {
+              throw new Error(`pages.render() needs a page name (${keys.length} pages loaded)`)
+            }
+            return reqIrs.get(keys[0]).renderPage(keys[0])
+          },
+        },
+      }
+    })(),
     server: {
       env: process.env,
       request: {
