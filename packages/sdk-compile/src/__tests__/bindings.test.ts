@@ -16,6 +16,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { parseSelector, canonicalEvent, resolveBindings, PROP_CHANGED, type BindingGraph } from '../bindings'
+import { isFrontendEvent } from '../routes'
 
 /** A graph: two objects, one a component containing the other. */
 function graph(over: Partial<BindingGraph> = {}): BindingGraph {
@@ -71,6 +72,24 @@ describe('event names', () => {
   it('rejects a name nothing dispatches', () => {
     expect(canonicalEvent('clickked')).toBeNull()
     expect(canonicalEvent('actuated')).toBeNull()
+  })
+
+  it('passes component lifecycle events the runtime emits', () => {
+    // The bug: `copied` compiled into a binding the dispatch map never
+    // contained, so code-block copy handlers never fired — silently.
+    for (const name of ['copied', 'copyFailed', 'complete', 'notified', 'dismissed', 'cancelled', 'closed', 'opened', 'patched', 'invalid', 'filtered', 'appended']) {
+      expect(canonicalEvent(name), name).toBe(name)
+    }
+  })
+
+  it('routes lifecycle selectors to the frontend, backend shapes away', () => {
+    expect(isFrontendEvent('d-code.copied')).toBe(true)
+    expect(isFrontendEvent('d-pin.complete')).toBe(true)
+    expect(isFrontendEvent('copied')).toBe(true)
+    expect(isFrontendEvent('store.orders.created')).toBe(false)
+    expect(isFrontendEvent('channel:ops')).toBe(false)
+    expect(isFrontendEvent('http.get /api/x')).toBe(false)
+    expect(isFrontendEvent('cron(every 1h)')).toBe(false)
   })
 })
 

@@ -4,6 +4,7 @@
 import { INTERACTION_EVENTS } from '@morgana/sdk';
 import type { SdkActionMeta } from './extract';
 import {
+  canonicalEvent,
   isBackendEvent,
   parseSelector,
   resolveBindings,
@@ -18,6 +19,11 @@ export type { Binding };
 export const EMITTABLE = new Set([
   'clicked', 'changed', 'submitted', 'loaded', 'selected', 'picked', 'collided',
   'hover', 'focus', 'blur', 'dblclick', 'scroll', 'reset', 'resize', 'visibilitychange',
+  // Component lifecycle — emitted by handle methods and delegation. Keep in
+  // lockstep with EVENT_ALIASES in bindings.ts or subscriptions to these
+  // compile and never fire.
+  'copied', 'copyFailed', 'complete', 'notified', 'dismissed', 'cancelled',
+  'closed', 'opened', 'patched', 'invalid', 'filtered', 'appended',
 ])
 
 export interface HttpRoute {
@@ -50,6 +56,12 @@ export function isFrontendEvent(on: string): boolean {
   if (/^state[:.]/i.test(t)) return true
   if (FRONTEND_SELECTOR_RE.test(t)) return true
   if (t.includes('#') && !t.includes(':') && !t.includes('/')) return true
+  // Component lifecycle events (copied, complete, notified, ...) resolve
+  // through the same alias table as clicks — a selector whose trailing
+  // segment canonicalizes is frontend. Backend shapes (store:, channel:,
+  // http, cron) never reach here: they contain ':'/'/'/'('.
+  const seg = t.includes('.') ? (t.split('.').pop() ?? '') : t
+  if (/^[a-z#][\w#.\-]*$/i.test(t) && !t.includes(':') && !t.includes('/') && !t.includes('(') && canonicalEvent(seg) !== null) return true
   return false
 }
 

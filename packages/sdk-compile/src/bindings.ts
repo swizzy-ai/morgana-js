@@ -82,6 +82,22 @@ const EVENT_ALIASES: Record<string, string> = {
   reset: 'reset',
   resize: 'resize',
   visibilitychange: 'visibilitychange',
+  // component lifecycle — emitted by handle methods and delegation, so user
+  // actions must be able to subscribe (a `copied` binding that compiles and
+  // never fires is bug #2 all over again). Keys are lowercase: the lookup
+  // lowercases input before matching.
+  copied: 'copied',
+  copyfailed: 'copyFailed',
+  complete: 'complete',
+  notified: 'notified',
+  dismissed: 'dismissed',
+  cancelled: 'cancelled',
+  closed: 'closed',
+  opened: 'opened',
+  patched: 'patched',
+  invalid: 'invalid',
+  filtered: 'filtered',
+  appended: 'appended',
 }
 
 /** The event a prop watcher dispatches. Namespaced so it cannot collide. */
