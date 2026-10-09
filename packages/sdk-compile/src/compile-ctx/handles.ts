@@ -39,6 +39,16 @@ export function ensureNode(state: CompileState, kind: string, props: Record<stri
   const id = rawId ?? `${kind}_${nextAutoId().toString(36)}`
   const existing = ir.objects.get(id)
   if (existing) {
+    // Explicit ids are project-global: a second creation used to merge props
+    // and silently reparent the object (docs rail rendered on the last page
+    // only). Fail fast with both claimants named.
+    if (rawId) {
+      throw new Error(
+        `[Morgana] duplicate object id "${id}" (${kind}) in action "${state.actionName}" — ` +
+          `previously declared as ${existing.kind}. Object ids are project-global: ` +
+          `prefix shared ids per page (d-<page>-…).`,
+      )
+    }
     Object.assign(existing.props, props)
     return existing
   }

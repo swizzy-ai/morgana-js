@@ -7,6 +7,16 @@
 import { extend, type HandleCtx } from './shared'
 import { chartSvg } from '../../chart-svg'
 
+/**
+ * Repaint a chart element from a spec — the runtime half of the shared
+ * builder. Used by the setKind/setSeries/setLabels/setPalette methods and
+ * by the generic set() path (runtime applyProp).
+ */
+export function repaintChartEl(el: HTMLElement, spec: { kind?: string; series?: unknown; labels?: unknown; palette?: unknown }): void {
+  const svg = chartSvg({ kind: spec.kind, series: spec.series, labels: spec.labels, palette: spec.palette })
+  el.innerHTML = svg === '' ? '<div data-part="empty">No data</div>' : svg
+}
+
 type Row = Record<string, unknown>
 
 function tableMethods(ctx: HandleCtx): Record<string, unknown> {
@@ -343,9 +353,7 @@ function chartMethods(ctx: HandleCtx): Record<string, unknown> {
    */
   const repaint = (): void => {
     if (!ctx.el) return
-    const st = chartState() as { kind: string; series: unknown; labels: unknown; palette: unknown }
-    const svg = chartSvg({ kind: st.kind, series: st.series, labels: st.labels, palette: st.palette })
-    ctx.el.innerHTML = svg === '' ? '<div data-part="empty">No data</div>' : svg
+    repaintChartEl(ctx.el, chartState() as { kind: string; series: unknown; labels: unknown; palette: unknown })
   }
   return {
     chartState,
@@ -366,7 +374,7 @@ function chartMethods(ctx: HandleCtx): Record<string, unknown> {
       ctx.setProp('palette', palette)
       repaint()
     },
-    getRenderer: () => (ctx.getProp('renderer') === 'chartjs' ? 'chartjs' : 'svg'),
+    getRenderer: () => 'svg' as const,
     download: (format: 'svg' | 'png' = 'svg'): void => {
       const svg = ctx.el?.querySelector('svg')
       if (!svg) return

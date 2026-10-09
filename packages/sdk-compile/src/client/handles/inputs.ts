@@ -122,17 +122,24 @@ function inputMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Toggle / checkbox / radio ───────────────────────────────────────────────
 
+/**
+ * Paint a toggle's checked state onto its element — data-checked, aria, and
+ * the native input when the kind renders one. Shared by setChecked and the
+ * generic set() path (runtime applyProp), so the two can never disagree.
+ */
+export function paintChecked(el: HTMLElement, on: boolean): void {
+  const track = el.querySelector('[data-part="track"]')
+  el.setAttribute('data-checked', on ? 'true' : 'false')
+  if (track) track.setAttribute('aria-checked', on ? 'true' : 'false')
+  const input = el.querySelector('input[type="checkbox"],input[type="radio"]') as HTMLInputElement | null
+  if (input) input.checked = on
+}
+
 /** Exported for tests — the delegation contract (flip + exactly one `changed`) lives here. */
 export function toggleMethods(ctx: HandleCtx): Record<string, unknown> {
   const setChecked = (on: boolean): void => {
     ctx.setProp('checked', on)
-    if (ctx.el) {
-      const track = ctx.el.querySelector('[data-part="track"]')
-      ctx.el.setAttribute('data-checked', on ? 'true' : 'false')
-      if (track) track.setAttribute('aria-checked', on ? 'true' : 'false')
-      const input = ctx.el.querySelector('input[type="checkbox"],input[type="radio"]') as HTMLInputElement | null
-      if (input) input.checked = on
-    }
+    if (ctx.el) paintChecked(ctx.el, on)
     // A programmatic write announces itself directly. It must NOT simulate a
     // click on the track: the document delegation reads that synthetic click
     // as a user gesture and flips the attribute straight back (check() stuck

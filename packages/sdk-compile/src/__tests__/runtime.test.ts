@@ -70,6 +70,27 @@ class El {
     }
     return null
   }
+  /** Minimal part lookup for handle paint methods (`[data-part="x"]`). */
+  querySelector(sel: string): El | null {
+    const m = /\[data-part="([\w-]+)"\]/.exec(sel)
+    if (!m) return null
+    const walk = (nodes: El[]): El | null => {
+      for (const n of nodes) {
+        if (n.attrs['data-part'] === m[1]) return n
+        const found = walk(n.children)
+        if (found) return found
+      }
+      return null
+    }
+    return walk(this.children)
+  }
+  private _html = ''
+  get innerHTML(): string {
+    return this._html
+  }
+  set innerHTML(v: string) {
+    this._html = String(v)
+  }
 }
 
 interface Harness {
@@ -479,4 +500,105 @@ describe('live object handles', () => {
       },
     )
   }, 60_000)
+})
+
+describe('generic set() routes handle-semantic props', () => {
+  const SEMANTIC_SEED = [
+    "import { defineClientAction } from '@morgana/sdk'",
+    '',
+    'export const seed = defineClientAction({',
+    "  config: { on: 'compile' },",
+    '  handler: (ctx) => {',
+    "    const p = ctx.ui.pages.create({ name: 'home', address: '/' })",
+    "    const tgl = ctx.ui.toggle({ id: 'tgl', label: 'T', checked: false })",
+    "    const bar = ctx.ui.progress({ id: 'bar', value: 20, max: 100 })",
+    "    const ch = ctx.ui.chart({ id: 'ch', kind: 'bar', series: [[4, 8]], labels: ['a', 'b'] })",
+    '    p.place(tgl)',
+    '    p.place(bar)',
+    '    p.place(ch)',
+    '    return { ok: true }',
+    '  },',
+    '})',
+    '',
+  ].join('\n')
+
+  function semanticEntities(): { tgl: El; fill: El; bar: El; ch: El; list: El[] } {
+    const track = new El('div', { 'data-part': 'track' })
+    const tgl = new El('div', { 'data-entity': 'tgl', 'data-kind': 'toggle', 'data-checked': 'false' })
+    tgl.appendChild(track)
+    const fill = new El('div', { 'data-part': 'fill' })
+    const bar = new El('div', { 'data-entity': 'bar', 'data-kind': 'progress' })
+    bar.appendChild(fill)
+    const ch = new El('div', { 'data-entity': 'ch', 'data-kind': 'chart' })
+    return { tgl, fill, bar, ch, list: [tgl, bar, ch] }
+  }
+
+  async function runSemanticProbe(handler: string): Promise<{ harness: Harness; els: { tgl: El; fill: El; bar: El; ch: El } }> {
+    const dir = fs.mkdtempSync(path.join(tmpdir(), 'morgana-rt-sem-'))
+    const write = (rel: string, text: string): void => {
+      fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true })
+      fs.writeFileSync(path.join(dir, rel), text, 'utf8')
+    }
+    write('morgana.config.ts', CONFIG)
+    write('src/actions/compile/seed.ts', SEMANTIC_SEED)
+    write(
+      'src/actions/browser/probe.ts',
+      [
+        "import { defineClientAction } from '@morgana/sdk'",
+        'export const probe = defineClientAction({',
+        '  handler: (ctx) => {',
+        handler,
+        '  },',
+        '})',
+        '',
+      ].join('\n'),
+    )
+    await compileProject({ dir, outDir: path.join(dir, 'dist') })
+    const html = fs.readFileSync(path.join(dir, 'dist', 'pages', 'home.html'), 'utf8')
+    const manifest = /<script id="__MORGANA_OBJECTS__" type="application\/json">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '{}'
+    const clientJs = fs.readFileSync(path.join(dir, 'dist', 'assets', 'client.js'), 'utf8')
+    fs.rmSync(dir, { recursive: true, force: true })
+    const { tgl, fill, bar, ch, list } = semanticEntities()
+    const harness = installDom('home', manifest.replace(/\\u003c/g, '<'), list)
+    const load = new Function('window', 'document', `${clientJs}\nreturn window;`) as (
+      w: unknown,
+      d: unknown,
+    ) => Record<string, unknown>
+    Object.assign(harness.win, load(harness.win, (globalThis as Record<string, unknown>)['document']))
+    const run = harness.win['__morgana_run'] as (n: string, p: unknown) => Promise<unknown>
+    await run('probe', {})
+    await sleep(5)
+    return { harness, els: { tgl, fill, bar, ch } }
+  }
+
+  it('set("checked") on a toggle paints data-checked', async () => {
+    const { harness, els } = await runSemanticProbe('ctx.ui.get("tgl").set("checked", true)')
+    try {
+      expect(els.tgl.getAttribute('data-checked')).toBe('true')
+    } finally {
+      harness.teardown()
+    }
+  }, 120_000)
+
+  it('set("value") on a progress paints the fill', async () => {
+    const { harness, els } = await runSemanticProbe('ctx.ui.get("bar").set("value", 50)')
+    try {
+      // Real DOM exposes width via style.width=; the stub records setProperty.
+      const width = (els.fill.style as unknown as Record<string, string>)['width'] ?? els.fill.style.declarations['width']
+      expect(width).toBe('50%')
+      expect(els.bar.getAttribute('aria-valuenow')).toBe('50')
+    } finally {
+      harness.teardown()
+    }
+  }, 120_000)
+
+  it('set("kind") on a chart repaints the svg', async () => {
+    const { harness, els } = await runSemanticProbe('ctx.ui.get("ch").set("kind", "pie")')
+    try {
+      expect(els.ch.innerHTML).toContain('<svg')
+      expect(els.ch.innerHTML).toContain('<path')
+    } finally {
+      harness.teardown()
+    }
+  }, 120_000)
 })

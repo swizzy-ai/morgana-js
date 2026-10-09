@@ -58,6 +58,21 @@ function alertMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+/**
+ * Paint a progress value onto its element — fill width, aria, label. Shared
+ * by setValue and the generic set() path, so the two can never disagree.
+ */
+export function paintProgressValue(el: HTMLElement, value: number, max: number): void {
+  const safe = max > 0 ? max : 100
+  const clamped = Math.max(0, Math.min(safe, Number(value) || 0))
+  const fill = el.querySelector<HTMLElement>('[data-part="fill"]')
+  if (fill) fill.style.width = `${(clamped / safe) * 100}%`
+  el.setAttribute('aria-valuenow', String(clamped))
+  el.setAttribute('aria-valuemax', String(safe))
+  const label = el.querySelector('[data-part="label"]')
+  if (label) label.textContent = String(clamped)
+}
+
 function progressMethods(ctx: HandleCtx): Record<string, unknown> {
   const max = (): number => {
     const v = ctx.getProp('max')
@@ -68,11 +83,7 @@ function progressMethods(ctx: HandleCtx): Record<string, unknown> {
     ctx.setProp('value', clamped)
     ctx.setProp('percent', Math.round((clamped / max()) * 100))
     if (!ctx.el) return
-    const fill = ctx.el.querySelector<HTMLElement>('[data-part="fill"]')
-    if (fill) fill.style.width = `${(clamped / max()) * 100}%`
-    ctx.el.setAttribute('aria-valuenow', String(clamped))
-    const label = ctx.el.querySelector('[data-part="label"]')
-    if (label) label.textContent = String(clamped)
+    paintProgressValue(ctx.el, clamped, max())
   }
   return {
     setValue,

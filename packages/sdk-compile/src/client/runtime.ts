@@ -15,6 +15,9 @@ import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } 
 import { resolveMakeToken } from '../compile-ctx/tokens'
 import { wrapElement } from './dom-handle'
 import { extendHandle } from './handles'
+import { paintChecked } from './handles/inputs'
+import { paintProgressValue } from './handles/feedback'
+import { repaintChartEl } from './handles/data'
 import { hasRuntimeCode, mountCustomObject, type MountedCustomObject } from './custom-objects'
 import type { PageManifest } from '../render/manifest'
 
@@ -181,8 +184,26 @@ function applyAttr(el: HTMLElement, prop: string, value: unknown): void {
 }
 
 /** Write one prop to the page. Structural props go through the resolver. */
-function applyProp(id: string, kind: string, el: HTMLElement, prop: string, value: unknown): void {
+function applyProp(id: string, kind: string, el: HTMLElement, prop: string, value: unknown, all?: Record<string, unknown>): void {
   if (prop === 'id' || prop === 'data-entity') return
+  // Handle-semantic props paint through the same helpers the handle methods
+  // use — generic set() used to no-op silently on all three (docs switch,
+  // progress and chart knobs proved it). `all` is the object's full props so
+  // painters that need siblings (progress max, chart series) read live state.
+  if (prop === 'checked' && (kind === 'toggle' || kind === 'switch' || kind === 'checkbox' || kind === 'radio')) {
+    paintChecked(el, value === true || value === 'true')
+    return
+  }
+  if (prop === 'value' && kind === 'progress') {
+    const max = Number(all?.['max'] ?? el.getAttribute('aria-valuemax') ?? 100)
+    paintProgressValue(el, Number(value) || 0, max)
+    return
+  }
+  if ((prop === 'kind' || prop === 'chartKind' || prop === 'series' || prop === 'labels' || prop === 'palette' || prop === 'points') && kind === 'chart') {
+    const spec = { ...(all ?? {}), [prop]: value } as { kind?: string; series?: unknown; labels?: unknown; palette?: unknown }
+    repaintChartEl(el, { kind: String(spec.kind ?? (all?.['chartKind'] as string) ?? 'bar'), series: spec.series, labels: spec.labels, palette: spec.palette })
+    return
+  }
   if (TEXT_PROPS.has(prop)) return applyText(el, id, prop, value)
   if (VALUE_PROPS.has(prop)) return applyValue(el, prop, value)
   if (FLAG_PROPS.has(prop)) return applyFlag(el, prop, value)
@@ -305,7 +326,7 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
         meta.props[prop] = fn(lookup)
         resolvers.push({ prop, fn })
         derivedHandlers.set(id, reevaluate)
-        if (el) applyProp(id, kind, el, prop, meta.props[prop])
+        if (el) applyProp(id, kind, el, prop, meta.props[prop], meta.props as Record<string, unknown>)
         if (resolvers.length === 1) watchDerived()
         return
       }
@@ -313,7 +334,7 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       if (idx >= 0) resolvers.splice(idx, 1)
       const oldValue = meta.props[prop]
       meta.props[prop] = value
-      if (el) applyProp(id, kind, el, prop, value)
+      if (el) applyProp(id, kind, el, prop, value, meta.props as Record<string, unknown>)
       // A component reads its props through onUpdate, not by re-inspecting.
       mountedComponents.get(id)?.update({ ...meta.props })
       // A prop watcher is a real change, not a state echo — set() fires it
@@ -328,7 +349,7 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
     const reevaluate = (): void => {
       for (const r of resolvers.slice()) {
         meta.props[r.prop] = r.fn(lookup)
-        if (el) applyProp(id, kind, el, r.prop, meta.props[r.prop])
+        if (el) applyProp(id, kind, el, r.prop, meta.props[r.prop], meta.props as Record<string, unknown>)
       }
     }
 

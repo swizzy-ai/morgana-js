@@ -511,7 +511,8 @@ export interface ChartHandle extends ObjectHandle {
 }
 
 export type ChartKind = 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter'
-export type ChartRendererKind = 'svg' | 'chartjs'
+/** SVG is the renderer. A `chartjs` backend was declared but never built — cut, not stubbed. */
+export type ChartRendererKind = 'svg'
 export interface ChartStateView {
   kind: ChartKind
   series: number[][]
