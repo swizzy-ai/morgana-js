@@ -378,6 +378,7 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   dialog: dialogMethods,
   drawer: drawerMethods,
   dropdown: dropdownMethods,
+  popover: popoverMethods,
   tooltip: tooltipMethods,
   menu: menuMethods,
   accordion: accordionMethods,

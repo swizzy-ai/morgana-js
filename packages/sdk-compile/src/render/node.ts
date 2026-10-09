@@ -110,7 +110,7 @@ export const LAYOUT_PRIMITIVES = new Set([
  */
 export const TEMPLATED_KINDS = new Set([
   'button', 'input', 'textarea', 'numberInput', 'pinInput', 'combobox', 'tagsInput', 'rating', 'editable', 'fileUpload', 'select', 'checkbox', 'radio', 'switch', 'toggle',
-  'steps', 'timeline', 'stat', 'tag',
+  'steps', 'timeline', 'stat', 'tag', 'treeView',
   'table', 'tabs', 'dialog', 'badge', 'alert', 'image', 'list', 'lister', 'chart', 'progress',
   'form', 'login', 'signup', 'label',
   'accordion', 'dropdown', 'menu', 'tooltip', 'popover', 'drawer', 'toast',
