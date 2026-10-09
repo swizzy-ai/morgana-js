@@ -368,6 +368,42 @@ export interface DropdownProps extends SharedProps {
 
 export interface MenuProps extends DropdownProps {}
 
+export interface TooltipProps extends SharedProps {
+  content?: string
+  tip?: string
+  label?: string
+  placement?: string
+  visible?: boolean
+}
+
+export interface AvatarProps extends SharedProps {
+  src?: string
+  alt?: string
+  name?: string
+  initials?: string
+  status?: string
+  size?: string
+  shape?: 'circle' | 'square' | 'rounded'
+  ring?: boolean
+}
+
+export interface TextareaProps extends SharedProps {
+  value?: string
+  placeholder?: string
+  name?: string
+  rows?: number
+  cols?: number
+  disabled?: boolean
+  error?: string | null
+}
+
+export interface LabelProps extends SharedProps {
+  content?: string
+  label?: string
+  text?: string
+  for?: string
+}
+
 // ── Select / Dropdown Props ────────────────────────────────────────────────
 
 export interface SelectOption {
@@ -484,6 +520,10 @@ export type KnownObjectHandleProps =
   | ToastProps
   | DropdownProps
   | MenuProps
+  | TooltipProps
+  | AvatarProps
+  | TextareaProps
+  | LabelProps
   | SelectProps
   | TabsProps
   | BadgeProps

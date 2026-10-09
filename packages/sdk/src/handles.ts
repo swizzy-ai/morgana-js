@@ -42,6 +42,10 @@ import type {
   DropdownProps,
   DropdownItem,
   MenuProps,
+  TooltipProps,
+  AvatarProps,
+  TextareaProps,
+  LabelProps,
   SelectProps,
   SelectOption,
   TabsProps,
@@ -664,6 +668,45 @@ export interface MenuHandle extends ObjectHandle<MenuProps> {
   /** Pick an item by value (clicks it, so selection flows through events). */
   selectItem(value: string): boolean
   setItems(items: DropdownItem[]): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Tooltip Handle ──────────────────────────────────────────────────────────
+
+export interface TooltipHandle extends ObjectHandle<TooltipProps> {
+  show(): void
+  hide(): void
+  toggle(): void
+  isVisible(): boolean
+  setContent(content: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Avatar Handle ───────────────────────────────────────────────────────────
+
+export interface AvatarHandle extends ObjectHandle<AvatarProps> {
+  setSrc(src: string): void
+  setName(name: string): void
+  setStatus(status: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Textarea Handle ─────────────────────────────────────────────────────────
+
+export interface TextareaHandle extends ObjectHandle<TextareaProps> {
+  value: string
+  clear(): void
+  focus(): void
+  blur(): void
+  setError(error: string | null): void
+  track(event: InputTrackableEvent | (string & {}), opts?: TrackOptions): EventSource
+}
+
+// ── Label Handle ────────────────────────────────────────────────────────────
+
+export interface LabelHandle extends ObjectHandle<LabelProps> {
+  setLabel(text: string): void
+  setFor(target: string): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

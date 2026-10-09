@@ -190,8 +190,20 @@ function avatarMethods(ctx: HandleCtx): Record<string, unknown> {
     },
     setStatus: (status: string) => {
       ctx.setProp('status', status)
-      const dot = ctx.el?.querySelector('[data-part="status"]')
-      if (dot) dot.setAttribute('data-status', String(status))
+      if (!ctx.el) return
+      const off = status === null || status === undefined || status === '' || status === 'none'
+      let dot = ctx.el.querySelector('[data-part="status"]')
+      if (off) {
+        dot?.remove()
+        return
+      }
+      if (!dot) {
+        dot = document.createElement('span')
+        dot.setAttribute('data-part', 'status')
+        ctx.el.appendChild(dot)
+      }
+      dot.setAttribute('data-status', String(status))
+      dot.setAttribute('title', String(status))
     },
   }
 }

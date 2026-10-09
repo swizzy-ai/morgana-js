@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -120,7 +120,7 @@ export interface UiApi {
   card: Creatable
   group: Creatable
   stage: Creatable
-  tooltip: Creatable
+  tooltip: Creatable<TooltipProps, TooltipHandle>
   login: Creatable
   signup: Creatable
   slot: Creatable
@@ -134,13 +134,13 @@ export interface UiApi {
 
   markdown: Creatable
   code: Creatable
-  label: Creatable
+  label: Creatable<LabelProps, LabelHandle>
 
-  textarea: Creatable
+  textarea: Creatable<TextareaProps, TextareaHandle>
   radio: Creatable<ToggleProps, ObjectHandle>
 
   lister: Creatable
-  avatar: Creatable
+  avatar: Creatable<AvatarProps, AvatarHandle>
   skeleton: Creatable
   separator: Creatable
 

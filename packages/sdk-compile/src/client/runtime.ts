@@ -156,6 +156,13 @@ function applyText(el: HTMLElement, id: string, prop: string, value: unknown): v
     )
   }
   const text = value === null || value === undefined ? '' : String(value)
+  // Placeholder is text content on text-like objects but an attribute on
+  // fields — textContent on an <input> is invisible (docs field knob proved it).
+  if (prop === 'placeholder' && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+    if (text === '') el.removeAttribute('placeholder')
+    else el.setAttribute('placeholder', text)
+    return
+  }
   if (prop === 'title') {
     el.setAttribute('title', text)
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') (el as HTMLInputElement).value = text

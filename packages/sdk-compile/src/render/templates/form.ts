@@ -33,7 +33,7 @@ export function renderField(ir: ProjectIR, node: RenderNode): string {
   const props = node.props
   const isTextarea = node.kind === 'textarea'
   const attrs: string[] = []
-  for (const k of ['type', 'name', 'placeholder', 'min', 'max', 'step']) {
+  for (const k of ['type', 'name', 'placeholder', 'min', 'max', 'step', 'rows', 'cols']) {
     if (props[k] !== undefined && props[k] !== null && props[k] !== '') {
       attrs.push(`${k}="${escAttr(String(props[k]))}"`)
     }

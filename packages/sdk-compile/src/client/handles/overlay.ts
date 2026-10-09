@@ -322,6 +322,36 @@ function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function tooltipMethods(ctx: HandleCtx): Record<string, unknown> {
+  const paint = (visible: boolean): void => {
+    ctx.setProp('visible', visible)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-visible', visible ? 'true' : 'false')
+    ctx.el.setAttribute('aria-describedby', visible ? 'true' : 'false')
+  }
+  return {
+    show: () => {
+      paint(true)
+      ctx.emit('changed', { visible: true })
+    },
+    hide: () => {
+      paint(false)
+      ctx.emit('changed', { visible: false })
+    },
+    toggle: () => {
+      const showing = ctx.el?.getAttribute('data-visible') !== 'true'
+      paint(showing)
+      ctx.emit('changed', { visible: showing })
+    },
+    isVisible: () => ctx.el?.getAttribute('data-visible') === 'true',
+    setContent: (content: string) => {
+      ctx.setProp('content', content)
+      const tip = ctx.el?.querySelector('[data-part="tip"]')
+      if (tip) tip.textContent = String(content ?? '')
+    },
+  }
+}
+
 function drawerMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     open: () => setOpen(ctx, true),
@@ -348,7 +378,7 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   dialog: dialogMethods,
   drawer: drawerMethods,
   dropdown: dropdownMethods,
-  popover: popoverMethods,
+  tooltip: tooltipMethods,
   menu: menuMethods,
   accordion: accordionMethods,
   tabs: tabsMethods,
