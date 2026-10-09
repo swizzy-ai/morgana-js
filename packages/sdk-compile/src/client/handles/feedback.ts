@@ -61,16 +61,18 @@ function alertMethods(ctx: HandleCtx): Record<string, unknown> {
 /**
  * Paint a progress value onto its element — fill width, aria, label. Shared
  * by setValue and the generic set() path, so the two can never disagree.
+ * Percent-based like the compile template (aria-valuenow 0-100).
  */
 export function paintProgressValue(el: HTMLElement, value: number, max: number): void {
   const safe = max > 0 ? max : 100
   const clamped = Math.max(0, Math.min(safe, Number(value) || 0))
+  const pct = Math.round((clamped / safe) * 100)
   const fill = el.querySelector<HTMLElement>('[data-part="fill"]')
-  if (fill) fill.style.width = `${(clamped / safe) * 100}%`
-  el.setAttribute('aria-valuenow', String(clamped))
-  el.setAttribute('aria-valuemax', String(safe))
+  if (fill) fill.style.width = `${pct}%`
+  el.setAttribute('aria-valuenow', String(pct))
+  el.setAttribute('aria-valuemax', '100')
   const label = el.querySelector('[data-part="label"]')
-  if (label) label.textContent = String(clamped)
+  if (label) label.textContent = `${pct}%`
 }
 
 function progressMethods(ctx: HandleCtx): Record<string, unknown> {
