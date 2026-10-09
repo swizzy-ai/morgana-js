@@ -66,6 +66,11 @@ export function createServerUi(graph: PageGraphJson, deps: ServerRenderDeps): Se
     return pageResult(renderPageHtml(ir, target))
   }
   ;(ui['pages'] as Record<string, unknown>)['render'] = renderPage
+  // Flat alias for the cloud sandbox: the guest rebuilds `ui` from what the
+  // WASM bridge delivered, and one extra level of nesting is what gets
+  // dropped crossing it (see buildActionModule). `pages.render` stays the
+  // documented path; this is how it survives the trip.
+  ;(ui as Record<string, unknown>)['renderPage'] = renderPage
   const withActions = {
     ...ui,
     actions: {

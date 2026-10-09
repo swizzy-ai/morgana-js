@@ -30,6 +30,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./server-render": {
+      "types": "./dist/server-render.d.ts",
+      "import": "./dist/server-render.js",
+      "require": "./dist/server-render.cjs"
     }
   },
   "files": [

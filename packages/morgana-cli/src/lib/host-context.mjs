@@ -337,7 +337,9 @@ export async function makeHostContext(opts) {
         return s
       }
       return {
-        get: (id) => {
+        // Async to match the cloud host, where the graph loads from storage.
+        // The lookup itself is in-memory here; the shape is what matters.
+        get: async (id) => {
           for (const s of reqIrs.values()) {
             const h = s.ui.get(id)
             if (h !== undefined) return h
@@ -352,7 +354,7 @@ export async function makeHostContext(opts) {
           return undefined
         },
         pages: {
-          render: (name) => {
+          render: async (name) => {
             if (name) {
               const s = forPage(name)
               if (!s) throw new Error(`no server graph for page "${name}" — is it render: 'server'?`)

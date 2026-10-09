@@ -317,11 +317,20 @@ async function main({ base, projectId, envName, bearer, dist }) {
   for (const f of failed) say(`  FAILED ${f.name}: ${f.error}`)
 
   // 2. project deploy: pages, stores, triggers, routes
+  const readGraph = (name) => {
+    try {
+      return fs.readFileSync(path.join(dist, 'server', 'pages', `${name}.json`), 'utf8')
+    } catch {
+      return null
+    }
+  }
   const pages = (manifest.pages ?? []).map((p) => ({
     name: p.name,
     address: p.address,
     render: p.render ?? 'static',
     html: safeRead(path.join(dist, 'pages', `${p.name}.html`)),
+    // The request-time render graph — only render:'server' pages emit one.
+    graph: p.render === 'server' ? readGraph(p.name) : null,
     clientJs: safeRead(path.join(dist, 'assets', 'client.js')),
     css: safeRead(path.join(dist, 'assets', 'style.css')),
   }))
@@ -329,7 +338,7 @@ async function main({ base, projectId, envName, bearer, dist }) {
     {
       name: 'main',
       displayName: (manifest.apps ?? [])[0]?.displayName ?? 'App',
-      pages: pages.map((p) => ({ name: p.name, address: p.address, render: p.render, html: p.html })),
+      pages: pages.map((p) => ({ name: p.name, address: p.address, render: p.render, html: p.html, graph: p.graph })),
     },
   ]
 

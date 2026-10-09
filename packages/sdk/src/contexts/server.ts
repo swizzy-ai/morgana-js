@@ -35,12 +35,27 @@ export interface ServerPageResult {
  * compile lane), and `pages.render` renders the mutated page to HTML.
  */
 export interface ServerUiApi {
-  /** Look up a compile-time object by id. Undefined when it does not exist. */
-  get<T extends ObjectHandle = ObjectHandle>(id: string): T | undefined
+  /**
+   * Look up a compile-time object by id. Async on purpose: the cloud host
+   * loads the page graph from storage, and one shape has to work on both
+   * hosts. `await` it — awaiting a sync value is harmless, a floating
+   * promise is not.
+   */
+  get<T extends ObjectHandle = ObjectHandle>(id: string): Promise<T | undefined>
   pages: {
-    /** Render the page to a branded result the host serves as text/html. */
-    render(name?: string): ServerPageResult
+    /**
+     * Render the page to a branded result the host serves as text/html.
+     * Async like `get` — one async surface, both hosts.
+     */
+    render(name?: string): Promise<ServerPageResult>
   }
+  /**
+   * Flat alias for `pages.render` — the same call one level up. Exists
+   * because the cloud sandbox rebuilds `ui` from what crosses the WASM
+   * bridge, and deep nesting is what gets dropped there. Either form works
+   * on both hosts; this one is what the guest wrapper calls.
+   */
+  renderPage(name?: string): Promise<ServerPageResult>
 }
 
 export interface ServerRequest {

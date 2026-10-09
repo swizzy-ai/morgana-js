@@ -14,6 +14,7 @@ import { createEmptyIR } from '../ir';
 import { ensureNode, makeHandle, type CompileState } from '../compile-ctx/handles';
 import { compileProject } from '../index';
 import { renderPageHtml } from '../render/page';
+import { createServerUi, isPageResult } from '../server-render';
 import { extractPageGraph, hydratePageGraph } from '../render/page-graph';
 
 type Placer = { place: (c: unknown) => void };
@@ -63,6 +64,30 @@ describe('page graph round-trip', () => {
     expect(renderPageHtml(a, 'dash')).toContain('request-a');
     expect(renderPageHtml(b, 'dash')).toContain('>hi<');
     expect(renderPageHtml(b, 'dash')).not.toContain('request-a');
+  });
+
+  it('createServerUi exposes get + pages.render + renderPage, and brands the result', async () => {
+    const ir = project();
+    const json = JSON.parse(JSON.stringify(extractPageGraph(ir, 'dash')));
+    const calls: Array<[string, unknown]> = [];
+    const { ui, renderPage } = createServerUi(json, {
+      runAction: async (name, params) => {
+        calls.push([name, params]);
+        return { rows: [1] };
+      },
+    });
+    const h = await (ui as any).get('dash-cell');
+    expect(h).toBeDefined();
+    h.setProps({ content: 'via-ui' });
+    // actions.run through the render ctx is memoized per request
+    await (ui as any).actions.run('getRows', { q: 1 });
+    await (ui as any).actions.run('getRows', { q: 1 });
+    expect(calls).toEqual([['getRows', { q: 1 }]]);
+    const out = await (ui as any).pages.render('dash');
+    expect(isPageResult(out)).toBe(true);
+    expect(out.html).toContain('via-ui');
+    expect(isPageResult({ html: 'x' })).toBe(false);
+    void renderPage;
   });
 
   it('a render:server page emits server/pages/<name>.json; static pages do not', async () => {
