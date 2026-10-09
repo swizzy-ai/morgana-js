@@ -3,8 +3,8 @@
  */
 import { baseAttrs, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
 import { iconFor, withIcon } from './icons';
-import { renderButton, renderField, renderNumberInput, renderPinInput, renderSelect, renderSlider, renderToggle } from './templates/form';
-import { renderChart, renderList, renderProgress, renderStat, renderSteps, renderTable, renderTag, renderTimeline } from './templates/data';
+import { renderButton, renderCombobox, renderEditable, renderField, renderFileUpload, renderNumberInput, renderPinInput, renderRating, renderSelect, renderSlider, renderTagsInput, renderToggle } from './templates/form';
+import { renderChart, renderList, renderProgress, renderStat, renderSteps, renderTable, renderTag, renderTimeline, renderTreeView } from './templates/data';
 import { renderAlert, renderBadge, renderDialog, renderTabs } from './templates/overlay';
 import { renderImage } from './templates/media';
 import { renderForm, renderLabel } from './templates/form-surface';
@@ -80,6 +80,12 @@ export const TAG_FOR_KIND: Record<string, string> = {
   timeline: 'div',
   stat: 'div',
   tag: 'span',
+  combobox: 'div',
+  tagsInput: 'div',
+  rating: 'div',
+  editable: 'div',
+  fileUpload: 'div',
+  treeView: 'div',
   toggle: 'input',
   form: 'form',
   login: 'form',
@@ -103,7 +109,7 @@ export const LAYOUT_PRIMITIVES = new Set([
  * and asserted against `CREATABLE_KINDS` so the two can never drift.
  */
 export const TEMPLATED_KINDS = new Set([
-  'button', 'input', 'textarea', 'numberInput', 'pinInput', 'select', 'checkbox', 'radio', 'switch', 'toggle',
+  'button', 'input', 'textarea', 'numberInput', 'pinInput', 'combobox', 'tagsInput', 'rating', 'editable', 'fileUpload', 'select', 'checkbox', 'radio', 'switch', 'toggle',
   'steps', 'timeline', 'stat', 'tag',
   'table', 'tabs', 'dialog', 'badge', 'alert', 'image', 'list', 'lister', 'chart', 'progress',
   'form', 'login', 'signup', 'label',
@@ -135,6 +141,16 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderNumberInput(ir, view)
     case 'pinInput':
       return renderPinInput(ir, view)
+    case 'combobox':
+      return renderCombobox(ir, view)
+    case 'tagsInput':
+      return renderTagsInput(ir, view)
+    case 'rating':
+      return renderRating(ir, view)
+    case 'editable':
+      return renderEditable(ir, view)
+    case 'fileUpload':
+      return renderFileUpload(ir, view)
     case 'select':
       return renderSelect(ir, view)
     case 'table':
@@ -171,6 +187,8 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderStat(ir, view)
     case 'tag':
       return renderTag(ir, view)
+    case 'treeView':
+      return renderTreeView(ir, view)
     // ── Forms ──
     case 'form':
     case 'login':

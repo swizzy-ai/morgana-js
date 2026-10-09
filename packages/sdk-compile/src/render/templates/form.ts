@@ -298,3 +298,106 @@ export function renderSlider(ir: ProjectIR, node: RenderNode): string {
   html += '</div>'
   return html
 }
+
+export function renderCombobox(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const disabled = props['disabled'] === true
+  const multiple = props['multiple'] === true
+  const value = props['value'] ?? (multiple ? [] : '')
+  if (disabled) attrList.push('data-disabled="true"')
+  if (multiple) attrList.push('data-multiple="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'options', 'value', 'placeholder', 'disabled', 'multiple', 'clearable', 'size', 'variant'])
+  attrList.push(...carryProps(props, skip))
+  const options = Array.isArray(props['options']) ? (props['options'] as Array<Record<string, unknown>>) : []
+  const placeholder = typeof props['placeholder'] === 'string' ? props['placeholder'] : ''
+
+  let html = `<div ${attrList.join(' ')} data-value="${escAttr(Array.isArray(value) ? value.join(',') : String(value ?? ''))}">`
+  html += `<input data-part="search" placeholder="${escAttr(placeholder)}"${disabled ? ' disabled' : ''} autocomplete="off" role="combobox" aria-expanded="false" />`
+  html += '<div data-part="panel" hidden>'
+  for (const o of options) {
+    if (!o || typeof o !== 'object') continue
+    const label = String(o['label'] ?? o['value'] ?? '')
+    const val = String(o['value'] ?? label)
+    html += `<div data-part="option" data-value="${escAttr(val)}" role="option" aria-selected="false"${o['disabled'] === true ? ' data-disabled="true"' : ''}>${escHtml(label)}</div>`
+  }
+  html += '</div></div>'
+  return html
+}
+
+export function renderTagsInput(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const disabled = props['disabled'] === true
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'placeholder', 'disabled', 'max', 'size'])
+  attrList.push(...carryProps(props, skip))
+  const tags = Array.isArray(props['value']) ? (props['value'] as unknown[]).map((t) => String(t)) : []
+  const placeholder = typeof props['placeholder'] === 'string' ? props['placeholder'] : ''
+
+  let html = `<div ${attrList.join(' ')} data-value="${escAttr(tags.join(','))}">`
+  for (const tag of tags) {
+    html += `<span data-part="tag" data-tag="${escAttr(tag)}">${escHtml(tag)}<button type="button" data-part="tag-remove" aria-label="Remove">×</button></span>`
+  }
+  html += `<input data-part="entry" placeholder="${escAttr(placeholder)}"${disabled ? ' disabled' : ''} />`
+  html += '</div>'
+  return html
+}
+
+export function renderRating(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const max = Math.max(1, Math.min(10, Math.floor(Number(props['max'] ?? 5)) || 5))
+  const value = Math.max(0, Math.min(max, Math.floor(Number(props['value'] ?? 0)) || 0))
+  const disabled = props['disabled'] === true
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'max', 'disabled', 'size'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<div ${attrList.join(' ')} data-value="${value}" data-max="${max}" role="radiogroup">`
+  for (let i = 1; i <= max; i += 1) {
+    html += `<button type="button" data-part="star" data-star="${i}" data-on="${i <= value ? 'true' : 'false'}" role="radio" aria-checked="${i <= value ? 'true' : 'false'}"${disabled ? ' disabled' : ''}>★</button>`
+  }
+  html += '</div>'
+  return html
+}
+
+export function renderEditable(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const disabled = props['disabled'] === true
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'placeholder', 'disabled'])
+  attrList.push(...carryProps(props, skip))
+  const value = String(props['value'] ?? '')
+  const placeholder = typeof props['placeholder'] === 'string' && props['placeholder'] !== '' ? props['placeholder'] : 'Click to edit'
+
+  let html = `<div ${attrList.join(' ')} data-editing="false" data-value="${escAttr(value)}">`
+  html += `<span data-part="preview" tabindex="0">${value !== '' ? escHtml(value) : `<span data-part="empty">${escHtml(placeholder)}</span>`}</span>`
+  html += `<input data-part="editor" value="${escAttr(value)}" hidden />`
+  html += '</div>'
+  return html
+}
+
+export function renderFileUpload(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const disabled = props['disabled'] === true
+  const multiple = props['multiple'] !== false
+  if (disabled) attrList.push('data-disabled="true"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'accept', 'multiple', 'maxFiles', 'disabled'])
+  attrList.push(...carryProps(props, skip))
+  const accept = typeof props['accept'] === 'string' ? props['accept'] : ''
+
+  let html = `<div ${attrList.join(' ')}>`
+  html += `<div data-part="dropzone" tabindex="0">Drop files here or <button type="button" data-part="browse"${disabled ? ' disabled' : ''}>browse</button></div>`
+  html += `<input type="file" data-part="file-input" hidden${accept !== '' ? ` accept="${escAttr(accept)}"` : ''}${multiple ? ' multiple' : ''}${disabled ? ' disabled' : ''} />`
+  html += '<div data-part="file-list"></div>'
+  html += '</div>'
+  return html
+}

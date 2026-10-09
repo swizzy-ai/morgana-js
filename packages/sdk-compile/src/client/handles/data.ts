@@ -564,6 +564,69 @@ function tagMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function treeMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const nodes = (): Element[] => Array.from(ctx.el?.querySelectorAll('[data-part="node"]') ?? [])
+  const setExpanded = (node: Element, open: boolean): void => {
+    node.setAttribute('data-expanded', open ? 'true' : 'false')
+    const caret = node.querySelector('[data-part="caret"]')
+    caret?.setAttribute('aria-expanded', open ? 'true' : 'false')
+    const kids = Array.from(node.children).find((c) => (c as Element).getAttribute?.('data-part') === 'children') as Element | undefined
+    if (kids) {
+      if (open) kids.removeAttribute('hidden')
+      else kids.setAttribute('hidden', '')
+    }
+  }
+  const byKey = (key: string): Element | undefined =>
+    nodes().find((n) => n.getAttribute('data-node-key') === String(key))
+  const expandedKeys = (): string[] =>
+    nodes()
+      .filter((n) => n.getAttribute('data-expanded') === 'true')
+      .map((n) => n.getAttribute('data-node-key') ?? '')
+  return {
+    expand: (key?: string) => {
+      if (key === undefined) {
+        for (const n of nodes()) setExpanded(n, true)
+      } else {
+        const t = byKey(key)
+        if (t) setExpanded(t, true)
+      }
+      ctx.emit('changed', { expanded: expandedKeys() })
+    },
+    collapse: (key?: string) => {
+      if (key === undefined) {
+        for (const n of nodes()) setExpanded(n, false)
+      } else {
+        const t = byKey(key)
+        if (t) setExpanded(t, false)
+      }
+      ctx.emit('changed', { expanded: expandedKeys() })
+    },
+    toggle: (key: string) => {
+      const t = byKey(key)
+      if (!t) return
+      setExpanded(t, t.getAttribute('data-expanded') !== 'true')
+      ctx.emit('changed', { expanded: expandedKeys() })
+    },
+    select: (key: string) => {
+      ctx.setProp('selectedKey', key)
+      for (const label of Array.from(ctx.el?.querySelectorAll('[data-part="node-label"]') ?? [])) {
+        const host = label.closest('[data-part="node"]')
+        const on = host?.getAttribute('data-node-key') === String(key)
+        if (on) label.setAttribute('data-selected', 'true')
+        else label.removeAttribute('data-selected')
+      }
+      ctx.emit('selected', { key: String(key) })
+    },
+    getSelected: () => {
+      const v = ctx.getProp('selectedKey')
+      return typeof v === 'string' && v !== '' ? v : undefined
+    },
+    getExpanded: () => expandedKeys(),
+  }
+}
+
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   table: tableMethods,
   list: listMethods,
@@ -576,6 +639,7 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   timeline: timelineMethods,
   stat: statMethods,
   tag: tagMethods,
+  treeView: treeMethods,
 }
 
 export function extendData(ctx: HandleCtx): void {

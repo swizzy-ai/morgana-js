@@ -226,6 +226,253 @@ function numberInputMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+// ── Combobox ──────────────────────────────────────────────────────────────
+
+function comboboxMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const options = (): Array<{ label: string; value: string; disabled?: boolean }> => {
+    const raw = ctx.getProp('options')
+    return Array.isArray(raw)
+      ? (raw as Array<Record<string, unknown>>).map((o) => ({
+          label: String(o['label'] ?? o['value'] ?? ''),
+          value: String(o['value'] ?? o['label'] ?? ''),
+          disabled: o['disabled'] === true,
+        }))
+      : []
+  }
+  const paint = (value: string | string[]): void => {
+    ctx.setProp('value', value)
+    if (!ctx.el) return
+    const multiple = ctx.el.getAttribute('data-multiple') === 'true'
+    const vals = Array.isArray(value) ? value.map(String) : [String(value ?? '')]
+    ctx.el.setAttribute('data-value', vals.join(','))
+    const search = ctx.el.querySelector('input[data-part="search"]') as HTMLInputElement | null
+    if (search && !multiple) search.value = options().find((o) => o.value === vals[0])?.label ?? vals[0] ?? ''
+    for (const node of Array.from(ctx.el.querySelectorAll('[data-part="option"]'))) {
+      const on = vals.includes(node.getAttribute('data-value') ?? '')
+      if (on) node.setAttribute('aria-selected', 'true')
+      else node.removeAttribute('aria-selected')
+    }
+  }
+  return {
+    getValue: () => {
+      const v = ctx.getProp('value')
+      return Array.isArray(v) ? v : v === undefined || v === null || v === '' ? undefined : String(v)
+    },
+    setValue: (value: string | string[]) => {
+      paint(value)
+      ctx.emit('changed', { value })
+    },
+    setOptions: (next: Array<{ label?: string; value?: string; disabled?: boolean }>) => {
+      ctx.setProp('options', next)
+      const panel = ctx.el?.querySelector('[data-part="panel"]')
+      if (!panel) return
+      panel.innerHTML = (Array.isArray(next) ? next : [])
+        .map((o) => {
+          if (!o || typeof o !== 'object') return ''
+          const label = String(o['label'] ?? o['value'] ?? '')
+          const val = String(o['value'] ?? label)
+          return `<div data-part="option" data-value="${esc(val)}" role="option" aria-selected="false"${o['disabled'] === true ? ' data-disabled="true"' : ''}>${esc(label)}</div>`
+        })
+        .join('')
+    },
+    open: () => {
+      const panel = ctx.el?.querySelector('[data-part="panel"]')
+      if (panel) panel.removeAttribute('hidden')
+      ctx.el?.querySelector('input[data-part="search"]')?.setAttribute('aria-expanded', 'true')
+    },
+    close: () => {
+      const panel = ctx.el?.querySelector('[data-part="panel"]')
+      if (panel) panel.setAttribute('hidden', '')
+      ctx.el?.querySelector('input[data-part="search"]')?.setAttribute('aria-expanded', 'false')
+    },
+    clear: () => {
+      paint(ctx.el?.getAttribute('data-multiple') === 'true' ? [] : '')
+      ctx.emit('changed', { value: ctx.getProp('value') })
+    },
+  }
+}
+
+// ── Tags input ────────────────────────────────────────────────────────────
+
+function tagsMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const max = (): number => {
+    const m = Number(ctx.getProp('max') ?? Infinity)
+    return Number.isFinite(m) && m > 0 ? Math.floor(m) : Infinity
+  }
+  const paint = (tags: string[]): void => {
+    ctx.setProp('value', tags)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-value', tags.join(','))
+    const entry = ctx.el.querySelector('input[data-part="entry"]')
+    for (const node of Array.from(ctx.el.querySelectorAll('[data-part="tag"]'))) node.remove()
+    for (const tag of tags) {
+      const span = document.createElement('span')
+      span.setAttribute('data-part', 'tag')
+      span.setAttribute('data-tag', tag)
+      span.innerHTML = `${esc(tag)}<button type="button" data-part="tag-remove" aria-label="Remove">×</button>`
+      if (entry) ctx.el.insertBefore(span, entry)
+      else ctx.el.appendChild(span)
+    }
+  }
+  return {
+    getValue: () => {
+      const v = ctx.getProp('value')
+      return Array.isArray(v) ? v.map(String) : []
+    },
+    setValue: (tags: string[]) => {
+      const next = (Array.isArray(tags) ? tags : []).map(String).filter((t) => t !== '').slice(0, max())
+      paint(next)
+      ctx.emit('changed', { value: next })
+    },
+    add: (tag: string) => {
+      const cur = (ctx.getProp('value') as string[] | undefined) ?? []
+      const clean = String(tag ?? '').trim()
+      if (clean === '' || cur.length >= max() || cur.includes(clean)) return false
+      const next = [...cur, clean]
+      paint(next)
+      ctx.emit('changed', { value: next })
+      return true
+    },
+    removeAt: (indexOrTag: number | string) => {
+      const cur = ((ctx.getProp('value') as string[] | undefined) ?? []).map(String)
+      const next =
+        typeof indexOrTag === 'number' ? cur.filter((_, i) => i !== indexOrTag) : cur.filter((t) => t !== String(indexOrTag))
+      paint(next)
+      ctx.emit('changed', { value: next })
+    },
+    clear: () => {
+      paint([])
+      ctx.emit('changed', { value: [] })
+    },
+  }
+}
+
+// ── Rating ────────────────────────────────────────────────────────────────
+
+function ratingMethods(ctx: HandleCtx): Record<string, unknown> {
+  const max = (): number => {
+    const m = Number(ctx.getProp('max') ?? 5)
+    return Number.isFinite(m) && m >= 1 ? Math.min(10, Math.floor(m)) : 5
+  }
+  const paint = (value: number): void => {
+    const v = Math.max(0, Math.min(max(), Math.floor(Number(value) || 0)))
+    ctx.setProp('value', v)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-value', String(v))
+    for (const star of Array.from(ctx.el.querySelectorAll('[data-part="star"]'))) {
+      const i = Number(star.getAttribute('data-star') ?? 0)
+      const on = i <= v
+      star.setAttribute('data-on', on ? 'true' : 'false')
+      star.setAttribute('aria-checked', on ? 'true' : 'false')
+    }
+  }
+  return {
+    getValue: () => Number(ctx.getProp('value') ?? 0),
+    setValue: (value: number) => {
+      paint(Number(value))
+      ctx.emit('changed', { value: Number(ctx.getProp('value') ?? 0) })
+    },
+    clear: () => {
+      paint(0)
+      ctx.emit('changed', { value: 0 })
+    },
+  }
+}
+
+// ── Editable ──────────────────────────────────────────────────────────────
+
+function editableMethods(ctx: HandleCtx): Record<string, unknown> {
+  const paint = (editing: boolean, draft?: string): void => {
+    ctx.setProp('editing', editing)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-editing', editing ? 'true' : 'false')
+    const preview = ctx.el.querySelector('[data-part="preview"]')
+    const editor = ctx.el.querySelector('input[data-part="editor"]') as HTMLInputElement | null
+    if (preview) {
+      if (editing) preview.setAttribute('hidden', '')
+      else preview.removeAttribute('hidden')
+    }
+    if (editor) {
+      if (editing) {
+        editor.removeAttribute('hidden')
+        if (draft !== undefined) editor.value = draft
+        editor.focus?.()
+        editor.select?.()
+      } else {
+        editor.setAttribute('hidden', '')
+      }
+    }
+  }
+  const commit = (value: string): void => {
+    ctx.setProp('value', value)
+    if (ctx.el) {
+      ctx.el.setAttribute('data-value', value)
+      const preview = ctx.el.querySelector('[data-part="preview"]')
+      if (preview) preview.textContent = value
+    }
+    paint(false)
+    ctx.emit('changed', { value })
+    ctx.emit('submitted', { value })
+  }
+  return {
+    getValue: () => String(ctx.getProp('value') ?? ''),
+    setValue: (value: string) => commit(String(value ?? '')),
+    edit: () => paint(true, String(ctx.getProp('value') ?? '')),
+    submit: () => {
+      const editor = ctx.el?.querySelector('input[data-part="editor"]') as HTMLInputElement | null
+      commit(editor ? editor.value : String(ctx.getProp('value') ?? ''))
+    },
+    cancel: () => {
+      paint(false)
+      ctx.emit('cancelled', {})
+    },
+    isEditing: () => ctx.el?.getAttribute('data-editing') === 'true',
+  }
+}
+
+// ── File upload ───────────────────────────────────────────────────────────
+
+function fileMethods(ctx: HandleCtx): Record<string, unknown> {
+  const entry = (): HTMLInputElement | null => ctx.el?.querySelector('input[data-part="file-input"]') as HTMLInputElement | null
+  const snapshot = (): Array<{ name: string; size: number; type: string }> => {
+    const input = entry()
+    const files = input?.files ? Array.from(input.files) : []
+    return files.map((f) => ({ name: f.name, size: f.size, type: f.type }))
+  }
+  const paint = (): void => {
+    if (!ctx.el) return
+    const list = ctx.el.querySelector('[data-part="file-list"]')
+    if (!list) return
+    const files = snapshot()
+    list.innerHTML = files
+      .map(
+        (f) =>
+          `<div data-part="file" data-name="${f.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')}">` +
+          `<span data-part="file-name">${f.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>` +
+          `<span data-part="file-size">${f.size} B</span></div>`,
+      )
+      .join('')
+  }
+  return {
+    getFiles: () => snapshot(),
+    clear: () => {
+      const input = entry()
+      if (input) input.value = ''
+      paint()
+      ctx.emit('changed', { files: [] })
+    },
+    browse: () => entry()?.click?.(),
+    refresh: () => {
+      paint()
+      ctx.emit('changed', { files: snapshot() })
+    },
+  }
+}
+
 // ── Pin input ─────────────────────────────────────────────────────────────
 
 function pinInputMethods(ctx: HandleCtx): Record<string, unknown> {
@@ -599,6 +846,11 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   radio: toggleMethods,
   numberInput: numberInputMethods,
   pinInput: pinInputMethods,
+  combobox: comboboxMethods,
+  tagsInput: tagsMethods,
+  rating: ratingMethods,
+  editable: editableMethods,
+  fileUpload: fileMethods,
   slider: sliderMethods,
   form: formMethods,
   login: formMethods,

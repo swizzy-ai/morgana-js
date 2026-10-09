@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, StepsHandle, TimelineHandle, StatHandle, TagHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, StepsHandle, TimelineHandle, StatHandle, TagHandle, ComboboxHandle, TagsInputHandle, TreeViewHandle, RatingHandle, EditableHandle, FileUploadHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, ListProps, ChartProps, StepsProps, TimelineProps, StatProps, TagProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, ListProps, ChartProps, StepsProps, TimelineProps, StatProps, TagProps, ComboboxProps, TagsInputProps, TreeViewProps, RatingProps, EditableProps, FileUploadProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -106,6 +106,12 @@ export interface UiApi {
   timeline: Creatable<TimelineProps, TimelineHandle>
   stat: Creatable<StatProps, StatHandle>
   tag: Creatable<TagProps, TagHandle>
+  combobox: Creatable<ComboboxProps, ComboboxHandle>
+  tagsInput: Creatable<TagsInputProps, TagsInputHandle>
+  treeView: Creatable<TreeViewProps, TreeViewHandle>
+  rating: Creatable<RatingProps, RatingHandle>
+  editable: Creatable<EditableProps, EditableHandle>
+  fileUpload: Creatable<FileUploadProps, FileUploadHandle>
   select: Creatable<SelectProps, SelectHandle>
   tabs: Creatable<TabsProps, TabsHandle>
   badge: Creatable<BadgeProps, BadgeHandle>

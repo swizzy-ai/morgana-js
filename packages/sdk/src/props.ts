@@ -488,6 +488,56 @@ export interface TagProps extends SharedProps {
   closable?: boolean
 }
 
+export interface ComboboxProps extends SharedProps {
+  options?: SelectOption[]
+  value?: string | string[]
+  placeholder?: string
+  disabled?: boolean
+  multiple?: boolean
+  clearable?: boolean
+}
+
+export interface TagsInputProps extends SharedProps {
+  value?: string[]
+  placeholder?: string
+  disabled?: boolean
+  max?: number
+}
+
+export interface TreeNode {
+  key: string
+  label: string
+  children?: TreeNode[]
+  disabled?: boolean
+  defaultExpanded?: boolean
+}
+
+export interface TreeViewProps extends SharedProps {
+  items?: TreeNode[]
+  expandedKeys?: string[]
+  selectedKey?: string
+}
+
+export interface RatingProps extends SharedProps {
+  value?: number
+  max?: number
+  disabled?: boolean
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+}
+
+export interface EditableProps extends SharedProps {
+  value?: string
+  placeholder?: string
+  disabled?: boolean
+}
+
+export interface FileUploadProps extends SharedProps {
+  accept?: string
+  multiple?: boolean
+  maxFiles?: number
+  disabled?: boolean
+}
+
 export interface SeparatorProps extends SharedProps {
   orientation?: 'horizontal' | 'vertical'
   variant?: 'solid' | 'dashed' | 'dotted'
@@ -676,6 +726,13 @@ export type KnownObjectHandleProps =
   | TimelineItem
   | StatProps
   | TagProps
+  | ComboboxProps
+  | TagsInputProps
+  | TreeViewProps
+  | TreeNode
+  | RatingProps
+  | EditableProps
+  | FileUploadProps
   | SeparatorProps
   | SkeletonProps
   | BreadcrumbsProps

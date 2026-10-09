@@ -30,7 +30,7 @@ export const CREATABLE_KINDS = [
   'header', 'main', 'footer', 'nav', 'section', 'article',
   'text', 'markdown', 'code', 'label',
   'button', 'input', 'textarea', 'select', 'checkbox', 'radio', 'switch', 'toggle',
-  'numberInput', 'pinInput', 'steps', 'timeline', 'stat', 'tag',
+  'numberInput', 'pinInput', 'combobox', 'tagsInput', 'rating', 'editable', 'fileUpload', 'steps', 'timeline', 'stat', 'tag', 'treeView',
   'slider',
   'list', 'lister', 'table', 'chart', 'badge', 'avatar',
   'alert', 'progress', 'skeleton', 'separator',

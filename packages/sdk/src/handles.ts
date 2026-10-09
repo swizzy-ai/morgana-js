@@ -56,6 +56,13 @@ import type {
   TimelineItem,
   StatProps,
   TagProps,
+  ComboboxProps,
+  TagsInputProps,
+  TreeViewProps,
+  TreeNode,
+  RatingProps,
+  EditableProps,
+  FileUploadProps,
   SeparatorProps,
   SkeletonProps,
   BreadcrumbsProps,
@@ -782,6 +789,77 @@ export interface TagHandle extends ObjectHandle<TagProps> {
   setLabel(label: string): void
   setVariant(variant: string): void
   close(): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Combobox Handle ─────────────────────────────────────────────────────────
+
+export interface ComboboxHandle extends ObjectHandle<ComboboxProps> {
+  getValue(): string | string[] | undefined
+  setValue(value: string | string[]): void
+  setOptions(options: SelectOption[]): void
+  open(): void
+  close(): void
+  clear(): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Tags Input Handle ───────────────────────────────────────────────────────
+
+export interface TagsInputHandle extends ObjectHandle<TagsInputProps> {
+  getValue(): string[]
+  setValue(value: string[]): void
+  add(tag: string): boolean
+  removeAt(indexOrTag: number | string): void
+  clear(): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Tree View Handle ────────────────────────────────────────────────────────
+
+export interface TreeViewHandle extends ObjectHandle<TreeViewProps> {
+  expand(key?: string): void
+  collapse(key?: string): void
+  toggle(key: string): void
+  select(key: string): void
+  getSelected(): string | undefined
+  getExpanded(): string[]
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Rating Handle ───────────────────────────────────────────────────────────
+
+export interface RatingHandle extends ObjectHandle<RatingProps> {
+  getValue(): number
+  setValue(value: number): void
+  clear(): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Editable Handle ─────────────────────────────────────────────────────────
+
+export interface EditableHandle extends ObjectHandle<EditableProps> {
+  getValue(): string
+  setValue(value: string): void
+  edit(): void
+  submit(): void
+  cancel(): void
+  isEditing(): boolean
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── File Upload Handle ──────────────────────────────────────────────────────
+
+export interface UploadedFile {
+  name: string
+  size: number
+  type: string
+}
+
+export interface FileUploadHandle extends ObjectHandle<FileUploadProps> {
+  getFiles(): UploadedFile[]
+  clear(): void
+  browse(): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

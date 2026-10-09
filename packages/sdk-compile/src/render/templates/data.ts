@@ -433,3 +433,43 @@ export function renderTag(ir: ProjectIR, node: RenderNode): string {
   html += '</span>'
   return html
 }
+
+function renderTreeNodes(nodes: Array<Record<string, unknown>>, selectedKey: string): string {
+  let html = ''
+  for (const node of nodes) {
+    if (!node || typeof node !== 'object') continue
+    const key = String(node['key'] ?? node['label'] ?? '')
+    const kids = Array.isArray(node['children']) ? (node['children'] as Array<Record<string, unknown>>) : []
+    const expanded = node['defaultExpanded'] === true
+    const disabled = node['disabled'] === true
+    html += `<div data-part="node" data-node-key="${escAttr(key)}" data-expanded="${expanded && kids.length > 0 ? 'true' : 'false'}"${disabled ? ' data-disabled="true"' : ''}>`
+    html += '<div data-part="node-row">'
+    if (kids.length > 0) {
+      html += `<button type="button" data-part="caret" aria-expanded="${expanded ? 'true' : 'false'}"${disabled ? ' disabled' : ''}>▸</button>`
+    } else {
+      html += '<span data-part="leaf-gap"></span>'
+    }
+    html += `<span data-part="node-label" data-selected="${key === selectedKey ? 'true' : 'false'}">${escHtml(String(node['label'] ?? key))}</span>`
+    html += '</div>'
+    if (kids.length > 0) {
+      html += `<div data-part="children"${expanded ? '' : ' hidden'}>${renderTreeNodes(kids, selectedKey)}</div>`
+    }
+    html += '</div>'
+  }
+  return html
+}
+
+export function renderTreeView(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'items', 'expandedKeys', 'selectedKey'])
+  attrList.push(...carryProps(props, skip))
+  const items = Array.isArray(props['items']) ? (props['items'] as Array<Record<string, unknown>>) : []
+  const selectedKey = typeof props['selectedKey'] === 'string' ? props['selectedKey'] : ''
+
+  let html = `<div ${attrList.join(' ')} role="tree">`
+  html += renderTreeNodes(items, selectedKey)
+  html += '</div>'
+  return html
+}
