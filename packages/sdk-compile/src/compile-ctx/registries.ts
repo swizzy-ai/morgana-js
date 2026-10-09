@@ -309,7 +309,7 @@ export function buildPages(state: CompileState): unknown {
     const name = (props?.['name'] as string) ?? `page_${nextAutoId().toString(36)}`
     const address = (props?.['address'] as string) ?? `/${name}`
     if (!state.ir.pages.has(name)) {
-      state.ir.pages.set(name, { name, address, rootIds: [], app: (props?.['app'] as string) ?? null })
+      state.ir.pages.set(name, { name, address, rootIds: [], app: (props?.['app'] as string) ?? null, render: 'static' })
     }
     const node = ensureNode(state, 'page', { id: name, ...(props ?? {}) })
     const handle = makeHandle(state, node) as Record<string, unknown>
@@ -324,6 +324,8 @@ export function buildPages(state: CompileState): unknown {
     pageApi['spa'] = () => pageApi
     pageApi['route'] = (p: string) => {
       state.ir.pages.get(name)!.address = p
+      const node = state.ir.objects.get(name)
+      if (node) (node.props as Record<string, unknown>)['address'] = p
       return pageApi
     }
     pageApi['app'] = (appName: string) => {

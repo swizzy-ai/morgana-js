@@ -19,7 +19,7 @@ function build(kind: string, props: Record<string, unknown>, id = 'k1') {
   const state = { ir, config: {}, actionName: 'test' } as CompileState;
   const node = ensureNode(state, kind, { id, ...props });
   makeHandle(state, node);
-  ir.pages.set('home', { name: 'home', address: '/', rootIds: [id], app: null });
+  ir.pages.set('home', { name: 'home', address: '/', rootIds: [id], app: null, render: 'static' });
   return { ir, node }
 }
 
@@ -177,7 +177,7 @@ describe('Page props are all read', () => {
     const state = { ir, config: {}, actionName: 'test' } as CompileState
     const node = ensureNode(state, 'page', { id: 'home', address: '/', tags: { analytics: 'on', tier: 'pro' } })
     makeHandle(state, node)
-    ir.pages.set('home', { name: 'home', address: '/', rootIds: [], app: null })
+    ir.pages.set('home', { name: 'home', address: '/', rootIds: [], app: null, render: 'static' })
     const html = renderPageHtml(ir, 'home')
     expect(html).toContain('data-tag-analytics="on"')
     expect(html).toContain('data-tag-tier="pro"')
@@ -189,7 +189,7 @@ describe('Page props are all read', () => {
     const node = ensureNode(state, 'page', { id: 'home', address: '/' })
     makeHandle(state, node)
     applyMake(node, 'page', 'spa')
-    ir.pages.set('home', { name: 'home', address: '/', rootIds: [], app: null })
+    ir.pages.set('home', { name: 'home', address: '/', rootIds: [], app: null, render: 'static' })
     const html = renderPageHtml(ir, 'home')
     expect(html).toContain('data-spa="true"')
   })

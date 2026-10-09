@@ -43,6 +43,8 @@ export interface PageNode {
   address: string
   rootIds: string[]
   app: string | null
+  /** How this page is served. Normalized during compile (default 'static'). */
+  render: 'static' | 'spa' | 'server'
 }
 
 export interface AppNode {

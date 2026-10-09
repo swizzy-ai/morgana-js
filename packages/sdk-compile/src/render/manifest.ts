@@ -33,7 +33,7 @@ export interface PageManifest {
   objects: Record<string, ManifestObject>
   /** Page name → the objects rendered at its root, in order. */
   roots: Record<string, string[]>
-  pages: Record<string, { address: string; app: string | null }>
+  pages: Record<string, { address: string; app: string | null; render: 'static' | 'spa' | 'server' }>
   apps: Array<{ name: string; displayName?: string; description?: string; pages: string[] }>
   icons: Record<string, unknown>
   libraries: Array<{ name: string; cdnUrl: string; globalVar: string }>
@@ -92,7 +92,7 @@ export function buildManifest(ir: ProjectIR, pageName: string): PageManifest {
     objects,
     roots,
     pages: Object.fromEntries(
-      [...ir.pages].map(([name, p]) => [name, { address: p.address, app: p.app }]),
+      [...ir.pages].map(([name, p]) => [name, { address: p.address, app: p.app, render: p.render }]),
     ),
     apps: [...ir.apps.values()].map((a) => ({
       name: a.name,

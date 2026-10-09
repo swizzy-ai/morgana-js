@@ -320,6 +320,7 @@ async function main({ base, projectId, envName, bearer, dist }) {
   const pages = (manifest.pages ?? []).map((p) => ({
     name: p.name,
     address: p.address,
+    render: p.render ?? 'static',
     html: safeRead(path.join(dist, 'pages', `${p.name}.html`)),
     clientJs: safeRead(path.join(dist, 'assets', 'client.js')),
     css: safeRead(path.join(dist, 'assets', 'style.css')),
@@ -328,7 +329,7 @@ async function main({ base, projectId, envName, bearer, dist }) {
     {
       name: 'main',
       displayName: (manifest.apps ?? [])[0]?.displayName ?? 'App',
-      pages: pages.map((p) => ({ name: p.name, address: p.address, html: p.html })),
+      pages: pages.map((p) => ({ name: p.name, address: p.address, render: p.render, html: p.html })),
     },
   ]
 

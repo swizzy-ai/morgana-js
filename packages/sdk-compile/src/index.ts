@@ -245,6 +245,48 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     }
   }
 
+  // Page addresses are the URL space: required, normalized, unique, and never
+  // colliding with reserved prefixes. Fail fast — a bad route ships a 404.
+  {
+    const RESERVED = new Set(['api', 'assets', 'apps', 'pages'])
+    const seen = new Map<string, string>()
+    for (const page of ir.pages.values()) {
+      const nodeProps = (ir.objects.get(page.name)?.props ?? {}) as Record<string, unknown>
+      if (typeof nodeProps['address'] !== 'string' || (nodeProps['address'] as string).trim() === '') {
+        throw new Error(`page "${page.name}" declares no address — address is required (e.g. address: '${page.name}')`)
+      }
+      const stripped = (page.address ?? '').trim().replace(/^\/+|\/+$/g, '')
+      page.address = stripped === '' ? '/' : stripped
+      if (page.address !== '/') {
+        for (const seg of page.address.split('/')) {
+          if (seg === '' || seg === '.' || seg === '..' || seg.includes('\\')) {
+            throw new Error(`page "${page.name}" address "/${page.address}/" has an illegal segment "${seg}"`)
+          }
+        }
+        const first = page.address.split('/')[0]!.toLowerCase()
+        if (RESERVED.has(first)) {
+          throw new Error(`page "${page.name}" address "/${page.address}/" collides with reserved "/${first}/"`)
+        }
+      }
+      const key = page.address.toLowerCase()
+      const clash = seen.get(key)
+      if (clash) {
+        throw new Error(`pages "${clash}" and "${page.name}" claim the same address "/${page.address}/"`)
+      }
+      seen.set(key, page.name)
+      const raw = nodeProps['render']
+      if (raw === 'server' || raw === 'spa' || raw === 'static') {
+        page.render = raw
+      } else if (raw !== undefined) {
+        throw new Error(`page "${page.name}" has unknown render mode "${String(raw)}" — want 'static', 'spa' or 'server'`)
+      } else if (nodeProps['spa'] === true || nodeProps['isSpa'] === true) {
+        page.render = 'spa'
+      } else {
+        page.render = 'static'
+      }
+    }
+  }
+
   // Attach pages declared only via config.apps.<app>.pages (no compile action created them).
   for (const app of ir.apps.values()) {
     for (const pageName of app.pages) {

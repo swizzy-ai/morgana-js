@@ -114,6 +114,12 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
 
   for (const [name, html] of Object.entries(inputs.pages)) {
     write(`pages/${name}.html`, html)
+    // Canonical address emit: the address is the URL, the file layout is an
+    // implementation detail. Directory-index form so dumb static hosts serve
+    // the app with zero config. `pages/<name>.html` stays as a permanent alias.
+    const addr = inputs.ir.pages.get(name)?.address ?? `/${name}`
+    const canonical = addr === '/' ? 'index.html' : `${addr}/index.html`
+    if (canonical !== `pages/${name}.html`) write(canonical, html)
   }
   write('assets/client.js', inputs.clientJs)
   write('assets/style.css', inputs.css)
@@ -185,7 +191,7 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     `${JSON.stringify(
       {
         entry: inputs.entry,
-        pages: [...inputs.ir.pages.values()].map((p) => ({ name: p.name, address: p.address, app: p.app })),
+        pages: [...inputs.ir.pages.values()].map((p) => ({ name: p.name, address: p.address, app: p.app, render: p.render })),
         apps: [...inputs.ir.apps.values()].map((a) => ({
           name: a.name,
           displayName: a.displayName,

@@ -410,14 +410,43 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 5. the entry page
-  if (pathname === '/') {
-    const entry = typeof manifest.entry === 'string' && manifest.entry ? manifest.entry : 'home'
-    try {
-      return send(res, 200, fs.readFileSync(path.join(dist, 'pages', `${entry}.html`), 'utf8'), MIME['.html'])
-    } catch {
-      return send(res, 404, 'no entry page — run `node build.mjs` first')
+  // 5. page addresses — the address is the URL. The canonical form has the
+  // trailing slash; the bare form redirects to it; /pages/<name>.html keeps
+  // serving via static output below as a permanent alias.
+  const pageRoutes = new Map()
+  for (const p of manifest.pages ?? []) {
+    if (!p || typeof p.name !== 'string') continue
+    const raw = typeof p.address === 'string' && p.address !== '' ? p.address : `/${p.name}`
+    const norm = raw === '/' ? '/' : raw.replace(/^\/+|\/+$/g, '')
+    pageRoutes.set(norm === '/' ? '/' : norm.toLowerCase(), { name: p.name, address: norm, render: p.render ?? 'static' })
+  }
+  const redirect = (target) => {
+    res.writeHead(301, { location: target, 'cache-control': 'no-store' })
+    return res.end()
+  }
+  const serveFile = (rel) => {
+    const full = path.join(dist, rel)
+    if (!path.resolve(full).startsWith(path.resolve(dist)) || !fs.existsSync(full) || fs.statSync(full).isDirectory()) {
+      return false
     }
+    send(res, 200, fs.readFileSync(full), MIME[path.extname(full)] ?? 'application/octet-stream')
+    return true
+  }
+  const entryName = typeof manifest.entry === 'string' && manifest.entry ? manifest.entry : 'home'
+  if (pathname === '/') {
+    const entry = [...pageRoutes.values()].find((r) => r.name === entryName) ?? pageRoutes.get('/')
+    if (!entry) return send(res, 404, 'no entry page — run `morgana build` first')
+    if (entry.address !== '/') return redirect(`/${entry.address}/`)
+    if (serveFile('index.html')) return
+    return send(res, 404, 'no entry page — run `morgana build` first')
+  }
+  const bare = pathname.replace(/^\/+|\/+$/g, '')
+  const hit = bare === '' ? undefined : pageRoutes.get(bare.toLowerCase())
+  if (hit && hit.address !== '/') {
+    if (!pathname.endsWith('/')) return redirect(`/${hit.address}/`)
+    // render:'server' pages are intercepted here in Phase 3; until then the
+    // prerendered file serves as the fallback.
+    if (serveFile(path.join(hit.address, 'index.html'))) return
   }
 
   // 6. static output, with traversal refused

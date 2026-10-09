@@ -100,7 +100,7 @@ describe('page head emission', () => {
       tracked: [],
       inlineWhens: [],
     })
-    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['cta'], app: null })
+    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['cta'], app: null, render: 'static' })
     return ir
   }
 

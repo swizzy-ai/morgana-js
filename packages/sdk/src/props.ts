@@ -208,6 +208,11 @@ export interface LinkProps extends BoxProps {
 export interface PageProps extends SharedProps {
   /** The path this page is served at (defaults to `/{name}`). */
   address?: string
+  /**
+   * How this page is served. `static` prerenders at build time (default),
+   * `spa` serves a client-routed shell, `server` renders per request.
+   */
+  render?: 'static' | 'spa' | 'server'
   title?: string
   meta?: string
   favicon?: string

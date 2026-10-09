@@ -44,7 +44,7 @@ function build(kind: string, props: Record<string, unknown> = {}) {
   const state = { ir, config: {}, actionName: 'test' } as CompileState;
   const node = ensureNode(state, kind, { id: 'k1', ...props });
   makeHandle(state, node);
-  ir.pages.set('home', { name: 'home', address: '/', rootIds: ['k1'], app: null });
+  ir.pages.set('home', { name: 'home', address: '/', rootIds: ['k1'], app: null, render: 'static' });
   return { ir, node }
 }
 
@@ -96,7 +96,7 @@ describe('previously-unimplemented kinds now render real markup', () => {
     acc.children.push('i1')
     makeHandle(state, acc)
     makeHandle(state, item)
-    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['a1'], app: null })
+    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['a1'], app: null, render: 'static' })
     const html = renderNode(ir, 'a1')
     expect(html).toContain('data-part="accordion-trigger"')
     expect(html).toContain('data-part="accordion-panel"')
@@ -161,7 +161,7 @@ describe('previously-unimplemented kinds now render real markup', () => {
     slot.children.push('c1')
     makeHandle(state, slot)
     makeHandle(state, child)
-    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['s1'], app: null })
+    ir.pages.set('home', { name: 'home', address: '/', rootIds: ['s1'], app: null, render: 'static' })
     expect(renderNode(ir, 's1')).toContain('Projected')
   })
 

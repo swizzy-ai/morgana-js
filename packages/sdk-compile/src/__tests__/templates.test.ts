@@ -32,7 +32,7 @@ function build(specs: Spec[], pageProps: Record<string, unknown> = {}): ProjectI
     })
   }
   ir.objects.set('p', { id: 'p', kind: 'page', props: { id: 'p', ...pageProps }, children: [], parentId: null, contentTemplateId: null, bindings: [], breakpointProps: {}, tracked: [], inlineWhens: [] })
-  ir.pages.set('p', { name: 'p', address: '/', rootIds: specs.filter((s) => s.id !== 'p').map((s) => s.id), app: null })
+  ir.pages.set('p', { name: 'p', address: '/', rootIds: specs.filter((s) => s.id !== 'p').map((s) => s.id), app: null, render: 'static' })
   return ir
 }
 
