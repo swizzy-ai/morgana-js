@@ -462,6 +462,108 @@ function chartMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function stepsMethods(ctx: HandleCtx): Record<string, unknown> {
+  const items = (): Array<Record<string, unknown>> =>
+    Array.isArray(ctx.getProp('items')) ? (ctx.getProp('items') as Array<Record<string, unknown>>) : []
+  const paint = (current: number): void => {
+    const n = items().length
+    const c = n === 0 ? 0 : Math.max(0, Math.min(n - 1, Math.floor(current) || 0))
+    ctx.setProp('current', c)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-current', String(c))
+    for (const node of Array.from(ctx.el.querySelectorAll('[data-part="step"]'))) {
+      const idx = Number(node.getAttribute('data-step-index') ?? -1)
+      const state = idx < c ? 'done' : idx === c ? 'current' : 'todo'
+      node.setAttribute('data-state', state)
+      const marker = node.querySelector('[data-part="marker"]')
+      if (marker) marker.textContent = idx < c ? '✓' : String(idx + 1)
+    }
+  }
+  return {
+    getCurrent: () => Number(ctx.getProp('current') ?? 0),
+    setCurrent: (index: number) => {
+      paint(Number(index))
+      ctx.emit('changed', { current: Number(ctx.getProp('current') ?? 0) })
+    },
+    next: () => {
+      paint(Number(ctx.getProp('current') ?? 0) + 1)
+      ctx.emit('changed', { current: Number(ctx.getProp('current') ?? 0) })
+    },
+    prev: () => {
+      paint(Number(ctx.getProp('current') ?? 0) - 1)
+      ctx.emit('changed', { current: Number(ctx.getProp('current') ?? 0) })
+    },
+    setItems: (next: Array<Record<string, unknown>>) => {
+      ctx.setProp('items', next)
+      paint(Number(ctx.getProp('current') ?? 0))
+    },
+  }
+}
+
+function timelineMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return {
+    setItems: (items: Array<{ title?: string; time?: string; content?: string }>) => {
+      ctx.setProp('items', items)
+      if (!ctx.el) return
+      ctx.el.innerHTML = (Array.isArray(items) ? items : [])
+        .map((item) => {
+          if (!item || typeof item !== 'object') return ''
+          return (
+            '<div data-part="event"><span data-part="dot"></span><div data-part="event-body">' +
+            `<div data-part="event-title">${esc(String(item.title ?? ''))}</div>` +
+            (item.time ? `<div data-part="event-time">${esc(String(item.time))}</div>` : '') +
+            (item.content ? `<div data-part="event-content">${esc(String(item.content))}</div>` : '') +
+            '</div></div>'
+          )
+        })
+        .join('')
+    },
+  }
+}
+
+function statMethods(ctx: HandleCtx): Record<string, unknown> {
+  const write = (part: string, prop: string, value: string): void => {
+    ctx.setProp(prop, value)
+    const node = ctx.el?.querySelector(`[data-part="${part}"]`)
+    if (node) node.textContent = String(value ?? '')
+  }
+  return {
+    setValue: (value: string) => write('stat-value', 'value', value),
+    setLabel: (label: string) => write('stat-label', 'label', label),
+    setDelta: (delta: string, trend?: string) => {
+      const t = trend === 'down' ? 'down' : trend === 'flat' ? 'flat' : 'up'
+      ctx.setProp('delta', delta)
+      ctx.setProp('trend', t)
+      if (!ctx.el) return
+      const node = ctx.el.querySelector('[data-part="stat-delta"]')
+      if (node) {
+        node.setAttribute('data-trend', t)
+        node.textContent = `${t === 'down' ? '↓' : t === 'flat' ? '→' : '↑'}${String(delta ?? '')}`
+      }
+    },
+  }
+}
+
+function tagMethods(ctx: HandleCtx): Record<string, unknown> {
+  return {
+    setLabel: (label: string) => {
+      ctx.setProp('label', label)
+      const node = ctx.el?.querySelector('[data-part="tag-label"]')
+      if (node) node.textContent = String(label ?? '')
+    },
+    setVariant: (variant: string) => {
+      ctx.setProp('variant', variant)
+      ctx.el?.setAttribute('data-variant', String(variant))
+    },
+    close: () => {
+      ctx.el?.remove()
+      ctx.emit('closed', {})
+    },
+  }
+}
+
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   table: tableMethods,
   list: listMethods,
@@ -470,6 +572,10 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   video: mediaMethods,
   audio: mediaMethods,
   breadcrumbs: breadcrumbsMethods,
+  steps: stepsMethods,
+  timeline: timelineMethods,
+  stat: statMethods,
+  tag: tagMethods,
 }
 
 export function extendData(ctx: HandleCtx): void {

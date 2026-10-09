@@ -335,3 +335,101 @@ export function renderProgress(ir: ProjectIR, node: RenderNode): string {
   const label = props['showLabel'] === true ? `<span data-part="label">${Math.round(pct)}%</span>` : ''
   return `<div ${attrList.join(' ')}><div data-part="fill" ${fillAttrs.join(' ')}></div>${label}</div>`
 }
+
+export function renderSteps(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const items = Array.isArray(props['items']) ? (props['items'] as Array<Record<string, unknown>>) : []
+  const current = Math.max(0, Math.min(items.length - 1, Math.floor(Number(props['current'] ?? 0)) || 0))
+  const orientation = props['orientation'] === 'vertical' ? 'vertical' : 'horizontal'
+  attrList.push(`data-current="${current}"`)
+  attrList.push(`data-orientation="${orientation}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'items', 'current', 'orientation', 'variant', 'size'])
+  attrList.push(...carryProps(props, skip))
+
+  // State per step derives from position vs current: done < current,
+  // current === index, todo beyond. The client recomputes the same way.
+  let html = `<div ${attrList.join(' ')}>`
+  items.forEach((item, i) => {
+    if (!item || typeof item !== 'object') return
+    const key = String(item['key'] ?? i)
+    const state = i < current ? 'done' : i === current ? 'current' : 'todo'
+    html += `<div data-part="step" data-step-index="${i}" data-step-key="${escAttr(key)}" data-state="${state}">`
+    html += `<span data-part="marker">${i < current ? '✓' : String(i + 1)}</span>`
+    html += '<span data-part="step-body">'
+    html += `<span data-part="step-title">${escHtml(String(item['title'] ?? ''))}</span>`
+    if (item['description'] !== undefined && item['description'] !== '') {
+      html += `<span data-part="step-description">${escHtml(String(item['description']))}</span>`
+    }
+    html += '</span></div>'
+  })
+  html += '</div>'
+  return html
+}
+
+export function renderTimeline(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'items', 'variant', 'size'])
+  attrList.push(...carryProps(props, skip))
+  const items = Array.isArray(props['items']) ? (props['items'] as Array<Record<string, unknown>>) : []
+
+  let html = `<div ${attrList.join(' ')}>`
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    html += '<div data-part="event">'
+    html += '<span data-part="dot"></span>'
+    html += '<div data-part="event-body">'
+    html += `<div data-part="event-title">${escHtml(String(item['title'] ?? ''))}</div>`
+    if (item['time'] !== undefined && item['time'] !== '') {
+      html += `<div data-part="event-time">${escHtml(String(item['time']))}</div>`
+    }
+    if (item['content'] !== undefined && item['content'] !== '') {
+      html += `<div data-part="event-content">${escHtml(String(item['content']))}</div>`
+    }
+    html += '</div></div>'
+  }
+  html += '</div>'
+  return html
+}
+
+export function renderStat(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'label', 'value', 'delta', 'trend', 'helpText', 'size'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<div ${attrList.join(' ')}>`
+  if (props['label'] !== undefined) html += `<div data-part="stat-label">${escHtml(String(props['label']))}</div>`
+  if (props['value'] !== undefined) html += `<div data-part="stat-value">${escHtml(String(props['value']))}</div>`
+  if (props['delta'] !== undefined && props['delta'] !== '') {
+    const trend = props['trend'] === 'down' ? 'down' : props['trend'] === 'flat' ? 'flat' : 'up'
+    const arrow = trend === 'down' ? '↓' : trend === 'flat' ? '→' : '↑'
+    html += `<div data-part="stat-delta" data-trend="${trend}"><span data-part="delta-arrow">${arrow}</span>${escHtml(String(props['delta']))}</div>`
+  }
+  if (props['helpText'] !== undefined && props['helpText'] !== '') {
+    html += `<div data-part="stat-help">${escHtml(String(props['helpText']))}</div>`
+  }
+  html += '</div>'
+  return html
+}
+
+export function renderTag(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'label', 'content', 'variant', 'size', 'closable'])
+  attrList.push(...carryProps(props, skip))
+  const label = props['label'] ?? props['content'] ?? ''
+
+  let html = `<span ${attrList.join(' ')}>`
+  html += `<span data-part="tag-label">${escHtml(String(label))}</span>`
+  if (props['closable'] === true) {
+    html += '<button type="button" data-part="tag-close" aria-label="Remove">×</button>'
+  }
+  html += '</span>'
+  return html
+}

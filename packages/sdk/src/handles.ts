@@ -27,6 +27,8 @@ import type {
   SliderProps,
   GradientSpec,
   LinkProps,
+  ListProps,
+  ChartProps,
   PageProps,
   TextProps,
   TableProps,
@@ -48,6 +50,12 @@ import type {
   LabelProps,
   NumberInputProps,
   PinInputProps,
+  StepsProps,
+  StepsItem,
+  TimelineProps,
+  TimelineItem,
+  StatProps,
+  TagProps,
   SeparatorProps,
   SkeletonProps,
   BreadcrumbsProps,
@@ -471,7 +479,7 @@ export interface LinkHandle extends ObjectHandle<LinkProps> {
 }
 
 /** List/feed handle — a view over a source: state or collection. */
-export interface ListHandle extends ObjectHandle {
+export interface ListHandle extends ObjectHandle<ListProps> {
   /** State-backed append — writes the bound source; the engine stamps the node. */
   append(record: Record<string, unknown>): void
   /** O(1) tail patch — update the last/matched item without a re-render. */
@@ -522,7 +530,7 @@ export interface PageHandle<P extends PageProps = PageProps> extends ObjectHandl
  * gridlines, renderer ('svg' native | 'chartjs'). Per-mark events arrive via
  * `when('selected', …)`; export via `download('svg' | 'png')`.
  */
-export interface ChartHandle extends ObjectHandle {
+export interface ChartHandle extends ObjectHandle<ChartProps> {
   readonly kind: ChartKind
   readonly renderer: ChartRendererKind
   /** The resolved chart state both renderer backends consume. */
@@ -738,6 +746,42 @@ export interface PinInputHandle extends ObjectHandle<PinInputProps> {
   setValue(value: string): void
   clear(): void
   focus(index?: number): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Steps Handle ────────────────────────────────────────────────────────────
+
+export interface StepsHandle extends ObjectHandle<StepsProps> {
+  getCurrent(): number
+  setCurrent(index: number): void
+  next(): void
+  prev(): void
+  setItems(items: StepsItem[]): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Timeline Handle ─────────────────────────────────────────────────────────
+
+export interface TimelineHandle extends ObjectHandle<TimelineProps> {
+  setItems(items: TimelineItem[]): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Stat Handle ─────────────────────────────────────────────────────────────
+
+export interface StatHandle extends ObjectHandle<StatProps> {
+  setValue(value: string): void
+  setLabel(label: string): void
+  setDelta(delta: string, trend?: 'up' | 'down' | 'flat'): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+// ── Tag Handle ──────────────────────────────────────────────────────────────
+
+export interface TagHandle extends ObjectHandle<TagProps> {
+  setLabel(label: string): void
+  setVariant(variant: string): void
+  close(): void
   track(event: string, opts?: TrackOptions): EventSource
 }
 

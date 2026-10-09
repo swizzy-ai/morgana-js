@@ -426,6 +426,68 @@ export interface PinInputProps extends SharedProps {
   otp?: boolean
 }
 
+export interface ListProps extends SharedProps {
+  /** Initial records (stamped at compile when a content template exists). */
+  data?: unknown[]
+  emptyText?: string
+}
+
+export interface ChartProps extends SharedProps {
+  kind?: 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter'
+  series?: number[][]
+  labels?: string[]
+  points?: Array<{ x: number; y: number; r?: number; c?: number }>
+  palette?: string[]
+  orientation?: 'v' | 'h'
+  stacked?: boolean
+  smooth?: boolean
+  markers?: boolean
+  legend?: 'none' | 'top' | 'bottom' | 'right'
+  gridlines?: 'none' | 'x' | 'y' | 'both'
+}
+
+export interface StepsItem {
+  key?: string
+  title: string
+  description?: string
+}
+
+export interface StepsProps extends SharedProps {
+  items?: StepsItem[]
+  current?: number
+  orientation?: 'horizontal' | 'vertical'
+  variant?: 'solid' | 'subtle'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+}
+
+export interface TimelineItem {
+  title: string
+  time?: string
+  content?: string
+}
+
+export interface TimelineProps extends SharedProps {
+  items?: TimelineItem[]
+  variant?: 'subtle' | 'solid' | 'outline' | 'plain'
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+}
+
+export interface StatProps extends SharedProps {
+  label?: string
+  value?: string
+  delta?: string
+  trend?: 'up' | 'down' | 'flat'
+  helpText?: string
+  size?: 'sm' | 'md' | 'lg'
+}
+
+export interface TagProps extends SharedProps {
+  label?: string
+  variant?: 'subtle' | 'solid' | 'outline' | 'surface'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  closable?: boolean
+}
+
 export interface SeparatorProps extends SharedProps {
   orientation?: 'horizontal' | 'vertical'
   variant?: 'solid' | 'dashed' | 'dotted'
@@ -606,6 +668,14 @@ export type KnownObjectHandleProps =
   | LabelProps
   | NumberInputProps
   | PinInputProps
+  | ListProps
+  | ChartProps
+  | StepsProps
+  | StepsItem
+  | TimelineProps
+  | TimelineItem
+  | StatProps
+  | TagProps
   | SeparatorProps
   | SkeletonProps
   | BreadcrumbsProps
