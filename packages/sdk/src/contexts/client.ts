@@ -20,14 +20,14 @@ import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
-  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, StepsHandle, TimelineHandle, StatHandle, TagHandle, ComboboxHandle, TagsInputHandle, TreeViewHandle, RatingHandle, EditableHandle, FileUploadHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, StepsHandle, TimelineHandle, StatHandle, TagHandle, ComboboxHandle, TagsInputHandle, TreeViewHandle, RatingHandle, EditableHandle, FileUploadHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, ContainerHandle, GridHandle, CardHandle, GroupHandle, StageHandle, VStackHandle, HStackHandle, HeaderHandle, MainHandle, FooterHandle, NavHandle, SectionHandle, ArticleHandle, SlotHandle, LoginHandle, SignupHandle, ListerHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
 } from '../handles'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
-  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, ListProps, ChartProps, StepsProps, TimelineProps, StatProps, TagProps, ComboboxProps, TagsInputProps, TreeViewProps, RatingProps, EditableProps, FileUploadProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, ListProps, ChartProps, StepsProps, TimelineProps, StatProps, TagProps, ComboboxProps, TagsInputProps, TreeViewProps, RatingProps, EditableProps, FileUploadProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, ContainerProps, GridPrimitiveProps, CardProps, GroupProps, StageProps, VStackProps, HStackProps, HeaderProps, MainProps, FooterProps, NavProps, SectionProps, ArticleProps, SlotProps, LoginProps, SignupProps, ListerProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -123,24 +123,24 @@ export interface UiApi {
   progress: Creatable<ProgressProps, ProgressHandle>
 
   // ── Registered kinds without a concrete handle — the full catalog ────────
-  container: Creatable
-  vstack: Creatable
-  hstack: Creatable
-  grid: Creatable
-  card: Creatable
-  group: Creatable
-  stage: Creatable
+  container: Creatable<ContainerProps, ContainerHandle>
+  vstack: Creatable<VStackProps, VStackHandle>
+  hstack: Creatable<HStackProps, HStackHandle>
+  grid: Creatable<GridPrimitiveProps, GridHandle>
+  card: Creatable<CardProps, CardHandle>
+  group: Creatable<GroupProps, GroupHandle>
+  stage: Creatable<StageProps, StageHandle>
   tooltip: Creatable<TooltipProps, TooltipHandle>
-  login: Creatable
-  signup: Creatable
-  slot: Creatable
+  login: Creatable<LoginProps, LoginHandle>
+  signup: Creatable<SignupProps, SignupHandle>
+  slot: Creatable<SlotProps, SlotHandle>
 
-  header: Creatable
-  main: Creatable
-  footer: Creatable
-  nav: Creatable
-  section: Creatable
-  article: Creatable
+  header: Creatable<HeaderProps, HeaderHandle>
+  main: Creatable<MainProps, MainHandle>
+  footer: Creatable<FooterProps, FooterHandle>
+  nav: Creatable<NavProps, NavHandle>
+  section: Creatable<SectionProps, SectionHandle>
+  article: Creatable<ArticleProps, ArticleHandle>
 
   markdown: Creatable<MarkdownProps, MarkdownHandle>
   code: Creatable<CodeProps, CodeHandle>
@@ -151,7 +151,7 @@ export interface UiApi {
   numberInput: Creatable<NumberInputProps, NumberInputHandle>
   pinInput: Creatable<PinInputProps, PinInputHandle>
 
-  lister: Creatable
+  lister: Creatable<ListerProps, ListerHandle>
   avatar: Creatable<AvatarProps, AvatarHandle>
   skeleton: Creatable<SkeletonProps, SkeletonHandle>
   separator: Creatable<SeparatorProps, SeparatorHandle>

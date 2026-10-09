@@ -63,6 +63,23 @@ import type {
   RatingProps,
   EditableProps,
   FileUploadProps,
+  ContainerProps,
+  GridPrimitiveProps,
+  CardProps,
+  GroupProps,
+  StageProps,
+  VStackProps,
+  HStackProps,
+  HeaderProps,
+  MainProps,
+  FooterProps,
+  NavProps,
+  SectionProps,
+  ArticleProps,
+  SlotProps,
+  LoginProps,
+  SignupProps,
+  ListerProps,
   SeparatorProps,
   SkeletonProps,
   BreadcrumbsProps,
@@ -862,6 +879,73 @@ export interface FileUploadHandle extends ObjectHandle<FileUploadProps> {
   browse(): void
   track(event: string, opts?: TrackOptions): EventSource
 }
+
+// ── Structural handles ──────────────────────────────────────────────────────
+// Layout primitives share the Box engine (per-object CSS) — the handle is
+// the typed props plus tracking. login/signup reuse the form contract,
+// lister reuses the list contract.
+
+export interface ContainerHandle extends ObjectHandle<ContainerProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface GridHandle extends ObjectHandle<GridPrimitiveProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface CardHandle extends ObjectHandle<CardProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface GroupHandle extends ObjectHandle<GroupProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface StageHandle extends ObjectHandle<StageProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface VStackHandle extends ObjectHandle<VStackProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface HStackHandle extends ObjectHandle<HStackProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface HeaderHandle extends ObjectHandle<HeaderProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface MainHandle extends ObjectHandle<MainProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface FooterHandle extends ObjectHandle<FooterProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface NavHandle extends ObjectHandle<NavProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface SectionHandle extends ObjectHandle<SectionProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface ArticleHandle extends ObjectHandle<ArticleProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface SlotHandle extends ObjectHandle<SlotProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface LoginHandle extends FormHandle {}
+
+export interface SignupHandle extends FormHandle {}
+
+export interface ListerHandle extends ListHandle {}
 
 // ── Static display handles ──────────────────────────────────────────────────
 // Separator, skeleton, breadcrumbs, markdown and code are compile-rendered

@@ -538,6 +538,29 @@ export interface FileUploadProps extends SharedProps {
   disabled?: boolean
 }
 
+// ── Layout primitives ───────────────────────────────────────────────────────
+// Structural surfaces share the Box prop vocabulary — one interface each so
+// intent stays explicit and future divergence has a home. They render through
+// renderGeneric (div + per-object CSS), which is the whole implementation.
+
+export interface ContainerProps extends BoxProps {}
+export interface GridPrimitiveProps extends BoxProps {}
+export interface CardProps extends BoxProps {}
+export interface GroupProps extends BoxProps {}
+export interface StageProps extends BoxProps {}
+export interface VStackProps extends BoxProps {}
+export interface HStackProps extends BoxProps {}
+export interface HeaderProps extends BoxProps {}
+export interface MainProps extends BoxProps {}
+export interface FooterProps extends BoxProps {}
+export interface NavProps extends BoxProps {}
+export interface SectionProps extends BoxProps {}
+export interface ArticleProps extends BoxProps {}
+export interface SlotProps extends SharedProps {}
+export interface LoginProps extends FormProps {}
+export interface SignupProps extends FormProps {}
+export interface ListerProps extends ListProps {}
+
 export interface SeparatorProps extends SharedProps {
   orientation?: 'horizontal' | 'vertical'
   variant?: 'solid' | 'dashed' | 'dotted'
@@ -733,6 +756,23 @@ export type KnownObjectHandleProps =
   | RatingProps
   | EditableProps
   | FileUploadProps
+  | ContainerProps
+  | GridPrimitiveProps
+  | CardProps
+  | GroupProps
+  | StageProps
+  | VStackProps
+  | HStackProps
+  | HeaderProps
+  | MainProps
+  | FooterProps
+  | NavProps
+  | SectionProps
+  | ArticleProps
+  | SlotProps
+  | LoginProps
+  | SignupProps
+  | ListerProps
   | SeparatorProps
   | SkeletonProps
   | BreadcrumbsProps
