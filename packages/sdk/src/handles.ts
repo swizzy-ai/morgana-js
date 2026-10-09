@@ -25,6 +25,7 @@ import type {
   ImageProps,
   InputProps,
   SliderProps,
+  GradientSpec,
   LinkProps,
   PageProps,
   TextProps,
@@ -151,6 +152,8 @@ export interface TransformerConfigApi {
   alignment: DomainStoreApi<'center' | 'left' | 'right' | string>
   /** Bare style shorthand words → concrete prop writes. */
   shorthands: DomainStoreApi<Record<string, string>>
+  /** Named gradients → resolved background CSS. */
+  gradients: DomainStoreApi<GradientSpec | string>
   /** Named CSS color words the color resolver recognizes. */
   colors: DomainStoreApi<string>
 }

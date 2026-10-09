@@ -6,6 +6,20 @@ import type { MorganaConfig } from '@morgana/sdk';
 import type { ProjectIR } from '../ir';
 import { createKindFn, ensureNode, makeHandle, nextAutoId, type CompileState } from './handles';
 import { creatorNameFor } from '@morgana/sdk';
+import { defineGradient } from './tokens/gradients';
+
+/**
+ * Validate-and-register a gradient at define time, so a bad spec fails the
+ * build naming the action — not the first page that tries to use it.
+ */
+function defineGradientChecked(state: CompileState, key: string, value: unknown): void {
+  try {
+    defineGradient(key, value as never)
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    throw new Error(`${reason} (in action "${state.actionName}")`)
+  }
+}
 
 export const CREATABLE_KINDS = [
   'page',
@@ -25,7 +39,7 @@ export const CREATABLE_KINDS = [
 
 const TRANSFORMER_DOMAINS = [
   'effects', 'radius', 'spacing', 'dimensions', 'fonts',
-  'surfaces', 'layout', 'alignment', 'shorthands', 'colors',
+  'surfaces', 'layout', 'alignment', 'shorthands', 'colors', 'gradients',
 ] as const
 
 export function buildTransformers(state: CompileState): Record<string, unknown> {
@@ -35,11 +49,13 @@ export function buildTransformers(state: CompileState): Record<string, unknown> 
     api[domain] = {
       add: (key: string, value: unknown) => {
         if (!store.has(key.toLowerCase())) {
+          if (domain === 'gradients') defineGradientChecked(state, key, value)
           store.set(key.toLowerCase(), value)
           state.ir.transformerMutations.push({ domain, op: 'add', key, value })
         }
       },
       update: (key: string, value: unknown) => {
+        if (domain === 'gradients') defineGradientChecked(state, key, value)
         store.set(key.toLowerCase(), value)
         state.ir.transformerMutations.push({ domain, op: 'update', key, value })
       },

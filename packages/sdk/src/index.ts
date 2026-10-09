@@ -151,6 +151,8 @@ export type {
   ButtonProps,
   InputProps,
   SliderProps,
+  GradientStop,
+  GradientSpec,
   ImageProps,
   LinkProps,
   PageProps,

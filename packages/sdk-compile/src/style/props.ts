@@ -3,6 +3,7 @@
  */
 import { ALIGN_MAP, ALERT_VARIANTS, BADGE_VARIANTS, BUTTON_VARIANTS, DIALOG_SIZES, DIMENSION_WORDS, JUSTIFY_MAP, LAYOUT_WORDS, PROGRESS_VARIANTS, RADIUS_SCALE, RADIUS_WORDS, SHADOW_SCALE, SPACING_SCALE, SPACING_WORDS, SURFACE_TOKENS, TABLE_DENSITY, TABLE_VARIANTS, TEXT_SCALE } from './tokens';
 import type { ProjectIR } from '../ir';
+import { defineGradient, gradientToCss, resolveGradient } from '../compile-ctx/tokens/gradients';
 
 export interface StyleCtx {
   measures: Map<string, number | string>
@@ -10,6 +11,7 @@ export interface StyleCtx {
   effectOverrides: Map<string, string>
   radiusOverrides: Map<string, string>
   fontOverrides: Map<string, Record<string, string>>
+  gradientOverrides: Map<string, string>
 }
 
 /** Plain form of StyleCtx — the page runtime rebuilds its context from this. */
@@ -19,6 +21,7 @@ export interface StyleCtxJSON {
   effectOverrides: Record<string, string>
   radiusOverrides: Record<string, string>
   fontOverrides: Record<string, Record<string, string>>
+  gradientOverrides: Record<string, string>
 }
 
 export function serializeStyleCtx(ctx: StyleCtx): StyleCtxJSON {
@@ -28,16 +31,28 @@ export function serializeStyleCtx(ctx: StyleCtx): StyleCtxJSON {
     effectOverrides: Object.fromEntries(ctx.effectOverrides),
     radiusOverrides: Object.fromEntries(ctx.radiusOverrides),
     fontOverrides: Object.fromEntries(ctx.fontOverrides),
+    gradientOverrides: Object.fromEntries(ctx.gradientOverrides),
   }
 }
 
 export function hydrateStyleCtx(json: StyleCtxJSON): StyleCtx {
+  const gradients = new Map(Object.entries(json.gradientOverrides ?? {}))
+  // The browser resolves make()/bg gradients from the same module registry
+  // the compile lane populated — hydrate it so both lanes agree.
+  for (const [name, css] of gradients) {
+    try {
+      defineGradient(name, css)
+    } catch {
+      // A bad stored value must not break boot; the token simply stays unknown.
+    }
+  }
   return {
     measures: new Map(Object.entries(json.measures ?? {})),
     surfaceOverrides: new Map(Object.entries(json.surfaceOverrides ?? {})),
     effectOverrides: new Map(Object.entries(json.effectOverrides ?? {})),
     radiusOverrides: new Map(Object.entries(json.radiusOverrides ?? {})),
     fontOverrides: new Map(Object.entries(json.fontOverrides ?? {})),
+    gradientOverrides: gradients,
   }
 }
 
@@ -48,6 +63,7 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
     effectOverrides: new Map(),
     radiusOverrides: new Map(),
     fontOverrides: new Map(),
+    gradientOverrides: new Map(),
   }
   // Last write wins per domain+key (matches the recording registry semantics).
   for (const m of ir.transformerMutations) {
@@ -57,6 +73,7 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
       if (m.domain === 'effects') ctx.effectOverrides.delete(key)
       if (m.domain === 'radius') ctx.radiusOverrides.delete(key)
       if (m.domain === 'fonts') ctx.fontOverrides.delete(key)
+      if (m.domain === 'gradients') ctx.gradientOverrides.delete(key)
       continue
     }
     if (m.domain === 'surfaces' && m.value && typeof m.value === 'object') {
@@ -71,9 +88,25 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
       ctx.fontOverrides.set(key, m.value as Record<string, string>)
     } else if (m.domain === 'fonts' && typeof m.value === 'string') {
       ctx.fontOverrides.set(key, { 'font-size': m.value })
+    } else if (m.domain === 'gradients') {
+      // Specs resolve to CSS here; raw strings pass through (defineGradient
+      // already validated at shape time — this replay only finalizes order).
+      try {
+        ctx.gradientOverrides.set(key, typeof m.value === 'string' ? m.value : gradientToCss(m.value as never))
+      } catch {
+        // Invalid late write: drop it rather than breaking the sheet.
+      }
     }
   }
   return ctx
+}
+
+/** Resolve a bg value — `gradient:<name>` consults the registry first. */
+function resolveBgValue(raw: string, ctx: StyleCtx): string | null {
+  const v = raw.trim()
+  if (!v.toLowerCase().startsWith('gradient:')) return null
+  const name = v.slice('gradient:'.length)
+  return ctx.gradientOverrides.get(name.trim().toLowerCase()) ?? resolveGradient(name) ?? null
 }
 
 /** Resolve a Dim (units | named measure | sizing mode | MeasureExpr) to CSS. */
@@ -283,7 +316,9 @@ export function resolvePropsToCss(
   } else if (typeof props['boxShadow'] === 'string' && props['boxShadow'] !== '') {
     css['box-shadow'] = props['boxShadow'] as string
   }
-  if (typeof props['bg'] === 'string' && props['bg'] !== '') css['background'] = props['bg'] as string
+  if (typeof props['bg'] === 'string' && props['bg'] !== '') {
+    css['background'] = resolveBgValue(props['bg'] as string, ctx) ?? (props['bg'] as string)
+  }
   if (typeof props['color'] === 'string' && props['color'] !== '') css['color'] = props['color'] as string
 
   const font = props['font']

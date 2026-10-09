@@ -174,6 +174,19 @@ export interface SliderProps extends SharedProps {
   showValue?: boolean
 }
 
+export interface GradientStop {
+  color: string
+  /** 0-100, '50%', or omitted (evenly spaced). */
+  at?: number | string
+}
+
+export interface GradientSpec {
+  type: 'linear' | 'radial' | 'conic'
+  /** Degrees for linear (default 135), position for radial/conic. */
+  angle?: number | string
+  stops: GradientStop[]
+}
+
 export interface ImageProps extends SharedProps {
   src?: string
   alt?: string

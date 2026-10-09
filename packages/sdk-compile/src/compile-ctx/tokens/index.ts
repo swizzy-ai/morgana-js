@@ -14,6 +14,7 @@ import {
   SIZE_TOKENS,
   SURFACE_WORDS,
 } from './vocabulary';
+import { hasGradient, resolveGradient } from './gradients';
 
 const TEXT_LIKE = new Set(['text', 'markdown', 'code', 'label', 'link'])
 const FONT_TOKENS = new Set([
@@ -87,6 +88,18 @@ export function resolveMakeTokenDetailed(
   }
   if (isColorToken(v)) {
     return { props: { [TEXT_LIKE.has(kind) ? 'color' : 'bg']: v }, resolved: true }
+  }
+  // Named gradients ride the background — a gradient IS a background value,
+  // so `make('gradient:sunset')` and a registered bare `make('sunset')` both
+  // land on bg. TEXT_LIKE kinds stay colors: CSS has no gradient text color.
+  if (v.toLowerCase().startsWith('gradient:')) {
+    const css = resolveGradient(v.slice('gradient:'.length))
+    if (css) return { props: { bg: css }, resolved: true }
+    return { props: {}, resolved: false }
+  }
+  if (hasGradient(v)) {
+    const css = resolveGradient(v)
+    if (css) return { props: { bg: css }, resolved: true }
   }
   // Behavior words ride a class; the client runtime reads it.
   if (BEHAVIOR_WORDS.has(v)) {
