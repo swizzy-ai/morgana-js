@@ -16,7 +16,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { say, row, bold, green, dim, warn } from '../ui.mjs'
-import { VERSION } from '../version.mjs'
+import { VERSION, rangeFor } from '../version.mjs'
 import { template } from '../templates.mjs'
 
 function writeFile(file, contents) {
@@ -118,16 +118,16 @@ const packageJson = (name) => `${JSON.stringify(
       typecheck: 'morgana types && tsc --noEmit',
       deploy: 'morgana deploy',
     },
-    // The Morgana packages release in lockstep, so the CLI's own version is the
-    // right range for all three.
+    // Packages version independently: the SDK and compiler ranges are the ones
+    // this CLI itself depends on, so a new project gets a tested set.
     dependencies: {
-      '@studiomorgana/sdk': `^${VERSION}`,
+      '@studiomorgana/sdk': rangeFor('@studiomorgana/sdk'),
     },
     // The CLI is a project dependency so `npm run dev` works without a
     // global install — and always matches this project's compiler.
     devDependencies: {
       '@studiomorgana/cli': `^${VERSION}`,
-      '@studiomorgana/sdk-compile': `^${VERSION}`,
+      '@studiomorgana/sdk-compile': rangeFor('@studiomorgana/sdk-compile'),
       typescript: '~5.8.2',
     },
   },

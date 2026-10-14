@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /**
- * `pnpm release` — publish every @studiomorgana package in one go.
+ * `pnpm release` — publish the @studiomorgana packages whose version is not on
+ * npm yet. Pair it with `pnpm release:bump`, which bumps only what changed.
  *
- *   pnpm release             gate, then publish, then tag + push
+ *   pnpm release:bump        bump the packages that changed since their last release
+ *   pnpm release             gate, then publish the new versions, then tag + push
  *   pnpm release --dry-run   gate, then `pnpm publish --dry-run`; nothing leaves the machine
  *   pnpm release:fast        build only — no typecheck/test. For re-running after a
  *                            gate that already passed (e.g. a 2FA timeout mid-publish)
  *   --otp=123456             one-time code, for an npm account with 2FA on writes
  *                            (or set NPM_OTP; or use a granular token that bypasses 2FA)
  *
- * The Morgana packages release in lockstep: they must all carry the same
- * version, and `morgana init` scaffolds against the CLI's own version.
+ * Packages version independently. Each one published is tagged
+ * `<name>@<version>`, which is how the next `release:bump` knows what changed.
  *
  * Re-runnable. A package whose version is already on npm is skipped, so a run
  * that dies halfway (network, 2FA timeout) is finished by running it again.
@@ -47,6 +49,13 @@ function fail(msg) {
   console.error(`\n\x1b[31m✗ ${msg}\x1b[0m`)
   process.exit(1)
 }
+const onNpm = (p) => {
+  try {
+    return sh(`npm view ${p.name}@${p.version} version`) === p.version
+  } catch {
+    return false // 404 — not published yet
+  }
+}
 
 const pkgs = PACKAGES.map((dir) => {
   const json = JSON.parse(fs.readFileSync(path.join(root, 'packages', dir, 'package.json'), 'utf8'))
@@ -55,11 +64,6 @@ const pkgs = PACKAGES.map((dir) => {
 
 // ── Preflight ────────────────────────────────────────────────────────────────
 step('preflight')
-
-const versions = new Set(pkgs.map((p) => p.version))
-if (versions.size !== 1) fail(`versions are not in lockstep: ${pkgs.map((p) => `${p.name}@${p.version}`).join(', ')}`)
-const version = pkgs[0].version
-console.log(`  version   ${version}`)
 
 let user = ''
 try {
@@ -73,34 +77,30 @@ const branch = sh('git rev-parse --abbrev-ref HEAD')
 if (branch !== 'main') fail(`releases go from main (on ${branch})`)
 if (!dryRun && sh('git status --porcelain')) fail('working tree is not clean — commit first')
 
-// ── Gate ─────────────────────────────────────────────────────────────────────
-// Only the published packages. Examples are not shipped and do not gate a release.
-const filters = pkgs.flatMap((p) => ['--filter', p.name])
+const todo = pkgs.filter((p) => !onNpm(p))
+for (const p of pkgs) console.log(`  ${p.name.padEnd(28)} ${p.version}${todo.includes(p) ? '   → publish' : ''}`)
+if (!todo.length) {
+  step('every version is already on npm — run `pnpm release:bump` after changing a package')
+  process.exit(0)
+}
 
+// ── Gate ─────────────────────────────────────────────────────────────────────
+// Every published package builds — a new one may depend on an unchanged one —
+// but only the ones being published are typechecked and tested.
 step('build')
-run('pnpm', [...filters, 'run', 'build'])
+run('pnpm', [...pkgs.flatMap((p) => ['--filter', p.name]), 'run', 'build'])
+const gated = todo.flatMap((p) => ['--filter', p.name])
 if (skipChecks) {
   step('typecheck + test skipped (--skip-checks)')
 } else {
   step('typecheck')
-  run('pnpm', [...filters, 'run', 'typecheck'])
+  run('pnpm', [...gated, 'run', 'typecheck'])
   step('test')
-  run('pnpm', [...filters, 'run', 'test'])
+  run('pnpm', [...gated, 'run', 'test'])
 }
 
 // ── Publish ──────────────────────────────────────────────────────────────────
-const published = []
-for (const p of pkgs) {
-  let onNpm = false
-  try {
-    onNpm = sh(`npm view ${p.name}@${p.version} version`) === p.version
-  } catch {
-    /* 404 — not published yet */
-  }
-  if (onNpm) {
-    step(`${p.name}@${p.version} already on npm — skipping`)
-    continue
-  }
+for (const p of todo) {
   step(`${dryRun ? 'dry-run ' : ''}publish ${p.name}@${p.version}`)
   // --no-git-checks: the clean-tree / branch checks above already ran, and pnpm's
   // own check refuses a dry run on a dirty tree.
@@ -115,21 +115,19 @@ for (const p of pkgs) {
     ],
     p.cwd,
   )
-  published.push(p.name)
 }
 
-// ── Tag ──────────────────────────────────────────────────────────────────────
 if (dryRun) {
-  step(`dry run complete — would publish: ${published.join(', ') || 'nothing'}`)
+  step(`dry run complete — would publish: ${todo.map((p) => `${p.name}@${p.version}`).join(', ')}`)
   process.exit(0)
 }
 
-const tag = `v${version}`
-if (!sh(`git tag --list ${tag}`)) {
-  step(`tag ${tag} and push`)
-  run('git', ['tag', '-a', tag, '-m', `release ${tag}`])
-  run('git', ['push', 'origin', 'main', tag])
-}
+// ── Tag ──────────────────────────────────────────────────────────────────────
+// One tag per published package — `release:bump` diffs against these.
+const tags = todo.map((p) => `${p.name}@${p.version}`).filter((t) => !sh(`git tag --list "${t}"`))
+step(`tag and push: ${tags.join(', ')}`)
+for (const t of tags) run('git', ['tag', '-a', t, '-m', `release ${t}`])
+run('git', ['push', 'origin', 'main', ...tags])
 
-step(`released ${version}: ${published.join(', ') || 'nothing new'}`)
+step(`released: ${todo.map((p) => `${p.name}@${p.version}`).join(', ')}`)
 console.log('\n  try it:  npx @studiomorgana/cli@latest init my-app')
