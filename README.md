@@ -188,6 +188,66 @@ the compiled client sends it as `x-morgana-runtime`. It ships in the page, so
 anyone can read it — its job is to scope a request to one project, not to
 authenticate a person.
 
+## Server objects
+
+A server object is a type you define once and create instances of by name.
+Each instance keeps its own state and tables, runs one call at a time, and is
+reachable from server code and, as far as its `access` allows, from the
+browser. On the cloud each instance is its own Durable Object; under
+`morgana dev` it is its own SQLite file. Put definitions in
+`src/server-objects/`, or list packages in `libraries` to use objects they
+ship (`"morgana": { "objects": [...] }` in their `package.json`).
+
+```ts
+// src/server-objects/counter.ts
+import { defineServerObject } from '@morgana/sdk'
+
+export default defineServerObject({
+  name: 'counter',
+  state: { count: 0 },
+  collections: { log: { columns: [{ name: 'by', type: 'string' }] } },
+  computed: { even: (s) => s.count % 2 === 0 },
+  access: { create: 'member', read: 'public', subscribe: 'public', bump: 'member' },
+  methods: {
+    bump: async (self) => {
+      self.set({ count: self.state.count + 1 })
+      self.db.log.add({ by: self.caller?.email ?? 'server' })
+      self.emit('bumped', { count: self.state.count })
+      return self.state.count
+    },
+    // A streaming method: each yield reaches the caller as it happens;
+    // its writes and return value commit when it finishes.
+    countdown: async function* (self, p: { from: number }) {
+      for (let i = p.from; i > 0; i--) yield i
+      return 'done'
+    },
+    tidy: async (self) => self.defer('cleanup', {}),
+  },
+  jobs: {
+    // Runs after the commit, outside the call; changes state only through methods.
+    cleanup: async (self) => { await self.call('bump') },
+  },
+})
+```
+
+```ts
+const c = await ctx.objects.counter.getOrCreate('main')
+await c.bump()
+for await (const n of c.countdown({ from: 3 })) console.log(n)
+c.on('bumped', (e) => console.log(e.count))      // browser: live events
+text.bind('object:counter/main.count')            // a component follows live state
+```
+
+- **A call is a transaction:** everything it wrote, emitted, scheduled or
+  deferred lands together, or nothing does.
+- **Access defaults to server-only.** Browser access is opt-in per operation:
+  `create`, `read`, `subscribe`, `list`, `remove`, or a method name, each set
+  to `'public'`, `'member'` or `{ role }`.
+- **Scheduling:** `self.schedule('5m', 'method', params)` for later.
+  `self.defer('job', params)` runs a job durably, at least once, with retries.
+- **One caution:** a method that calls its own instance through `ctx.objects`
+  waits on itself. Use `self` inside a method.
+
 ## Deploying
 
 `morgana deploy` needs no arguments. The Morgana cloud URL is compiled in as the
@@ -276,6 +336,9 @@ enforces the same isolation.
   HttpOnly cookie. Gate pages with `access: 'member' | { role }`.
 - **Server:** collections, files (R2), queues, `ctx.server.email` (Resend),
   secrets, `respond()` and streaming, cron and store triggers, channels.
+- **Server objects:** named, durable instances with their own state and
+  tables, methods (including streaming ones), schedules and background jobs;
+  the same typed `ctx.objects` on the server and in the browser.
 - **Pages:** static, SPA or server-rendered; `products/:id` routes; every one
   of 91 component kinds styled by props (hover/focus/active states, themes,
   dark mode).
