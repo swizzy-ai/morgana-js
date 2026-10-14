@@ -591,6 +591,55 @@ export async function loadCustomObjectDefinition(
 }
 
 /**
+ * Load a module's default export in Node — a server object definition. The
+ * compiler needs its shape (method names, state, collections, access); the
+ * functions themselves run later, on a host.
+ */
+export async function loadModuleDefault(projectDir: string, file: string, label: string): Promise<unknown> {
+  const code = await run({ projectDir, file, name: label, factory: 'client' }, {
+    stdin: {
+      contents: [`import __morg_def from ${JSON.stringify(file)};`, `export const __morganaDefinition = __morg_def;`].join('\n'),
+      resolveDir: path.dirname(file),
+      sourcefile: 'object.morgana-definition.ts',
+      loader: 'ts',
+    },
+    platform: 'node',
+    format: 'cjs',
+  })
+  const module: { exports: Record<string, unknown> } = { exports: {} }
+  const require_ = createRequire(path.join(projectDir, 'noop.js'))
+  const evaluate = new Function(CJS_MODULE, CJS_EXPORTS, CJS_REQUIRE, CJS_FILENAME, CJS_DIRNAME, code) as (
+    m: unknown,
+    e: unknown,
+    r: unknown,
+    f: string,
+    d: string,
+  ) => void
+  evaluate(module, module.exports, require_, file, path.dirname(file))
+  return module.exports['__morganaDefinition']
+}
+
+/**
+ * Bundle a server object into one self-contained ES module whose default
+ * export is the definition — what both hosts load to run its methods. Same
+ * profile as the server action lane (imports inlined, node built-ins warned).
+ */
+export async function bundleServerObject(projectDir: string, file: string, name: string, warnings: string[] = []): Promise<string> {
+  const code = await run({ projectDir, file, name: `object "${name}"`, factory: 'client' }, {
+    stdin: {
+      contents: [`import __morg_def from ${JSON.stringify(file)};`, 'export default __morg_def;'].join('\n'),
+      resolveDir: path.dirname(file),
+      sourcefile: `${name}.morgana-object.ts`,
+      loader: 'ts',
+    },
+    platform: 'node',
+    format: 'esm',
+    plugins: [warnNodeBuiltins(warnings)],
+  })
+  return `${COMPILED_MARKER}\n${code}`
+}
+
+/**
  * Bundle every custom object module into one browser script that registers
  * them on the page.
  *

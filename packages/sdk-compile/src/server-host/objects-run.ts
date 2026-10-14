@@ -37,8 +37,10 @@ export interface SelfHost {
   emit(event: string, data: unknown): void
   schedule(when: number | string, method: string, params?: Record<string, unknown>): void
   defer(job: string, params?: Record<string, unknown>): void
-  /** Streams and jobs only: run a method of this instance (serialized, transactional). */
+  /** Jobs only: run a method of this instance (serialized, transactional). */
   callMethod(method: string, params?: Record<string, unknown>): Promise<unknown>
+  /** A streaming method's yield, sent to the caller as it happens. */
+  chunk(value: unknown): Promise<void>
 }
 
 /**
@@ -64,14 +66,15 @@ export const SELF_BUILDER_SRC = `function __mgSelf(h, meta, ctx, kind) {
     id: h.id, name: h.id, type: meta.name, caller: h.caller || null, db: db, ctx: ctx,
     emit: function (e, d) { return h.emit(e, d); }
   };
+  Object.defineProperty(self, '__chunk', { value: function (v) { return h.chunk(v); }, enumerable: false });
   if (kind === 'method') {
     self.set = function (p) { return h.set(p); };
     self.schedule = function (w, m, p) { return h.schedule(w, m, p || {}); };
     self.defer = function (j, p) { return h.defer(j, p || {}); };
   } else {
-    // Streams and jobs read a snapshot and change it only through methods,
-    // so every state change stays serialized and transactional.
-    self.set = function () { throw new Error('self.set is for methods; from a ' + kind + ' use: await self.call("method", params)'); };
+    // Jobs read a snapshot and change it only through methods, so every
+    // state change stays serialized and transactional.
+    self.set = function () { throw new Error('self.set is for methods; from a job use: await self.call("method", params)'); };
     self.call = function (m, p) { return h.callMethod(m, p || {}); };
   }
   Object.defineProperty(self, 'state', { get: function () { return h.stateGet(); }, enumerable: true });
@@ -83,6 +86,7 @@ export function makeSelfHost(
   id: string,
   caller: AuthUser | null,
   callMethod?: SelfHost['callMethod'],
+  onChunk?: (value: unknown) => void | Promise<void>,
 ): SelfHost {
   return {
     id,
@@ -102,8 +106,11 @@ export function makeSelfHost(
     callMethod:
       callMethod ??
       (async () => {
-        throw new Error('self.call is for streams and jobs; a method changes state directly with self.set')
+        throw new Error('self.call is for jobs; a method changes state directly with self.set')
       }),
+    chunk: async (value) => {
+      if (onChunk) await onChunk(structuredClone(value))
+    },
   }
 }
 
@@ -161,9 +168,10 @@ async function transact(
   caller: AuthUser | null,
   invoke: Invoke,
   baseState: Record<string, unknown>,
+  onChunk?: (value: unknown) => void | Promise<void>,
 ): Promise<CallOutcome> {
   const journal = new Journal(sql, meta, baseState)
-  const host = makeSelfHost(journal, name, caller)
+  const host = makeSelfHost(journal, name, caller, undefined, onChunk)
   const out = await invoke({ kind, name: member, params: structuredClone(params ?? {}), host })
   journal.commit()
   sql.exec("INSERT OR REPLACE INTO __meta (k, v) VALUES ('computed', ?)", JSON.stringify(out.computed ?? {}))
@@ -205,7 +213,11 @@ export async function createInstance(
   }
 }
 
-/** Run one method as a transaction. The host serializes calls per instance. */
+/**
+ * Run one method as a transaction. The host serializes calls per instance.
+ * A streaming method (`async function*`) sends each yield to `onChunk` as it
+ * happens; its state changes still commit only when it finishes.
+ */
 export async function callMethod(
   sql: ObjectSql,
   meta: ObjectMeta,
@@ -214,12 +226,13 @@ export async function callMethod(
   params: Record<string, unknown>,
   caller: AuthUser | null,
   invoke: Invoke,
+  onChunk?: (value: unknown) => void | Promise<void>,
 ): Promise<CallOutcome> {
   if (!meta.methods.includes(method)) throw new ObjectError(`${meta.name} has no method "${method}"`, 404)
   ensureSchema(sql, meta)
   const inst = readInstance(sql)
   if (!inst) throw new ObjectError(`${meta.name} "${name}" does not exist`, 404)
-  return transact(sql, meta, name, 'method', method, params, caller, invoke, inst.state)
+  return transact(sql, meta, name, 'method', method, params, caller, invoke, inst.state, onChunk)
 }
 
 /** Remove an instance's data entirely. */
@@ -260,7 +273,14 @@ export const RUN_MEMBER_SRC = `async function __mgRun(def, kind, name, params, s
   else if (name) {
     var fn = def.methods && def.methods[name];
     if (typeof fn !== 'function') throw new Error(def.name + ' has no method "' + name + '"');
-    result = await fn(self, params);
+    var out = fn(self, params);
+    if (out && typeof out[Symbol.asyncIterator] === 'function') {
+      // A streaming method: each yield goes to the caller now; the
+      // generator's return value is the call's result.
+      var it = out[Symbol.asyncIterator](), step;
+      while (!(step = await it.next()).done) await self.__chunk(step.value);
+      result = step.value;
+    } else result = await out;
   }
   var computed = {};
   var st = self.state;

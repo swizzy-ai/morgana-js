@@ -31,7 +31,8 @@ export interface ObjectMeta {
   state: Record<string, unknown>
   collections: Record<string, { columns: Array<{ name: string; type?: string }> }>
   methods: string[]
-  streams: string[]
+  /** Methods written as `async function*`: their yields stream to the caller. */
+  streaming: string[]
   jobs: string[]
   computed: string[]
   access: Record<string, AccessRule>
@@ -339,9 +340,12 @@ export function accessRefusal(meta: ObjectMeta, what: string, user: AuthUser | n
 export function validateObjectMeta(meta: ObjectMeta): string[] {
   const errors: string[] = []
   if (!OBJECT_NAME_RE.test(meta.name)) errors.push(`object name "${meta.name}" must be lowercase letters, digits and -, starting with a letter`)
-  const members = new Set([...meta.methods, ...meta.streams, ...meta.jobs])
-  if (members.size !== meta.methods.length + meta.streams.length + meta.jobs.length) {
-    errors.push(`object "${meta.name}" uses one name in more than one of methods / streams / jobs`)
+  const members = new Set([...meta.methods, ...meta.jobs])
+  if (members.size !== meta.methods.length + meta.jobs.length) {
+    errors.push(`object "${meta.name}" uses one name for both a method and a job`)
+  }
+  for (const s of meta.streaming) {
+    if (!meta.methods.includes(s)) errors.push(`object "${meta.name}": streaming "${s}" is not a method`)
   }
   const reserved = new Set(['create', 'read', 'subscribe', 'list', 'remove'])
   for (const name of members) {
@@ -349,8 +353,8 @@ export function validateObjectMeta(meta: ObjectMeta): string[] {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) errors.push(`object "${meta.name}": "${name}" is not a valid method name`)
   }
   for (const [what, rule] of Object.entries(meta.access)) {
-    if (!reserved.has(what) && !meta.methods.includes(what) && !meta.streams.includes(what)) {
-      errors.push(`object "${meta.name}" access names "${what}", which is not a method, stream, or create/read/subscribe/list/remove`)
+    if (!reserved.has(what) && !meta.methods.includes(what)) {
+      errors.push(`object "${meta.name}" access names "${what}", which is not a method or create/read/subscribe/list/remove`)
     }
     const ok = rule === 'public' || rule === 'member' || rule === 'server' || (typeof rule === 'object' && rule !== null && 'role' in rule)
     if (!ok) errors.push(`object "${meta.name}" access.${what} must be 'public' | 'member' | 'server' | { role }`)

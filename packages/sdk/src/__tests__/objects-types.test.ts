@@ -17,10 +17,11 @@ const room = defineServerObject({
       self.set({ count: 0 })
       return true
     },
-  },
-  streams: {
+    // A streaming method: yields stream, the return value is .result.
     tokens: async function* (self, p: { n: number }) {
       for (let i = 0; i < p.n; i++) yield `t${i}`
+      self.set({ count: self.state.count + p.n })
+      return { total: p.n }
     },
   },
 })
@@ -33,16 +34,18 @@ describe('server object types', () => {
       const m = await r.post({ text: 'hi' })
       const id: string = m.id
       const ok: boolean = await r.reset()
-      for await (const t of r.tokens({ n: 2 })) {
+      const stream = r.tokens({ n: 2 })
+      for await (const t of stream) {
         const s: string = t
         void s
       }
+      const total: number = (await stream.result).total
       const st = await r.state()
       const label: string = st.label
       const count: number = st.count
       // @ts-expect-error — wrong param shape
       await r.post({ txt: 'x' })
-      void [id, ok, label, count]
+      void [id, ok, label, count, total]
     }
     expect(typeof use).toBe('function')
     expect(room.name).toBe('chat-room')

@@ -21,9 +21,12 @@
  *   const room = await ctx.objects.chatRoom.getOrCreate('general', { title: 'General' })
  *   await room.post({ text: 'hi' })          // typed from the definition
  *
- * Methods are transactions: one at a time per instance, all-or-nothing.
- * Streams and jobs run concurrently on a snapshot and change state only by
- * calling methods. In the cloud every instance is its own Durable Object.
+ * Methods are transactions: one at a time per instance, all-or-nothing. A
+ * method written as `async function*` streams: each `yield` reaches the
+ * caller as it happens (an AI answer, token by token), and its state changes
+ * commit when it finishes. Jobs run in the background on a snapshot and
+ * change state by calling methods. In the cloud every instance is its own
+ * Durable Object.
  */
 import type { AuthUser } from './contexts/server'
 
@@ -82,21 +85,20 @@ export interface ObjectSelf<S = Record<string, any>, C = Record<string, any>> ex
   defer(job: string, params?: Record<string, unknown>): void
 }
 
-/** What a stream or job receives: a snapshot, and methods to change it. */
+/** What a job receives: a snapshot, and methods to change it. */
 export interface ObjectTaskSelf<S = Record<string, any>, C = Record<string, any>> extends SelfBase<S, C> {
   /** Run a method of this instance (serialized, transactional). */
   call(method: string, params?: Record<string, unknown>): Promise<unknown>
 }
 
+/** A method: returns a value, or (as `async function*`) streams its yields. */
 type MethodFn<S, C> = (self: ObjectSelf<S, C>, params: any) => unknown
-type StreamFn<S, C> = (self: ObjectTaskSelf<S, C>, params: any) => AsyncIterable<unknown>
 type JobFn<S, C> = (self: ObjectTaskSelf<S, C>, params: any) => unknown
 
 export interface ServerObjectSpec<
   S extends Record<string, any> = Record<string, any>,
   C extends Record<string, { columns: ObjectColumn[] }> = Record<string, { columns: ObjectColumn[] }>,
   M extends Record<string, MethodFn<S, C>> = Record<string, MethodFn<S, C>>,
-  St extends Record<string, StreamFn<S, C>> = Record<string, StreamFn<S, C>>,
   J extends Record<string, JobFn<S, C>> = Record<string, JobFn<S, C>>,
   Cm extends Record<string, unknown> = Record<string, unknown>,
 > {
@@ -112,13 +114,15 @@ export interface ServerObjectSpec<
    * What a *browser* may do. Anything not named is server-only. Server code
    * (actions, other objects) may always call everything.
    */
-  access?: Partial<Record<'create' | 'read' | 'subscribe' | 'list' | 'remove' | (keyof M & string) | (keyof St & string), ObjectAccessRule>>
+  access?: Partial<Record<'create' | 'read' | 'subscribe' | 'list' | 'remove' | (keyof M & string), ObjectAccessRule>>
   /** Runs inside the create transaction. */
   onCreate?: (self: ObjectSelf<S, C>, init: Partial<S>) => unknown
-  /** Transactions: one at a time per instance, all-or-nothing. */
+  /**
+   * Transactions: one at a time per instance, all-or-nothing. Write one as
+   * `async function*` to stream its yields to the caller; it still commits
+   * (or discards) its state changes as a whole when it finishes.
+   */
   methods?: M
-  /** Async generators streamed to the caller as they yield. */
-  streams?: St
   /** Background work started with `self.defer(job, params)`. */
   jobs?: J
 }
@@ -128,30 +132,36 @@ export function defineServerObject<
   S extends Record<string, any>,
   C extends Record<string, { columns: ObjectColumn[] }> = {},
   M extends Record<string, MethodFn<S, C>> = {},
-  St extends Record<string, StreamFn<S, C>> = {},
   J extends Record<string, JobFn<S, C>> = {},
   Cm extends Record<string, unknown> = {},
->(spec: ServerObjectSpec<S, C, M, St, J, Cm>): ServerObjectSpec<S, C, M, St, J, Cm> {
+>(spec: ServerObjectSpec<S, C, M, J, Cm>): ServerObjectSpec<S, C, M, J, Cm> {
   return spec
 }
 
 // ── the proxy: how server and browser code reach an instance ───────────────
 
 type ParamOf<F> = F extends (self: any, params: infer P) => any ? P : never
-type ChunkOf<F> = F extends (...a: any[]) => AsyncIterable<infer T> ? T : unknown
-type StateOf<D> = D extends ServerObjectSpec<infer S, any, any, any, any, infer Cm>
-  ? S & Cm
-  : Record<string, any>
 
-export type ObjectInstance<D> = (D extends ServerObjectSpec<any, any, infer M, infer St, any, any>
+/** A streaming method's call: iterate its yields; `result` is its return value. */
+export type ObjectStream<Y, R> = AsyncIterable<Y> & { readonly result: Promise<R> }
+
+type Called<F> = F extends (...a: any[]) => AsyncGenerator<infer Y, infer R, any>
+  ? ObjectStream<Y, R>
+  : F extends (...a: any[]) => AsyncIterable<infer Y>
+    ? ObjectStream<Y, unknown>
+    : F extends (...a: any[]) => infer R
+      ? Promise<Awaited<R>>
+      : never
+
+type StateOf<D> = D extends ServerObjectSpec<infer S, any, any, any, infer Cm> ? S & Cm : Record<string, any>
+
+export type ObjectInstance<D> = (D extends ServerObjectSpec<any, any, infer M, any, any>
   ? {
       [K in keyof M]: undefined extends ParamOf<M[K]>
-        ? (params?: ParamOf<M[K]>) => Promise<Awaited<ReturnType<M[K]>>>
-        : (params: ParamOf<M[K]>) => Promise<Awaited<ReturnType<M[K]>>>
-    } & {
-      [K in keyof St]: (params?: ParamOf<St[K]>) => AsyncIterable<ChunkOf<St[K]>>
+        ? (params?: ParamOf<M[K]>) => Called<M[K]>
+        : (params: ParamOf<M[K]>) => Called<M[K]>
     }
-  : Record<string, (params?: any) => Promise<any>>) & {
+  : Record<string, (params?: any) => any>) & {
   readonly name: string
   readonly type: string
   /** State plus computed values, as last committed. */

@@ -80,6 +80,23 @@ const def = {
     badField: async (self: any) => {
       self.db.messages.add({ text: 'x', colour: 'red' })
     },
+    // A streaming method: yields go to the caller as they happen; its writes
+    // and its return value land when it finishes.
+    answer: async function* (self: any, p: { words: string[] }) {
+      const out: string[] = []
+      for (const w of p.words) {
+        out.push(w)
+        yield w
+      }
+      self.db.messages.add({ text: out.join(' '), user: 'ai' })
+      self.set({ count: self.state.count + 1 })
+      return { saved: out.length }
+    },
+    answerThenFail: async function* (self: any) {
+      self.set({ count: 500 })
+      yield 'partial'
+      throw new Error('model went away')
+    },
   },
 }
 
@@ -88,7 +105,7 @@ const meta: ObjectMeta = {
   state: def.state,
   collections: def.collections,
   methods: Object.keys(def.methods),
-  streams: [],
+  streaming: ['answer'],
   jobs: [],
   computed: Object.keys(def.computed),
   access: { read: 'public', post: 'member', increment: { role: 'admin' } },
@@ -162,6 +179,32 @@ describe('server object kernel', () => {
     await createInstance(sql, meta, 'g', {}, null, invoke)
     await expect(callMethod(sql, meta, 'g', 'badField', {}, null, invoke)).rejects.toThrow(/colour/)
     await expect(callMethod(sql, meta, 'g', 'nope', {}, null, invoke)).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('a streaming method streams yields, then commits its writes and return value', async () => {
+    const sql = sqliteAdapter()
+    await createInstance(sql, meta, 'g', {}, null, invoke)
+    const chunks: unknown[] = []
+    const seenAtChunk: number[] = []
+    const out = await callMethod(sql, meta, 'g', 'answer', { words: ['the', 'answer', 'is'] }, null, invoke, (c) => {
+      chunks.push(c)
+      seenAtChunk.push(readSnapshot(sql, meta)!.state.count as number)
+    })
+    expect(chunks).toEqual(['the', 'answer', 'is'])
+    expect(seenAtChunk).toEqual([0, 0, 0]) // nothing committed while streaming
+    expect(out.result).toEqual({ saved: 3 })
+    expect(readSnapshot(sql, meta)!.state.count).toBe(1)
+    const saved = await callMethod(sql, meta, 'g', 'seesOwnWrites', {}, null, invoke)
+    expect(saved.result).toBe(1)
+  })
+
+  it('a streaming method that fails midway commits nothing', async () => {
+    const sql = sqliteAdapter()
+    await createInstance(sql, meta, 'g', {}, null, invoke)
+    const chunks: unknown[] = []
+    await expect(callMethod(sql, meta, 'g', 'answerThenFail', {}, null, invoke, (c) => void chunks.push(c))).rejects.toThrow('model went away')
+    expect(chunks).toEqual(['partial'])
+    expect(readSnapshot(sql, meta)!.state.count).toBe(0)
   })
 
   it('destroy removes everything', async () => {
