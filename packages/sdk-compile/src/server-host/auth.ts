@@ -90,6 +90,12 @@ export interface AppUserRecord {
 export interface AppSessionRecord {
   userId: string
   expiresAt: number
+  /**
+   * Absent for a session. A one-time token (password reset, email
+   * verification) is stored in the same table with its purpose — and a
+   * record with a purpose is never accepted as a session.
+   */
+  purpose?: 'reset' | 'verify'
 }
 
 /** What a host supplies. Every method is one bounded read or write — no listing. */
@@ -215,6 +221,11 @@ export class AppAuth {
       const user = await this.createUser({ email, name: identity.name, provider: identity.provider })
       rec = (await this.storage.getUser(user.id))!
     }
+    if (!rec.emailVerified) {
+      // The provider verified the address.
+      rec.emailVerified = true
+      await this.storage.putUser(rec)
+    }
     return { user: publicUser(rec), ...(await this.startSession(rec.id)) }
   }
 
@@ -227,7 +238,7 @@ export class AppAuth {
     if (!token || typeof token !== 'string' || token.length > 256) return null
     const hash = await sha256Hex(token)
     const s = await this.storage.getSession(hash)
-    if (!s) return null
+    if (!s || s.purpose) return null
     if (s.expiresAt <= Date.now()) {
       await this.storage.deleteSession(hash)
       return null
@@ -250,6 +261,64 @@ export class AppAuth {
     const rec = await this.storage.getUser(id)
     if (!rec) throw new AuthError(`No user "${id}"`, 404)
     rec.roles = [...new Set((roles ?? []).map(String))]
+    await this.storage.putUser(rec)
+    return publicUser(rec)
+  }
+
+  private async issueToken(userId: string, purpose: 'reset' | 'verify', ttlMs: number): Promise<string> {
+    const token = randomToken()
+    await this.storage.putSession(await sha256Hex(token), { userId, expiresAt: Date.now() + ttlMs, purpose })
+    return token
+  }
+
+  /** Spend a one-time token: valid once, for its purpose, before it expires. */
+  private async consumeToken(token: string, purpose: 'reset' | 'verify'): Promise<AppUserRecord> {
+    const bad = new AuthError('This link is invalid or has expired', 400)
+    if (!token || typeof token !== 'string' || token.length > 256) throw bad
+    const hash = await sha256Hex(token)
+    const rec = await this.storage.getSession(hash)
+    if (!rec || rec.purpose !== purpose) throw bad
+    await this.storage.deleteSession(hash)
+    if (rec.expiresAt <= Date.now()) throw bad
+    const user = await this.storage.getUser(rec.userId)
+    if (!user) throw bad
+    return user
+  }
+
+  /**
+   * A password-reset token for `email`, valid for an hour — or null when no
+   * account has that address. The caller emails the link; it must answer the
+   * visitor the same way either way, or the form becomes an account oracle.
+   */
+  async createPasswordReset(email: string): Promise<{ token: string; user: AuthUser } | null> {
+    const id = await this.storage.getUserIdByEmail(normEmail(email))
+    const rec = id ? await this.storage.getUser(id) : null
+    if (!rec) return null
+    return { token: await this.issueToken(rec.id, 'reset', 60 * 60 * 1000), user: publicUser(rec) }
+  }
+
+  async resetPassword(token: string, password: string): Promise<AuthUser> {
+    const min = this.opts.minPasswordLength ?? MIN_PASSWORD_LENGTH
+    if (typeof password !== 'string' || password.length < min) {
+      throw new AuthError(`Password must be at least ${min} characters`, 400)
+    }
+    const rec = await this.consumeToken(token, 'reset')
+    rec.passwordHash = await hashPassword(password)
+    // Whoever reset it proved they hold the inbox.
+    rec.emailVerified = true
+    await this.storage.putUser(rec)
+    return publicUser(rec)
+  }
+
+  /** An email-verification token for a user, valid for a day. */
+  async createEmailVerification(userId: string): Promise<string> {
+    if (!(await this.storage.getUser(userId))) throw new AuthError(`No user "${userId}"`, 404)
+    return this.issueToken(userId, 'verify', 24 * 60 * 60 * 1000)
+  }
+
+  async verifyEmail(token: string): Promise<AuthUser> {
+    const rec = await this.consumeToken(token, 'verify')
+    rec.emailVerified = true
     await this.storage.putUser(rec)
     return publicUser(rec)
   }
@@ -390,6 +459,16 @@ export function buildServerAuth(deps: ServerAuthDeps) {
       create: (input: { email: string; password?: string; name?: string; roles?: string[] }) => deps.auth.createUser(input),
       setRoles: (id: string, roles: string[]) => deps.auth.setRoles(id, roles),
       setPassword: (id: string, password: string) => deps.auth.setPassword(id, password),
+    },
+    /** Password reset: create a token to email, then complete it from the link. */
+    passwordReset: {
+      create: (email: string) => deps.auth.createPasswordReset(email),
+      complete: (token: string, password: string) => deps.auth.resetPassword(token, password),
+    },
+    /** Email verification: create a token to email, then verify it from the link. */
+    emailVerification: {
+      create: (userId: string) => deps.auth.createEmailVerification(userId),
+      verify: (token: string) => deps.auth.verifyEmail(token),
     },
   }
   return handle

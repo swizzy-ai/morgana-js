@@ -245,6 +245,20 @@ export interface ServerAuthHandle {
     setRoles(id: string, roles: string[]): Promise<AuthUser>
     setPassword(id: string, password: string): Promise<void>
   }
+  /**
+   * Password reset. `create` returns a one-hour token to put in an emailed
+   * link — or null when no account has that address (answer the visitor the
+   * same way either way). `complete` spends the token and sets the password.
+   */
+  passwordReset: {
+    create(email: string): Promise<{ token: string; user: AuthUser } | null>
+    complete(token: string, password: string): Promise<AuthUser>
+  }
+  /** Email verification: a one-day token to email, then `verify` marks `user.emailVerified`. */
+  emailVerification: {
+    create(userId: string): Promise<string>
+    verify(token: string): Promise<AuthUser>
+  }
 }
 
 /** @deprecated Use `ServerAuthHandle` (server) or `ClientAuthHandle` (browser). */

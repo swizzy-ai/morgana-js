@@ -185,6 +185,12 @@ async function scenarios(c, label) {
     expect(res?.count >= 2, `count ${res?.count} — a set() must never wipe the collection`)
     expect(/colour/.test(String(res?.undeclared)), `undeclared: ${res?.undeclared}`)
   })
+  await check('password reset: one-time token, null for unknown email', async () => {
+    const r = await c.run('resetDemo')
+    const res = r.json?.data?.result
+    expect(res?.verified === true && res?.missing === null, r.text)
+    expect(/invalid or has expired/.test(String(res?.reused)), `reused: ${res?.reused}`)
+  })
   await check('ctx.server.respond shapes the HTTP response', async () => {
     const r = await c.request('POST', '/hooks/test', { body: {}, raw: true })
     expect(r.status === 202 && r.text === 'accepted', `status ${r.status} body ${JSON.stringify(r.text)}`)

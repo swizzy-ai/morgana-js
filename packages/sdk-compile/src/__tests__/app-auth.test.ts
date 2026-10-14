@@ -152,3 +152,44 @@ describe('page access', () => {
     expect(pageAccessRefusal({ role: ['admin', 'editor'] }, user)).toBeNull()
   })
 })
+
+describe('one-time tokens', () => {
+  it('password reset: works once, never as a session, unknown email gives null', async () => {
+    const auth = new AppAuth(memoryStorage().storage)
+    await auth.signUp({ email: 'a@x.com', password: 'password-1' })
+    expect(await auth.createPasswordReset('nobody@x.com')).toBeNull()
+    const reset = (await auth.createPasswordReset('A@x.com'))!
+    // A reset token is not a session.
+    expect(await auth.resolve(reset.token)).toBeNull()
+    const user = await auth.resetPassword(reset.token, 'password-2')
+    expect(user.emailVerified).toBe(true)
+    await expect(auth.resetPassword(reset.token, 'password-3')).rejects.toMatchObject({ status: 400 })
+    await expect(auth.signIn({ email: 'a@x.com', password: 'password-1' })).rejects.toMatchObject({ status: 401 })
+    expect((await auth.signIn({ email: 'a@x.com', password: 'password-2' })).user.email).toBe('a@x.com')
+  })
+
+  it('email verification: tokens are purpose-bound and single-use', async () => {
+    const auth = new AppAuth(memoryStorage().storage)
+    const { user, token: session } = await auth.signUp({ email: 'a@x.com', password: 'password-1' })
+    const verify = await auth.createEmailVerification(user.id)
+    // Neither kind of token can stand in for the other.
+    await expect(auth.resetPassword(verify, 'password-9')).rejects.toMatchObject({ status: 400 })
+    await expect(auth.verifyEmail(session)).rejects.toMatchObject({ status: 400 })
+    const v2 = await auth.createEmailVerification(user.id)
+    expect((await auth.verifyEmail(v2)).emailVerified).toBe(true)
+    await expect(auth.verifyEmail(v2)).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('expired tokens are refused', async () => {
+    const auth = new AppAuth(memoryStorage().storage)
+    await auth.signUp({ email: 'a@x.com', password: 'password-1' })
+    const reset = (await auth.createPasswordReset('a@x.com'))!
+    const realNow = Date.now
+    Date.now = () => realNow() + 2 * 60 * 60 * 1000
+    try {
+      await expect(auth.resetPassword(reset.token, 'password-2')).rejects.toMatchObject({ status: 400 })
+    } finally {
+      Date.now = realNow
+    }
+  })
+})
