@@ -11,7 +11,7 @@ export default createCustomObject({
     handle.setProps({ layout: 'column', gap: 2, pad: 4 })
     handle.make('card')
     // Child ids are project-global, so derive them from this instance's id.
-    handle.place(ctx.ui.text({ id: `${ctx.id}-title`, content: ctx.props.title, font: 'h4' }))
+    handle.place(ctx.ui.text({ id: `${ctx.id}-title`, content: ctx.props.title, font: 'title' }))
     handle.place(ctx.ui.text({ id: `${ctx.id}-cards`, content: '' }))
   },
 })
