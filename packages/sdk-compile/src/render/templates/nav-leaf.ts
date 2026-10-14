@@ -137,20 +137,11 @@ export function renderSkeleton(ir: ProjectIR, node: RenderNode): string {
   if (props['animate'] === false) attrList.push('data-animate="false"')
   const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'width', 'height', 'radius', 'animate', 'icon', 'iconPosition'])
   attrList.push(...carryProps(props, skip))
+  // Width, height and radius reach the element through the object's own
+  // stylesheet rule, like every other kind. They used to be written inline as
+  // well — with different units (radius 7 became 28px) and winning over any
+  // later style, so a skeleton could not be restyled by its props.
   let html = `<div ${attrList.join(' ')}`
-  // data-width/height/radius also become inline style — CSS cannot read data
-  // attributes into box dimensions, so without this every skeleton is 0×0.
-  const dim = (v: unknown): string | null => {
-    if (v === undefined || v === null || v === '') return null
-    if (typeof v === 'number') return `${v * 4}px`
-    return String(v)
-  }
-  const sw = dim(props['width'])
-  const sh = dim(props['height'])
-  const sr = dim(props['radius'])
-  if (sw || sh || sr) {
-    html += ` style="${[sw ? `width:${sw}` : '', sh ? `height:${sh}` : '', sr ? `border-radius:${sr}` : ''].filter(Boolean).join(';')}"`
-  }
   if (props['width'] !== undefined) html += ` data-width="${escAttr(String(props['width']))}"`
   if (props['height'] !== undefined) html += ` data-height="${escAttr(String(props['height']))}"`
   if (props['radius'] !== undefined) html += ` data-radius="${escAttr(String(props['radius']))}"`

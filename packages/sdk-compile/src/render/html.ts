@@ -33,6 +33,11 @@ export function baseAttrs(node: RenderNode): string[] {
   if (node.breakpointProps && Object.keys(node.breakpointProps).length > 0) {
     attrList.push(`data-breakpoints="${escAttr(Object.keys(node.breakpointProps).join(' '))}"`)
   }
+  // Theme scope and colour mode for this object and everything inside it.
+  const theme = node.props?.['theme']
+  if (typeof theme === 'string' && theme !== '') attrList.push(`data-theme="${escAttr(theme.toLowerCase())}"`)
+  const mode = node.props?.['mode']
+  if (mode === 'light' || mode === 'dark' || mode === 'system') attrList.push(`data-mode="${mode}"`)
   return attrList
 }
 
@@ -41,6 +46,11 @@ export function carryProps(props: Record<string, unknown>, skip: Set<string>): s
   const out: string[] = []
   for (const [k, v] of Object.entries(props)) {
     if (v === undefined || v === null || skip.has(k)) continue
+    // Objects (hover/focus state styles, item lists) have no attribute form;
+    // String() would write "[object Object]" into the markup.
+    if (typeof v === 'object' || typeof v === 'function') continue
+    // Theme and mode already have their own attributes.
+    if (k === 'theme' || k === 'mode') continue
     out.push(`data-prop-${escAttr(k)}="${escAttr(String(v))}"`)
   }
   return out

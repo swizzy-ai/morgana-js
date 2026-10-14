@@ -7,6 +7,7 @@ import type { ProjectIR } from '../ir';
 import { createKindFn, ensureNode, makeHandle, nextAutoId, type CompileState } from './handles';
 import { creatorNameFor } from '@morgana/sdk';
 import { defineGradient } from './tokens/gradients';
+import { defineTheme, type ThemeSpec } from '../style/themes';
 
 /**
  * Validate-and-register a gradient at define time, so a bad spec fails the
@@ -40,8 +41,18 @@ export const CREATABLE_KINDS = [
 
 const TRANSFORMER_DOMAINS = [
   'effects', 'radius', 'spacing', 'dimensions', 'fonts',
-  'surfaces', 'layout', 'alignment', 'shorthands', 'colors', 'gradients',
+  'surfaces', 'layout', 'alignment', 'shorthands', 'colors', 'gradients', 'themes',
 ] as const
+
+/** Validate-and-register a theme at define time — same rule as gradients. */
+function defineThemeChecked(state: CompileState, key: string, value: unknown): void {
+  try {
+    defineTheme(key, value as ThemeSpec)
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err)
+    throw new Error(`${reason} (in action "${state.actionName}")`)
+  }
+}
 
 export function buildTransformers(state: CompileState): Record<string, unknown> {
   const api: Record<string, unknown> = {}
@@ -51,12 +62,14 @@ export function buildTransformers(state: CompileState): Record<string, unknown> 
       add: (key: string, value: unknown) => {
         if (!store.has(key.toLowerCase())) {
           if (domain === 'gradients') defineGradientChecked(state, key, value)
+          if (domain === 'themes') defineThemeChecked(state, key, value)
           store.set(key.toLowerCase(), value)
           state.ir.transformerMutations.push({ domain, op: 'add', key, value })
         }
       },
       update: (key: string, value: unknown) => {
         if (domain === 'gradients') defineGradientChecked(state, key, value)
+        if (domain === 'themes') defineThemeChecked(state, key, value)
         store.set(key.toLowerCase(), value)
         state.ir.transformerMutations.push({ domain, op: 'update', key, value })
       },
@@ -374,6 +387,19 @@ export function buildUi(state: CompileState): Record<string, unknown> {
   ui['track'] = (event: string) => ({ name: event, origin: { name: '' } })
   ui['sources'] = () => []
   ui['transformers'] = buildTransformers(state)
+  // ctx.ui.themes — the same registry as transformers.themes, under the name
+  // an author looks for. Apply with make('theme:<name>') or make('<name>').
+  {
+    const t = (ui['transformers'] as Record<string, Record<string, (...a: unknown[]) => unknown>>)['themes']!
+    ui['themes'] = {
+      define: (name: string, spec: unknown) => {
+        if (t['has']!(name)) t['update']!(name, spec)
+        else t['add']!(name, spec)
+      },
+      get: (name: string) => t['get']!(name),
+      has: (name: string) => t['has']!(name),
+    }
+  }
   const st = buildState(state)
   ui['state'] = st
   ui['setState'] = (next: Record<string, unknown> | ((p: Record<string, unknown>) => Record<string, unknown>)) => {

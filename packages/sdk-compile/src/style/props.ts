@@ -4,6 +4,7 @@
 import { ALIGN_MAP, ALERT_VARIANTS, BADGE_VARIANTS, BUTTON_VARIANTS, DIALOG_SIZES, DIMENSION_WORDS, JUSTIFY_MAP, LAYOUT_WORDS, PROGRESS_VARIANTS, RADIUS_SCALE, RADIUS_WORDS, SHADOW_SCALE, SPACING_SCALE, SPACING_WORDS, SURFACE_TOKENS, TABLE_DENSITY, TABLE_VARIANTS, TEXT_SCALE } from './tokens';
 import type { ProjectIR } from '../ir';
 import { defineGradient, gradientToCss, resolveGradient } from '../compile-ctx/tokens/gradients';
+import { defineTheme, hasTheme, type ThemeSpec } from './themes';
 
 export interface StyleCtx {
   measures: Map<string, number | string>
@@ -12,6 +13,8 @@ export interface StyleCtx {
   radiusOverrides: Map<string, string>
   fontOverrides: Map<string, Record<string, string>>
   gradientOverrides: Map<string, string>
+  /** Project-defined themes (built-ins live in themes.ts). */
+  themes: Map<string, ThemeSpec>
 }
 
 /** Plain form of StyleCtx — the page runtime rebuilds its context from this. */
@@ -22,6 +25,7 @@ export interface StyleCtxJSON {
   radiusOverrides: Record<string, string>
   fontOverrides: Record<string, Record<string, string>>
   gradientOverrides: Record<string, string>
+  themes?: Record<string, ThemeSpec>
 }
 
 export function serializeStyleCtx(ctx: StyleCtx): StyleCtxJSON {
@@ -32,6 +36,7 @@ export function serializeStyleCtx(ctx: StyleCtx): StyleCtxJSON {
     radiusOverrides: Object.fromEntries(ctx.radiusOverrides),
     fontOverrides: Object.fromEntries(ctx.fontOverrides),
     gradientOverrides: Object.fromEntries(ctx.gradientOverrides),
+    themes: Object.fromEntries(ctx.themes),
   }
 }
 
@@ -53,7 +58,22 @@ export function hydrateStyleCtx(json: StyleCtxJSON): StyleCtx {
     radiusOverrides: new Map(Object.entries(json.radiusOverrides ?? {})),
     fontOverrides: new Map(Object.entries(json.fontOverrides ?? {})),
     gradientOverrides: gradients,
+    themes: hydrateThemes(json.themes),
   }
+}
+
+/** Themes from the manifest, registered so the browser's make('brand') resolves. */
+function hydrateThemes(json: Record<string, ThemeSpec> | undefined): Map<string, ThemeSpec> {
+  const out = new Map<string, ThemeSpec>()
+  for (const [name, spec] of Object.entries(json ?? {})) {
+    try {
+      if (!hasTheme(name)) defineTheme(name, spec)
+      out.set(name, spec)
+    } catch {
+      // A bad stored theme must not break boot.
+    }
+  }
+  return out
 }
 
 export function buildStyleCtx(ir: ProjectIR): StyleCtx {
@@ -64,6 +84,7 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
     radiusOverrides: new Map(),
     fontOverrides: new Map(),
     gradientOverrides: new Map(),
+    themes: new Map(),
   }
   // Last write wins per domain+key (matches the recording registry semantics).
   for (const m of ir.transformerMutations) {
@@ -74,6 +95,11 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
       if (m.domain === 'radius') ctx.radiusOverrides.delete(key)
       if (m.domain === 'fonts') ctx.fontOverrides.delete(key)
       if (m.domain === 'gradients') ctx.gradientOverrides.delete(key)
+      if (m.domain === 'themes') ctx.themes.delete(key)
+      continue
+    }
+    if (m.domain === 'themes' && m.value && typeof m.value === 'object') {
+      ctx.themes.set(key, m.value as ThemeSpec)
       continue
     }
     if (m.domain === 'surfaces' && m.value && typeof m.value === 'object') {
@@ -102,8 +128,26 @@ export function buildStyleCtx(ir: ProjectIR): StyleCtx {
 }
 
 /** Resolve a bg value — `gradient:<name>` consults the registry first. */
+/**
+ * Theme colour names → the variables every theme sets. `bg: 'primary'` follows
+ * whatever theme the object sits in (and its dark mode), where `bg: '#18181B'`
+ * is fixed.
+ */
+export const THEME_COLORS: Record<string, string> = Object.fromEntries(
+  [
+    'background', 'foreground', 'card', 'card-foreground', 'muted', 'muted-foreground', 'border',
+    'primary', 'primary-foreground', 'accent', 'accent-foreground', 'danger', 'success', 'warning',
+  ].flatMap((n) => {
+    const camel = n.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())
+    return [[n, `var(--${n})`], [camel, `var(--${n})`]]
+  }),
+)
+
+const colorValue = (raw: string): string => THEME_COLORS[raw.trim()] ?? raw
+
 function resolveBgValue(raw: string, ctx: StyleCtx): string | null {
   const v = raw.trim()
+  if (THEME_COLORS[v]) return THEME_COLORS[v]!
   if (!v.toLowerCase().startsWith('gradient:')) return null
   const name = v.slice('gradient:'.length)
   return ctx.gradientOverrides.get(name.trim().toLowerCase()) ?? resolveGradient(name) ?? null
@@ -290,12 +334,21 @@ export function resolvePropsToCss(
         ctx.radiusOverrides.get(r.toLowerCase()) ?? RADIUS_SCALE[r] ?? RADIUS_SCALE[r.toLowerCase()] ?? r
     }
   }
-  if (props['border'] === true) css['border'] = '1px solid var(--border)'
-  else if (typeof props['border'] === 'string') css['border'] = props['border'] as string
+  // `border: true` honours borderColor/borderWidth; it used to hard-code the
+  // theme border, so `{ border: true, borderColor: 'primary' }` ignored the colour.
+  if (props['border'] === true) {
+    const bw = props['borderWidth'] !== undefined ? dimToCss(props['borderWidth'], ctx) : null
+    const bc = typeof props['borderColor'] === 'string' ? colorValue(props['borderColor'] as string) : 'var(--border)'
+    css['border'] = `${bw ?? '1px'} solid ${bc}`
+  } else if (typeof props['border'] === 'string') css['border'] = props['border'] as string
+  else if (typeof props['borderColor'] === 'string' && props['borderTop'] === undefined && props['borderBottom'] === undefined && props['borderLeft'] === undefined && props['borderRight'] === undefined) {
+    // A colour alone recolours whatever border the component already draws.
+    css['border-color'] = colorValue(props['borderColor'] as string)
+  }
   // Per-side borders: true → width+color, number → unit px, string → raw CSS.
   {
     const bw = props['borderWidth'] !== undefined ? dimToCss(props['borderWidth'], ctx) : null
-    const bc = typeof props['borderColor'] === 'string' ? (props['borderColor'] as string) : 'var(--border)'
+    const bc = typeof props['borderColor'] === 'string' ? colorValue(props['borderColor'] as string) : 'var(--border)'
     const width = bw ?? '1px'
     const sides: Array<[unknown, string]> = [
       [props['borderTop'], 'border-top'],
@@ -319,7 +372,7 @@ export function resolvePropsToCss(
   if (typeof props['bg'] === 'string' && props['bg'] !== '') {
     css['background'] = resolveBgValue(props['bg'] as string, ctx) ?? (props['bg'] as string)
   }
-  if (typeof props['color'] === 'string' && props['color'] !== '') css['color'] = props['color'] as string
+  if (typeof props['color'] === 'string' && props['color'] !== '') css['color'] = colorValue(props['color'] as string)
 
   const font = props['font']
   if (typeof font === 'string') {
@@ -448,6 +501,16 @@ export function resolvePropsToCss(
   }
   if (typeof props['display'] === 'string') css['display'] = props['display'] as string
   if (typeof props['cursor'] === 'string') css['cursor'] = props['cursor'] as string
+  // Smooths state changes (hover/focus/active): a speed word or raw CSS.
+  const transition = props['transition']
+  if (typeof transition === 'string' && transition !== '') {
+    const speeds: Record<string, string> = { fast: '120ms', normal: '200ms', slow: '320ms' }
+    css['transition'] = transition === 'none'
+      ? 'none'
+      : speeds[transition]
+        ? `background-color ${speeds[transition]} ease, color ${speeds[transition]} ease, border-color ${speeds[transition]} ease, box-shadow ${speeds[transition]} ease, opacity ${speeds[transition]} ease, transform ${speeds[transition]} ease`
+        : transition
+  }
   if (typeof props['opacity'] === 'number' || typeof props['opacity'] === 'string') {
     css['opacity'] = String(props['opacity'])
   }

@@ -67,8 +67,13 @@ export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: 
   if (pageProps['viewport'] === 'fill' || pageProps['viewport'] === 'hug') {
     bodyAttrs.push(`data-viewport="${escAttr(String(pageProps['viewport']))}"`)
   }
-  if (pageProps['theme'] === 'light' || pageProps['theme'] === 'dark') {
-    bodyAttrs.push(`data-theme="${escAttr(String(pageProps['theme']))}"`)
+  // The page's theme (built-in `light`/`dark` or a defined one) and colour
+  // mode. A page with neither stays on the light defaults.
+  if (typeof pageProps['theme'] === 'string' && pageProps['theme'] !== '') {
+    bodyAttrs.push(`data-theme="${escAttr(String(pageProps['theme']).toLowerCase())}"`)
+  }
+  if (pageProps['mode'] === 'light' || pageProps['mode'] === 'dark' || pageProps['mode'] === 'system') {
+    bodyAttrs.push(`data-mode="${pageProps['mode']}"`)
   }
   return [
     '<!doctype html>',

@@ -4,6 +4,7 @@
  * Public surface: `resolveMakeToken` (compile lane) and `animationKeyframes`
  * (stylesheet emission for the animation words).
  */
+import { hasTheme, isDefinedTheme } from '../../style/themes'
 import { ALIGN_TOKENS, JUSTIFY_TOKENS, LAYOUT_TOKENS, RADIUS_TOKENS, SURFACE_TOKENS } from '@morgana/sdk';
 import {
   ANIMATION_WORDS,
@@ -53,6 +54,11 @@ export function resolveMakeTokenDetailed(
 ): { props: Record<string, unknown>; resolved: boolean } {
   const v = token.trim()
 
+  // A theme the project defined wins over the built-in vocabulary: naming a
+  // theme `brand` must not be silently shadowed by the `brand` surface.
+  if (isDefinedTheme(v)) {
+    return { props: { theme: v.toLowerCase() }, resolved: true }
+  }
   if ((SURFACE_TOKENS as readonly string[]).includes(v)) {
     return { props: { surface: v }, resolved: true }
   }
@@ -100,6 +106,18 @@ export function resolveMakeTokenDetailed(
   if (hasGradient(v)) {
     const css = resolveGradient(v)
     if (css) return { props: { bg: css }, resolved: true }
+  }
+  // Themes: `make('theme:brand')`, or the bare name once it is defined.
+  if (v.toLowerCase().startsWith('theme:')) {
+    const name = v.slice('theme:'.length).trim()
+    return hasTheme(name) ? { props: { theme: name.toLowerCase() }, resolved: true } : { props: {}, resolved: false }
+  }
+  if (hasTheme(v)) {
+    return { props: { theme: v.toLowerCase() }, resolved: true }
+  }
+  // Colour modes ride the same scope: make('dark-mode') / make('light-mode').
+  if (v === 'dark-mode' || v === 'light-mode' || v === 'system-mode') {
+    return { props: { mode: v.slice(0, -'-mode'.length) }, resolved: true }
   }
   // Behavior words ride a class; the client runtime reads it.
   if (BEHAVIOR_WORDS.has(v)) {

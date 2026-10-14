@@ -72,9 +72,105 @@ export interface BreakpointShape {
   label?: string
 }
 
-/** Props every rendered object exposes (escape hatches + tags). */
-export interface SharedProps {
+/** Theme colour names — they follow the object's theme and colour mode. */
+export type ThemeColorToken =
+  | 'background' | 'foreground' | 'card' | 'card-foreground' | 'muted' | 'muted-foreground' | 'border'
+  | 'primary' | 'primary-foreground' | 'accent' | 'accent-foreground' | 'danger' | 'success' | 'warning'
+
+/** A colour: a theme token, a named colour, or any CSS colour. */
+export type ColorValue = ThemeColorToken | (string & {})
+
+/**
+ * The visual props every object accepts — the whole stylable surface, as
+ * props. Values resolve through the same tokens `make()` uses.
+ */
+export interface VisualProps {
+  width?: Dim
+  height?: Dim
+  minW?: Dim
+  minH?: Dim
+  maxW?: Dim
+  maxH?: Dim
+  pad?: Dim
+  gap?: Dim
+  /** Background: a colour, a theme token, `gradient:<name>`, or CSS. */
+  bg?: ColorValue
+  color?: ColorValue
+  surface?: SurfaceToken
+  radius?: string | number
+  border?: boolean | string
+  borderTop?: boolean | string | number
+  borderBottom?: boolean | string | number
+  borderLeft?: boolean | string | number
+  borderRight?: boolean | string | number
+  borderColor?: ColorValue
+  borderWidth?: Dim
+  boxShadow?: string
+  /** Shadow / glow word (`raised`, `floating`, `glow`, …). */
+  effect?: string
+  opacity?: number | string
+  font?: string
+  fontFamily?: string
+  fontSize?: Dim
+  fontWeight?: string | number
+  fontStyle?: string
+  lineHeight?: string | number
+  textDecoration?: string
+  textTransform?: 'uppercase' | 'lowercase' | 'capitalize' | 'none'
+  cursor?: string
+  overflow?: OverflowToken
+  /** Smooths state changes: `fast` | `normal` | `slow` | `none` | CSS. */
+  transition?: 'fast' | 'normal' | 'slow' | 'none' | (string & {})
+}
+
+/** Styles for one interaction state — the same props as the object itself. */
+export type StateStyle = VisualProps
+
+/** Visual props plus interaction states, theme and colour mode. */
+export interface StyleProps extends VisualProps {
+  hover?: StateStyle
+  /** Keyboard focus, and focus inside the object. */
+  focus?: StateStyle
+  /** While pressed. */
+  active?: StateStyle
+  /** While disabled (`disabled` attribute or prop). */
+  disabled?: StateStyle | boolean
+  /** A theme for this object and everything inside it: `light`, `dark`, or one you defined. */
+  theme?: string
+  /** Colour mode for this subtree: `light`, `dark`, or `system` (follow the OS). */
+  mode?: 'light' | 'dark' | 'system'
+}
+
+/** Design tokens a theme sets. Every built-in component paints from these. */
+export interface ThemeTokens {
+  background?: string
+  foreground?: string
+  card?: string
+  cardForeground?: string
+  muted?: string
+  mutedForeground?: string
+  border?: string
+  primary?: string
+  primaryForeground?: string
+  accent?: string
+  accentForeground?: string
+  danger?: string
+  success?: string
+  warning?: string
+  shadow?: string
+  fontFamily?: string
+}
+
+/** A theme: light tokens, plus overrides for dark mode (brand colours carry over). */
+export interface ThemeSpec extends ThemeTokens {
+  dark?: ThemeTokens
+}
+
+/** Props every rendered object exposes: the style surface plus tags. */
+export interface SharedProps extends StyleProps {
+  /** @deprecated Style with props; raw CSS is an escape hatch. */
   style?: string
+  /** @deprecated Style with props. */
   class?: string
   tags?: unknown
 }
@@ -232,7 +328,6 @@ export interface PageProps extends SharedProps {
   app?: string
   viewport?: PageViewport
   layer?: number
-  theme?: 'light' | 'dark'
   layout?: LayoutToken
 }
 

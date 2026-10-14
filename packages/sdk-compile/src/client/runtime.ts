@@ -11,6 +11,7 @@
  * meaning once the page is built, so they raise rather than pretend.
  */
 
+import { STATE_PROPS, stateRules } from '../style/states'
 import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } from '../style/props'
 import { resolveMakeToken } from '../compile-ctx/tokens'
 import { wrapElement } from './dom-handle'
@@ -211,6 +212,20 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
     repaintChartEl(el, { kind: String(spec.kind ?? (all?.['chartKind'] as string) ?? 'bar'), series: spec.series, labels: spec.labels, palette: spec.palette })
     return
   }
+  // Theme scope and colour mode are attributes the stylesheet scopes on.
+  if (prop === 'theme' || prop === 'mode') {
+    const attr = prop === 'theme' ? 'data-theme' : 'data-mode'
+    if (value === null || value === undefined || value === '') el.removeAttribute(attr)
+    else el.setAttribute(attr, String(value).toLowerCase())
+    return
+  }
+  // State styles (hover/focus/active/disabled) are rules, not inline styles —
+  // the runtime sheet is rebuilt from the manifest, which setProp updated.
+  // `disabled` is also the component flag: only a style object is a state style.
+  if (STATE_PROPS.has(prop) && (prop !== 'disabled' || (typeof value === 'object' && value !== null))) {
+    flushRuntimeSheet()
+    return
+  }
   if (TEXT_PROPS.has(prop)) return applyText(el, id, prop, value)
   if (VALUE_PROPS.has(prop)) return applyValue(el, prop, value)
   if (FLAG_PROPS.has(prop)) return applyFlag(el, prop, value)
@@ -251,6 +266,7 @@ function flushRuntimeSheet(): void {
       const decls = Object.entries(css).map(([k, v]) => `${k}:${v}`).join(';')
       if (decls) out.push(`@media ${query}{${selectorFor(id)}{${decls}}}`)
     }
+    out.push(...stateRules(selectorFor(id), meta.kind, (meta.props ?? {}) as Record<string, unknown>, styleCtx()))
   }
   let styleEl = document.getElementById(RUNTIME_STYLE_ID) as HTMLStyleElement | null
   if (!styleEl) {

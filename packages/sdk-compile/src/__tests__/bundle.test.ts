@@ -490,9 +490,15 @@ describe('minify', () => {
       // `@morgana` here is the header comment's own text, which is meant to go.
       const atRules = [...new Set([...big.matchAll(/@[-a-z]+/g)].map((m) => m[0]))].filter((a) => a !== '@morgana')
       for (const at of atRules) expect(min, `${at} must survive minification`).toContain(at)
-      // A declaration count comparison catches a minifier that dropped rules.
-      const count = (css: string, re: RegExp) => (css.match(re) ?? []).length
-      expect(count(min, /\{/g)).toBe(count(big, /\{/g))
+      // No rule may be dropped. (Counting braces stopped working once theme
+      // rules share bodies: esbuild legitimately merges `a{x}b{x}` into
+      // `a,b{x}`.) Every selector target and custom property must survive.
+      const targets = (css: string, re: RegExp) => new Set([...css.matchAll(re)].map((m) => m[0]))
+      for (const t of targets(big, /data-(?:entity|kind|theme|mode|part)="[^"]+"/g)) {
+        // esbuild drops the quotes where the value allows it.
+        expect(min.includes(t) || min.includes(t.replace(/"/g, '')), `${t} must survive minification`).toBe(true)
+      }
+      for (const t of targets(big, /--[a-z-]+:/g)) expect(min).toContain(t)
     } finally {
       fs.rmSync(readable, { recursive: true, force: true })
       fs.rmSync(small, { recursive: true, force: true })

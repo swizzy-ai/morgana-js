@@ -16,6 +16,7 @@
 import type { ActionContract, AppEventName, AppEventPayload, EventScope } from '../contracts'
 import type { BaseContext } from './base'
 import type { AuthUser } from './server'
+import type { ThemeSpec } from '../props'
 import type { EventApi, EventSubscribeOptions } from '../events'
 import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
@@ -211,6 +212,16 @@ export interface UiApi {
    * in the running browser the surface is read-only (tokens are baked in).
    */
   transformers: TransformerConfigApi
+  /**
+   * Themes (compile lane). `define` registers one; apply it like any make()
+   * word — `make('theme:brand')`, `make('brand')`, or `{ theme: 'brand' }`.
+   * Built in: `light` and `dark`.
+   */
+  themes: {
+    define(name: string, spec: ThemeSpec): void
+    get(name: string): ThemeSpec | undefined
+    has(name: string): boolean
+  }
 
   // ── UI state — the single source of truth for the UI ─────────────────────
   state: StateHandle
