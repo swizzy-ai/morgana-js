@@ -17,6 +17,7 @@ import path from 'node:path'
 
 import { say, row, bold, green, dim, warn } from '../ui.mjs'
 import { VERSION } from '../version.mjs'
+import { template } from '../templates.mjs'
 
 function writeFile(file, contents) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -188,6 +189,10 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
   writeFile(path.join(dir, 'tsconfig.json'), tsconfig)
   writeFile(path.join(dir, '.gitignore'), gitignore)
   writeFile(path.join(dir, 'README.md'), readme(pkg))
+  // The guide for agents building here. CLAUDE.md imports it so Claude Code
+  // and AGENTS.md-reading tools see one file.
+  writeFile(path.join(dir, 'AGENTS.md'), template('AGENTS.md'))
+  writeFile(path.join(dir, 'CLAUDE.md'), '@AGENTS.md\n')
 
   say(`${green('created')} ${bold(pkg)}`)
   say()
@@ -197,6 +202,7 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
     'assets/favicon.svg',
     'package.json',
     'tsconfig.json',
+    'AGENTS.md',
     '.gitignore',
     'README.md',
   ]) {

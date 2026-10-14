@@ -1,332 +1,46 @@
 # Morgana
 
-A full-stack application framework that compiles to a static bundle and runs your
-server code in a sandbox.
+A full-stack TypeScript framework with one small surface — **actions**,
+**events** and **`ctx`** — from the page to the server. Compiled, typed end to
+end, and deployed with one command.
 
-Morgana is not a hosting platform with a compiler bolted on. You write ordinary
-TypeScript actions; a compiler walks them, resolves their imports, builds an
-intermediate representation of the page, and emits HTML, CSS and JavaScript. The
-deployed artefact is static — pages, styles, one client runtime — plus your server
-actions, which run inside a sandbox rather than on a Node process.
-
-- **Banner:** Swizzy AI
-- **Licence:** Apache-2.0
-
----
-
-## The shape of a project
-
-A project is a directory with a config, a folder of actions, and nothing else in
-the way:
-
+```bash
+npx @studiomorgana/cli init my-app
+cd my-app && npm install
+npx morgana dev          # http://localhost:4317
+npx morgana deploy
 ```
-morgana.config.ts
-src/
-  actions/
-    compile/hello.ts      runs at build time, shapes the page
-    server/…              runs on the server, deployed
-    client/…              runs in the browser, bundled into client.js
-  objects/                custom component definitions
-assets/
-```
-
-`morgana init my-app` writes exactly that: a config, one compile action, an
-assets folder, and a `package.json`. Nothing else, because a scaffold that
-guesses a design system is a scaffold nobody deletes.
-
-## Actions, and the three lanes
-
-An **action** is a module exporting a handler. What it exports decides where it
-runs. There are three lanes, and the distinction is the core idea:
-
-| Lane | `config.on` | Runs | Bundled to |
-|---|---|---|---|
-| **compile** | `'compile'` | At build time, in Node | nothing on disk |
-| **server** | `'api.post /x'`, `'cron'`, `'store.x.created'` | In the sandbox, on request | `dist/server/actions/*.js` |
-| **client** | `'click'`, `'load'`, … | In the browser | `dist/assets/client.js` |
 
 ```ts
-// src/actions/compile/hello.ts
-import { defineClientAction } from '@studiomorgana/sdk'
-
-export const hello = defineClientAction({
-  config: { on: 'compile' },
-  handler: (ctx) => {
-    ctx.apps.create('main', { displayName: 'Acme' })
-
-    const page = ctx.ui.pages.create({ name: 'home', address: '/' })
-    page.app('main')
-
-    const hero = ctx.ui.box({ id: 'hero' })
-    hero.make('card')
-    hero.setProps({ layout: 'column', pad: 6, gap: 3 })
-    hero.place(ctx.ui.text({ id: 'title', content: 'Hello', font: 'h2' }))
-    page.place(hero)
-
-    return { ok: true }
+// A button click in the browser, a durable object on the server, one model.
+export const addCard = defineClientAction({
+  config: { on: 'add-card.clicked' },
+  handler: async (ctx) => {
+    const text = String(ctx.ui.get('new-card')!.get('value') ?? '')
+    await ctx.objects.board.get('main').addCard({ text })
   },
+})
+
+// An HTTP route is an action too.
+export const listCards = defineServerAction({
+  config: { on: 'http.get /v1/cards' },
+  handler: async (ctx) => (await ctx.objects.board.getOrCreate('main')).cards(),
 })
 ```
 
-A compile action is not a build script — it receives the same `ctx` a server
-action does, and it mutates the same intermediate representation. Creating a page
-and creating an action are the same kind of statement, which is why there is no
-separate routing or templating layer to learn.
+## Learn
 
-## How a build works
+- **[The guide](docs/README.md)** — the model, apps and pages, client objects,
+  the backend (HTTP routes, responses, server rendering, server objects),
+  lifecycles, custom objects, events, types, and a full example.
+- **`morgana spec`** — the complete API, generated from the SDK you have
+  installed: `morgana spec server-object`, `morgana spec ui button`,
+  `morgana spec events`.
+- **[`examples/team-board`](examples/team-board)** — the guide's running example.
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — how it works inside.
 
-`morgana build` (or `compileProject()`) runs in this order:
-
-1. **Scan.** Read `morgana.config.ts` and discover every action file, extracting
-   each one's `config` and handler shape from the TypeScript AST.
-2. **Discover custom objects.** Load each component definition in Node so its
-   `define` and `methods` are callable.
-3. **Run compile actions, in order.** Each bundles to CommonJS and is evaluated
-   in-process with real `require`, so a helper importing a Node built-in works
-   exactly as it would on disk. What it returns is the page IR.
-4. **Bundle runtime actions.** Compile lane is done; now server and client actions
-   are bundled per lane.
-5. **Emit.**
-
-```
-dist/
-  manifest.json           content hash, entry page, page list
-  pages/home.html         one element per line
-  assets/style.css        design tokens and layout
-  assets/client.js        page runtime + browser actions + components
-  server/actions/*.js     one self-contained ES module per action
-  server/apis.json        declared routes
-  server/stores.json      collection shapes
-  server/triggers.json    cron and store hooks
-```
-
-### One esbuild profile per lane
-
-`platform` and `format` are chosen per lane, and the choice is load-bearing:
-
-| Lane | platform | format | Why |
-|---|---|---|---|
-| compile | `node` | `cjs` | evaluated in-process via `new Function` |
-| server | `node` | `esm` | one self-contained file, deployed |
-| client | `browser` | `iife` | one pass over every browser action |
-
-Imports are real. An action may import siblings, shared helpers and third-party
-packages from `node_modules`; esbuild resolves and inlines the whole graph.
-
-`@studiomorgana/sdk` is never resolved from your project — your actions import it for
-its factories, which are identity helpers, and for types. The compiler redirects
-those specifiers to the SDK's own source so a value import gets the real
-implementation rather than a stand-in. This is why the SDK ships its `src/`.
-
-### The compile/server split has one sharp edge
-
-The server lane bundles with `platform: 'node'`, which is right for *resolution*
-but also leaves Node built-ins external. So `import { createHash } from
-'node:crypto'` survives into the emitted module as a bare import. Under
-`morgana dev` that file is imported by Node and resolves. The worker evaluates
-the module body inside a function, where `import` is a SyntaxError.
-
-The build warns:
-
-```
-warning  node:crypto is a Node built-in. This works in `morgana dev` and will fail on deploy.
-```
-
-It is a warning and not an error because the action is valid locally and the
-compiler cannot know whether you will ship it. The deploy reaches the same
-warning, since deploy builds first.
-
-## The runtime
-
-### Client
-
-`assets/client.js` carries the page runtime, every browser action, and every
-component that has runtime behaviour. A component that is only a `define` ships
-no code at all — it compiles to plain objects in the HTML.
-
-### Server
-
-A deployed server action does not run in Node. It runs inside a **QuickJS WASM
-sandbox** in a Durable Object, which exists because Cloudflare Workers forbids
-`eval` and `new Function`. The sandbox gets `console` and the action's `ctx`, and
-nothing else — no module loader, no `crypto`, no `fs`. Every import is inlined at
-build time because there is no way to resolve one at runtime.
-
-### Stores
-
-Collections are SQLite inside a Durable Object, so reads and writes are not
-metered. One table per collection, records as JSON plus a sort column, which keeps
-the schema a function of the declared shape rather than of migrations.
-
-## The backend
-
-`morgana-server` is a private Cloudflare Worker. It is never published and is not
-part of your project's dependencies.
-
-```
-KV                        durable state: deploys, projects, auth, trigger indexes
-PROJECT_ACTIONS (DO)      runs server actions in the QuickJS sandbox
-PROJECT_STORES  (DO)      SQLite collections
-PROJECT_EVENTS  (DO)      channels, history, SSE subscribers
-PROJECT_CHANNELS (DO)     channel ACLs
-PROJECT_OBJECTS (DO)      custom objects
-AI                        Workers AI binding
-```
-
-Two decisions worth knowing, because both were learned the hard way:
-
-**Enumeration is never metered.** `KV.list()` allows 1,000 calls per day *per
-account* on the free plan. A scheduled trigger that enumerated triggers once a
-minute exhausted the whole account in 45 minutes and silently broke deploys for
-every project. Sets are therefore index keys — `deploys:{env}:{pid}::assets:index`,
-`triggers:{env}:{pid}::index` — so nothing enumerates after the first deploy.
-
-**Runtime keys are not secrets.** A deployed page is a static bundle with no user
-credentials, so it authenticates as a *project*. Each `(env, projectId)` gets one
-random key, minted on first serve and injected into the HTML as a `<meta>` tag;
-the compiled client sends it as `x-morgana-runtime`. It ships in the page, so
-anyone can read it — its job is to scope a request to one project, not to
-authenticate a person.
-
-## Server objects
-
-A server object is a type you define once and create instances of by name.
-Each instance keeps its own state and tables, runs one call at a time, and is
-reachable from server code and, as far as its `access` allows, from the
-browser. On the cloud each instance is its own Durable Object; under
-`morgana dev` it is its own SQLite file. Put definitions in
-`src/server-objects/`, or list packages in `libraries` to use objects they
-ship (`"morgana": { "objects": [...] }` in their `package.json`).
-
-```ts
-// src/server-objects/counter.ts
-import { defineServerObject } from '@studiomorgana/sdk'
-
-export default defineServerObject({
-  name: 'counter',
-  state: { count: 0 },
-  collections: { log: { columns: [{ name: 'by', type: 'string' }] } },
-  computed: { even: (s) => s.count % 2 === 0 },
-  access: { create: 'member', read: 'public', subscribe: 'public', bump: 'member' },
-  methods: {
-    bump: async (self) => {
-      self.set({ count: self.state.count + 1 })
-      self.db.log.add({ by: self.caller?.email ?? 'server' })
-      self.emit('bumped', { count: self.state.count })
-      return self.state.count
-    },
-    // A streaming method: each yield reaches the caller as it happens;
-    // its writes and return value commit when it finishes.
-    countdown: async function* (self, p: { from: number }) {
-      for (let i = p.from; i > 0; i--) yield i
-      return 'done'
-    },
-    tidy: async (self) => self.defer('cleanup', {}),
-  },
-  jobs: {
-    // Runs after the commit, outside the call; changes state only through methods.
-    cleanup: async (self) => { await self.call('bump') },
-  },
-})
-```
-
-```ts
-const c = await ctx.objects.counter.getOrCreate('main')
-await c.bump()
-for await (const n of c.countdown({ from: 3 })) console.log(n)
-c.on('bumped', (e) => console.log(e.count))      // browser: live events
-text.bind('object:counter/main.count')            // a component follows live state
-```
-
-- **A call is a transaction:** everything it wrote, emitted, scheduled or
-  deferred lands together, or nothing does.
-- **Access defaults to server-only.** Browser access is opt-in per operation:
-  `create`, `read`, `subscribe`, `list`, `remove`, or a method name, each set
-  to `'public'`, `'member'` or `{ role }`.
-- **Scheduling:** `self.schedule('5m', 'method', params)` for later.
-  `self.defer('job', params)` runs a job durably, at least once, with retries.
-- **One caution:** a method that calls its own instance through `ctx.objects`
-  waits on itself. Use `self` inside a method.
-
-## Deploying
-
-`morgana deploy` needs no arguments. The Morgana cloud URL is compiled in as the
-default; `--url` or `MORGANA_URL` point somewhere else, which keeps self-hosting a
-supported destination rather than a fork.
-
-Credentials resolve in order, first match wins:
-
-1. `--token`
-2. `MORGANA_TOKEN` — how CI runs unattended
-3. **the stored token** — what `morgana login` wrote, so signing in once is enough
-4. **`morgana login`** — run automatically, in the browser, when there is nothing
-   else
-
-There is no shared deploy key, deliberately. A deploy uploads code that then
-executes, so the credential is scoped to one project, expires in 30 days, and is
-recorded against an identity. One unscoped value would authorise writing into
-every project on the worker.
-
-`morgana login` drives a consent flow: a loopback server on an ephemeral port, the
-worker renders a permission screen listing the requested scopes, and the token
-comes back in the URL **fragment** — which is why the callback serves a small page
-that reads `location.hash` and posts it back. The token never passes through a
-request line, an access log or a `Referer`.
-
-After publishing, `deploy` verifies the page and every asset it references serve.
-That the page *works* — stylesheet applied, runtime booted, no console errors — is
-checked in CI, which installs a browser deliberately rather than asking every user
-to have one.
-
-## Headless deploy
-
-```bash
-MORGANA_TOKEN=$(node tools/mint-token.mjs https://your-worker.workers.dev)
-```
-
-`tools/mint-token.mjs` signs in over HTTP with a generated per-run identity, so a
-machine gets a real token: one project, expiring, attributable. A CI job with a
-checked-in email and password would just be a shared credential with extra steps.
-
-## Commands
-
-| Command | Does |
-|---|---|
-| `morgana init [name]` | scaffold a project |
-| `morgana build` | compile to `dist/` |
-| `morgana dev` | compile, serve on :4317, recompile on change |
-| `morgana deploy` | build, publish, verify assets |
-| `morgana login` | sign in via the browser, store a scoped token |
-| `morgana logout` | forget the stored token |
-| `morgana status` | what the worker holds for this project |
-| `morgana secrets set\|list\|remove` | secrets server actions read with `ctx.vars.get()` (`--local` for dev) |
-| `morgana domains add\|verify\|list\|remove` | serve the project at a hostname you own (DNS-verified) |
-| `morgana eject` | a plain React + Express codebase with no framework trace |
-
-## Packages
-
-| Package | Published | What it is |
-|---|---|---|
-| `@studiomorgana/sdk` | yes | the developer interface — contexts, object handles, contracts, configs |
-| `@studiomorgana/sdk-compile` | yes | the compiler; esbuild, the IR, page/style/asset emission |
-| `@studiomorgana/agents` | yes | the agent loop — providers, action tools, `ctx.agents` |
-| `@studiomorgana/cli` | yes | the `morgana` command |
-| `@studiomorgana/eject` | yes | `morgana eject`, installed into a project on demand |
-| `morgana-server` | **no** | the cloud worker. Private, never published |
-
-## Deploying to your own infrastructure
-
-`morgana deploy` targets the Morgana cloud by default. To publish somewhere else
-— your own worker, a staging environment — name it:
-
-```bash
-morgana deploy --url https://your-worker.workers.dev
-# or
-export MORGANA_URL=https://your-worker.workers.dev
-```
-
-The credential is scoped to one project either way, so a self-hosted worker
-enforces the same isolation.
+Every new project gets an `AGENTS.md`, so coding agents build with Morgana
+correctly from the first prompt.
 
 ## What an app gets
 
@@ -334,29 +48,50 @@ enforces the same isolation.
   (`require`, `signIn/signUp`, roles, password reset, email verification) and
   client `ctx.auth` (`signIn/signUp/signOut`, Google sign-in). Sessions are an
   HttpOnly cookie. Gate pages with `access: 'member' | { role }`.
-- **Server:** collections, files (R2), queues, `ctx.server.email` (Resend),
-  secrets, `respond()` and streaming, cron and store triggers, channels.
+- **Server:** collections, files, queues, `ctx.server.email`, secrets,
+  `respond()` and streaming, cron and store triggers, channels.
 - **Server objects:** named, durable instances with their own state and
   tables, methods (including streaming ones), schedules and background jobs;
   the same typed `ctx.objects` on the server and in the browser.
-- **Pages:** static, SPA or server-rendered; `products/:id` routes; every one
-  of 91 component kinds styled by props (hover/focus/active states, themes,
-  dark mode).
-- **Hosting:** each project at `<project>.<APPS_DOMAIN>`, plus DNS-verified
-  custom domains.
+- **Pages:** static, SPA or server-rendered; `products/:id` routes; every
+  component kind styled by props (hover/focus/active states, themes, dark
+  mode). Several apps per project.
+- **Types:** `morgana types` types `ctx.actions.run`, `ctx.objects` and your
+  custom UI kinds from your own code.
+- **Hosting:** each project at its own subdomain, plus DNS-verified custom
+  domains.
+
+## Commands
+
+| Command | Does |
+|---|---|
+| `morgana init [name]` | scaffold a project |
+| `morgana dev` | compile, serve on :4317, recompile on change |
+| `morgana build` | compile to `dist/` |
+| `morgana types` | generate `.morgana/` types for actions, server objects and custom objects |
+| `morgana spec [topic]` | print the API surface |
+| `morgana deploy` | build, publish, verify |
+| `morgana login` / `logout` | sign in via the browser / forget the token |
+| `morgana status` | what the cloud holds for this project |
+| `morgana secrets set\|list\|remove` | secrets server actions read with `ctx.vars.get()` |
+| `morgana domains add\|verify\|list\|remove` | serve the project at a hostname you own |
+| `morgana eject` | a plain React + Express codebase with no framework trace |
+
+## Packages
+
+| Package | What it is |
+|---|---|
+| [`@studiomorgana/sdk`](packages/sdk) | the developer interface — contexts, objects, contracts, config |
+| [`@studiomorgana/cli`](packages/morgana-cli) | the `morgana` command |
+| [`@studiomorgana/sdk-compile`](packages/sdk-compile) | the compiler |
+| [`@studiomorgana/agents`](packages/morgana-agents) | the agent loop behind `ctx.agents` |
+| [`@studiomorgana/wizard`](packages/wizard) | durable multi-step AI workflows behind `ctx.ai` wizards |
+| [`@studiomorgana/eject`](packages/morgana-eject) | `morgana eject` |
 
 ## Status
 
-- `init → build → dev → deploy → login` work end to end.
-- `node tools/e2e.mjs` runs the same full-stack scenarios on `morgana dev`
-  and (with `--worker`) on a real worker; `tools/style-check.mjs`,
-  `tools/api-check.mjs` and `tools/components-check.mjs` check every
-  component in a real browser. All run in CI.
-- Server actions that import Node built-ins are warned about, not blocked: they
-  work under `morgana dev` and fail in the sandbox, and the build says so.
-- Not yet published to npm. When it is, the order is `sdk` → `sdk-compile` /
-  `agents` → `cli` → `eject`, and it must use `pnpm publish` — `npm publish` leaves
-  `workspace:^` in the dependencies, which produces an uninstallable tarball.
+Published as `0.5.0`. `init → dev → build → deploy` work end to end; the same
+full-stack scenarios run on `morgana dev` and a real worker in CI.
 
 ## Licence
 

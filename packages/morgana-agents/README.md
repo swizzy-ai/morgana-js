@@ -1,5 +1,7 @@
 # @studiomorgana/agents
 
+> Server actions reach this as `ctx.agents` / `ctx.ai`. To build apps, start with the [Morgana guide](https://github.com/swizzy-ai/morgana-js/tree/main/docs).
+
 The agent loop for Morgana — providers, action tools, and `ctx.agents`.
 
 ```bash

@@ -1,5 +1,7 @@
 # @studiomorgana/sdk
 
+> **Start here:** the [Morgana guide](https://github.com/swizzy-ai/morgana-js/tree/main/docs) explains the model; `npx morgana spec` lists the full API this package exposes, generated from its own types.
+
 The Morgana developer interface — types first.
 
 This package is almost entirely types. The runtime exports are factories that
@@ -47,8 +49,10 @@ it runs. `config.on` picks the lane:
 | `config.on` | Runs |
 |---|---|
 | `'compile'` | at build time, in Node |
-| `'api.post /x'`, `'cron'`, `'store.x.created'` | on the server, deployed |
-| `'click'`, `'load'`, … | in the browser |
+| `'http.post /v1/x'`, `'cron(0 3 * * *)'`, `'store.x.created'`, `'object:room.message'` | on the server, deployed |
+| `'save.clicked'`, `'loaded'`, … | in the browser |
+
+Every valid `on`: `npx morgana spec events`.
 
 ```ts
 import { defineClientAction } from '@studiomorgana/sdk'

@@ -1,5 +1,7 @@
 # @studiomorgana/cli
 
+> **Start here:** `npx @studiomorgana/cli init my-app`, then the [Morgana guide](https://github.com/swizzy-ai/morgana-js/tree/main/docs). `morgana spec` prints the full API; `morgana types` generates your project's types.
+
 The `morgana` command — build and deploy a Morgana project.
 
 ```bash

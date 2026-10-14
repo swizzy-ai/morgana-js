@@ -30,7 +30,8 @@
     "./host": "./dist/host.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "templates"
   ],
   "engines": {
     "node": ">=22.12.0"

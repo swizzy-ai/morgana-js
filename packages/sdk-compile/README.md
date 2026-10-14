@@ -1,5 +1,7 @@
 # @studiomorgana/sdk-compile
 
+> The compiler behind `morgana build`. You do not usually install it directly — `@studiomorgana/cli` does. To build apps, read the [Morgana guide](https://github.com/swizzy-ai/morgana-js/tree/main/docs).
+
 The Morgana compiler.
 
 Takes a directory of TypeScript actions and emits `dist/`: pages, styles, one
