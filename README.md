@@ -239,6 +239,9 @@ checked-in email and password would just be a shared credential with extra steps
 | `morgana login` | sign in via the browser, store a scoped token |
 | `morgana logout` | forget the stored token |
 | `morgana status` | what the worker holds for this project |
+| `morgana secrets set\|list\|remove` | secrets server actions read with `ctx.vars.get()` (`--local` for dev) |
+| `morgana domains add\|verify\|list\|remove` | serve the project at a hostname you own (DNS-verified) |
+| `morgana eject` | a plain React + Express codebase with no framework trace |
 
 ## Packages
 
@@ -248,6 +251,7 @@ checked-in email and password would just be a shared credential with extra steps
 | `@morgana/sdk-compile` | yes | the compiler; esbuild, the IR, page/style/asset emission |
 | `@morgana/agents` | yes | the agent loop — providers, action tools, `ctx.agents` |
 | `@morgana/cli` | yes | the `morgana` command |
+| `@morgana/eject` | yes | `morgana eject`, installed into a project on demand |
 | `morgana-server` | **no** | the cloud worker. Private, never published |
 
 ## Deploying to your own infrastructure
@@ -264,13 +268,31 @@ export MORGANA_URL=https://your-worker.workers.dev
 The credential is scoped to one project either way, so a self-hosted worker
 enforces the same isolation.
 
+## What an app gets
+
+- **Auth for your users**, separate from Morgana accounts: server `ctx.auth`
+  (`require`, `signIn/signUp`, roles, password reset, email verification) and
+  client `ctx.auth` (`signIn/signUp/signOut`, Google sign-in). Sessions are an
+  HttpOnly cookie. Gate pages with `access: 'member' | { role }`.
+- **Server:** collections, files (R2), queues, `ctx.server.email` (Resend),
+  secrets, `respond()` and streaming, cron and store triggers, channels.
+- **Pages:** static, SPA or server-rendered; `products/:id` routes; every one
+  of 91 component kinds styled by props (hover/focus/active states, themes,
+  dark mode).
+- **Hosting:** each project at `<project>.<APPS_DOMAIN>`, plus DNS-verified
+  custom domains.
+
 ## Status
 
 - `init → build → dev → deploy → login` work end to end.
+- `node tools/e2e.mjs` runs the same full-stack scenarios on `morgana dev`
+  and (with `--worker`) on a real worker; `tools/style-check.mjs`,
+  `tools/api-check.mjs` and `tools/components-check.mjs` check every
+  component in a real browser. All run in CI.
 - Server actions that import Node built-ins are warned about, not blocked: they
   work under `morgana dev` and fail in the sandbox, and the build says so.
 - Not yet published to npm. When it is, the order is `sdk` → `sdk-compile` /
-  `agents` → `cli`, and it must use `pnpm publish` — `npm publish` leaves
+  `agents` → `cli` → `eject`, and it must use `pnpm publish` — `npm publish` leaves
   `workspace:^` in the dependencies, which produces an uninstallable tarball.
 
 ## Licence

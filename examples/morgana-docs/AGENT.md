@@ -19,7 +19,7 @@ Project shape: `morgana.config.ts`, `src/actions/{compile,server,client}/`,
 `src/objects/`, `assets/`. Scaffold with `morgana init <name>` (global
 `morgana` must be the linked `@morgana/cli` — `morgana --version` is the tell).
 
-## 2. Object catalog (89 kinds, all under `ctx.ui.*`)
+## 2. Object catalog (91 kinds, all under `ctx.ui.*`)
 
 Every handle shares: `get/set/setProps/make/setWithBreakpoint/bind/place/
 clone/copy/move/remove/when/track/emit/animate`. `ctx.ui.get(id)` is the only
@@ -83,6 +83,8 @@ Styling: `make()` words — surfaces (`card elevated glass-card dark-glass`), ef
 Gradients: named via `ctx.ui.transformers.gradients.add(name, {type, angle, stops})` (linear/radial/conic, validated at define time — bad specs fail the build naming the action). Apply anywhere a background works: `make('gradient:sunset')`, bare `make('sunset')` once registered, `bg: 'gradient:sunset'`. Boundary: NOT `color` (no gradient text color in CSS) or `borderColor` (needs border-image). Stock pack = one file (`actions/compile/gradients.ts`, 16 backgrounds) + a hooks entry — install by copying. Registry ships in the style JSON so the browser resolves the same names at runtime.
 
 - **datePicker**: value (`YYYY-MM-DD`), min, max, placeholder, name, disabled, weekStart. Methods: `getValue/setValue/clear/open/close/isOpen`. Events: `changed {value}`, `opened`, `closed`. Calendar built client-side (the visitor's "today").
+- **dateRange**: start, end (`YYYY-MM-DD`, swapped if reversed), min, max, placeholder, disabled, weekStart. First click sets the start, second the end; days between are marked. Methods: `getValue() → {start,end}`, `setValue(start, end)`, `clear/open/close/isOpen`. Event: `changed {start, end, value: 'start..end'}` once per completed range.
+- **qrCode**: value (text/URL), ecc (`L M Q H`, raised automatically when it fits), codeColor, codeBackground, label. Size with `width`/`height`. Methods: `getValue/setValue` (re-encodes live). Dependency-free encoder; verified by decoding with an independent reader.
 - **radioGroup**: options (`label value description disabled`), value, name, orientation, disabled. Methods: `getValue/setValue/setOptions`. Event: `changed {value}` (once — the generic radio change is suppressed inside groups).
 - **pagination**: page, total + pageSize (or pages), siblings. Methods: `getPage/getPages/setPage/next/prev/setTotal`. Event: `changed {page}`.
 - **collapsible**: title, content, open, disabled; placed children render in the panel. Methods: `open/close/toggle/isOpen`. Events: `opened`, `closed`.
@@ -91,7 +93,7 @@ Gradients: named via `ctx.ui.transformers.gradients.add(name, {type, angle, stop
 - **contextMenu**: items (`label value disabled separator shortcut`); placed children are the right-click area. Methods: `open(x?, y?)/close/isOpen/setItems`. Events: `opened`, `selected {value}`, `closed`.
 - **commandPalette**: items (+ `group`, `shortcut`), placeholder, hotkey (`mod+k` default), open, emptyText. Type to filter, arrows + Enter, Esc. Methods: `open/close/toggle/isOpen/setItems`. Events: `opened`, `selected {value,label}`, `closed`.
 
-**Every object is styled by props — never `class`/`style`.** Every kind accepts the full style surface (`StyleProps`): `width height minW minH maxW maxH pad gap bg color surface radius border borderTop… borderColor borderWidth boxShadow effect opacity font fontFamily fontSize fontWeight lineHeight textDecoration textTransform cursor overflow transition`. Framework CSS lives in `@layer morgana`; an object's props are unlayered, so they always win (a primary button's `bg` used to lose to its variant). Proven for all 89 kinds by `tools/style-check.mjs`.
+**Every object is styled by props — never `class`/`style`.** Every kind accepts the full style surface (`StyleProps`): `width height minW minH maxW maxH pad gap bg color surface radius border borderTop… borderColor borderWidth boxShadow effect opacity font fontFamily fontSize fontWeight lineHeight textDecoration textTransform cursor overflow transition`. Framework CSS lives in `@layer morgana`; an object's props are unlayered, so they always win (a primary button's `bg` used to lose to its variant). Proven for all 91 kinds by `tools/style-check.mjs`.
 
 States: `hover`, `focus` (keyboard focus + focus-within), `active`, `disabled` each take the same props: `{ bg: 'primary', hover: { bg: '#4338CA' }, transition: 'fast' }`. They win over base styles from the sheet or from runtime `set()`, and `set('hover', {...})` works at runtime. (`disabled: true` is still the component flag; only an object is a state style.)
 
@@ -120,13 +122,14 @@ Animation: `handle.animate.<preset>(opts)` — 16 presets + `animate(name)` + `a
 15. **Secrets are vars you set, not config.** `morgana secrets set NAME value` (deployed, encrypted) or `--local` (`.morgana/secrets.json` for dev); read with `ctx.vars.get('NAME')` in server actions only.
 16. **Email:** `ctx.server.email.send({ to, subject, html | text })` — Resend via the `RESEND_API_KEY` secret, sender from `EMAIL_FROM`; `EMAIL_PROVIDER=console` prints instead.
 17. **Collection writes name declared columns.** Both hosts refuse undeclared fields (the error names the field and suggests `type: 'json'`). `set(name, id, data)` upserts one record.
-18. **Param routes:** `address: 'products/:id'` — literal pages win; params reach server pages as `ctx.args.id`. Files: `ctx.server.files.*` (R2 when deployed). Responses: `ctx.server.respond(body, { status, contentType })` on both hosts.
+18. **Param routes:** `address: 'products/:id'` — literal pages win; params reach server pages as `ctx.args.id`. Files: `ctx.server.files.*` (R2 when deployed). Responses: `ctx.server.respond(body, { status, contentType })` on both hosts. Streaming: `await ctx.server.response.stream(async (emit) => { await emit('token') })` — chunks leave as produced (strings as-is, objects as JSON lines), on both hosts.
+19. **Custom domains:** `morgana domains add shop.example.com` prints a TXT record; `morgana domains verify shop.example.com` routes it once DNS proves you own it. The hostname must also reach the worker (zone route or Cloudflare for SaaS).
 
 ## 4. Gap map vs Chakra UI (surveyed chakra-ui@main, 76 recipes)
 
 Morgana's 18 handles cover Chakra's core: button/input/select/tabs/dialog/alert/badge/progress/table/switch/checkbox/avatar-ish/link/text/textarea-ish/form/image. Chakra vocabulary worth adopting: sizes (`2xs–2xl`), button variants (`solid subtle surface outline ghost plain`), input variants (`outline subtle flushed`), dialog sizes (`xs–full`) + placement (`center top bottom`), tabs variants (`line subtle enclosed outline`), table variants (`line outline`), badge/tag variants (`solid subtle outline surface`), switch (`solid raised`).
 
-**Still missing** (no Morgana kind yet): QR-code, marquee, date-range picker. Everything else on the original gap list now ships — see §2.
+Everything on the original gap list now ships — see §2.
 
 **Structural difference**: Chakra components are compound (`Dialog.Root/Trigger/Content/Header/Footer`); Morgana handles are single objects with props + `data-part` internals. Match prop-for-prop where handles exist; new handles follow the single-object shape, not the compound one.
 
