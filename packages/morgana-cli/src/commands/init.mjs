@@ -117,7 +117,10 @@ const packageJson = (name) => `${JSON.stringify(
     dependencies: {
       '@morgana/sdk': '^0.3.0',
     },
+    // The CLI is a project dependency so `npm run dev` works without a
+    // global install — and always matches this project's compiler.
     devDependencies: {
+      '@morgana/cli': '^0.1.0',
       '@morgana/sdk-compile': '^0.1.0',
     },
   },
