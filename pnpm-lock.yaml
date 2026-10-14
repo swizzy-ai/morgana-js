@@ -12,6 +12,16 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
 
+  examples/morgana-docs:
+    dependencies:
+      '@morgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+    devDependencies:
+      '@morgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+
   examples/sdk-compile-demo:
     dependencies:
       '@morgana/agents':
@@ -108,6 +118,25 @@ importers:
       typescript:
         specifier: ~5.8.2
         version: 5.8.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
+
+  packages/morgana-eject:
+    dependencies:
+      '@morgana/sdk-compile':
+        specifier: workspace:^
+        version: link:../sdk-compile
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+    devDependencies:
+      '@types/node':
+        specifier: ^22.14.0
+        version: 22.20.5
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
       vitest:
         specifier: ^4.1.10
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))

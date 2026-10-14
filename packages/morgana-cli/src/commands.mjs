@@ -118,6 +118,30 @@ export const COMMANDS = {
     },
   },
 
+  eject: {
+    describe: 'eject to a plain React + Express codebase with no framework trace',
+    usage: 'morgana eject [--outDir <path>] [--pages a,b] [--port <n>] [--apiPrefix <p>] [--yes]',
+    flags: {
+      outDir: { type: 'string', describe: 'output directory (default ./ejected-app)' },
+      pages: { type: 'string', describe: 'comma-separated page names (default all)' },
+      port: { type: 'string', describe: 'Express port (default 3001)' },
+      apiPrefix: { type: 'string', describe: 'API prefix (default /api)' },
+      yes: { type: 'boolean', describe: 'install @morgana/eject automatically' },
+    },
+    async run(args, { str, bool }) {
+      const { eject } = await import('./commands/eject.mjs')
+      const pages = str(args, 'pages') ? str(args, 'pages').split(',').map((s) => s.trim()).filter(Boolean) : undefined
+      await eject({
+        dir: process.cwd(),
+        outDir: str(args, 'outDir') || undefined,
+        pages,
+        port: str(args, 'port') ? Number(str(args, 'port')) : undefined,
+        apiPrefix: str(args, 'apiPrefix') || undefined,
+        yes: bool(args, 'yes'),
+      })
+    },
+  },
+
   package: {
     describe: 'build a shippable package — web dist/ or the desktop installer',
     usage: 'morgana package [web|desktop] [--dir <path>]',

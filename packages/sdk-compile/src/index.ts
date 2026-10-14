@@ -55,6 +55,11 @@ export interface CompileResult extends EmitResult {
   warnings: string[]
   /** Whether JS and CSS were minified — the resolved value, not the request. */
   minify: boolean
+  /**
+   * The compiled graph. Present for in-process consumers (eject); not
+   * serialized. Additive — existing readers ignore it.
+   */
+  ir: ProjectIR
 }
 
 /** Order compile actions: hook `run` order first, then the remainder sorted. */
@@ -467,12 +472,14 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     compileActions: compileActions.map((a) => a.name),
     warnings,
     minify,
+    ir,
   }
 }
 
 export { scanProject } from './extract'
 export type { SdkActionMeta } from './extract'
 export type { ProjectIR } from './ir'
+export type { ObjNode, PageNode } from './ir'
 // Request-time rendering for `render: 'server'` pages — the host imports
 // these, users never do.
 export { createServerUi, isPageResult, pageResult } from './server-render'
@@ -480,3 +487,5 @@ export type { ServerRenderCtx, ServerRenderDeps } from './server-render'
 export { extractPageGraph, hydratePageGraph } from './render/page-graph'
 export type { PageGraphJson } from './render/page-graph'
 export { renderPageHtml } from './render/page'
+export { renderNode } from './render/node'
+export { resolveMakeToken } from './compile-ctx/tokens'

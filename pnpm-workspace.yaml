@@ -12,6 +12,7 @@
 packages:
   - packages/sdk
   - packages/sdk-compile
+  - packages/morgana-eject
   - packages/hotsheet
   - packages/morgana-agents
   - packages/morgana-cli
