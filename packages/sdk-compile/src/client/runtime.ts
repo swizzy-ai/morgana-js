@@ -11,6 +11,7 @@
  * meaning once the page is built, so they raise rather than pretend.
  */
 
+import { qrMarkup } from '../qr'
 import { CREATABLE_KINDS } from '../kinds'
 import { STATE_PROPS, stateRules } from '../style/states'
 import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } from '../style/props'
@@ -231,6 +232,11 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
       painter(el, wave3.coerce ? wave3.coerce(value) : value)
       return
     }
+  }
+  // A QR code re-encodes from its full props when any of them changes.
+  if (kind === 'qrCode' && (prop === 'value' || prop === 'ecc' || prop === 'codeColor' || prop === 'codeBackground')) {
+    el.innerHTML = qrMarkup({ ...(all ?? {}), [prop]: value })
+    return
   }
   // Theme scope and colour mode are attributes the stylesheet scopes on.
   if (prop === 'theme' || prop === 'mode') {

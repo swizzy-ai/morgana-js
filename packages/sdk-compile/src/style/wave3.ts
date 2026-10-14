@@ -44,6 +44,9 @@ export function wave3Styles(): string[] {
     '[data-kind="dateRange"] [data-part="day"][data-selected="true"]{background:var(--primary);color:var(--primary-foreground)}',
     '[data-kind="dateRange"] [data-part="day"][data-outside="true"]{color:var(--muted-foreground);opacity:.6}',
     '[data-kind="dateRange"] [data-part="day"]:disabled{opacity:.35;cursor:not-allowed}',
+    // qrCode — the SVG fills the object; size it with width/height props
+    '[data-kind="qrCode"]{display:inline-block;width:160px;line-height:0}',
+    '[data-kind="qrCode"] [data-part="code"]{display:block;width:100%;height:auto}',
     // radioGroup
     '[data-kind="radioGroup"]{display:flex;flex-direction:column;gap:8px}',
     '[data-kind="radioGroup"][data-orientation="horizontal"]{flex-direction:row;flex-wrap:wrap;gap:16px}',

@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "jsqr": "^1.4.0",
     "tsup": "^8.4.0",
     "vitest": "^4.1.10"
   }

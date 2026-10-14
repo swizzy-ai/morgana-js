@@ -10,6 +10,7 @@
 import { baseAttrs, carryProps, escAttr, escHtml, type RenderNode } from '../html'
 import { renderNode } from '../node'
 import type { ProjectIR } from '../../ir'
+import { qrMarkup } from '../../qr'
 
 const STRUCT = ['id', 'name', 'placement', 'data', 'address', 'app']
 const skipOf = (...more: string[]) => new Set([...STRUCT, ...more])
@@ -81,6 +82,17 @@ export function renderDateRange(ir: ProjectIR, node: RenderNode): string {
   html += '<div data-part="calendar" role="dialog" aria-label="Choose dates" hidden></div>'
   html += '</div>'
   return html
+}
+
+// ── qrCode ──────────────────────────────────────────────────────────────────
+
+export function renderQrCode(ir: ProjectIR, node: RenderNode): string {
+  void ir
+  const p = node.props
+  const attrs = baseAttrs(node)
+  attrs.push('role="img"', `aria-label="${escAttr(str(p['label'], 'QR code'))}"`)
+  attrs.push(...carryProps(p, skipOf('value', 'ecc', 'codeColor', 'codeBackground', 'label')))
+  return `<div ${attrs.join(' ')}>${qrMarkup(p)}</div>`
 }
 
 // ── radioGroup ──────────────────────────────────────────────────────────────

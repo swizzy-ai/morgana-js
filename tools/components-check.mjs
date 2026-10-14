@@ -43,6 +43,7 @@ export const page = defineClientAction({
     col.place(ctx.ui.text({ id: 'log', content: '' }))
     col.place(ctx.ui.button({ id: 'methods', label: 'methods' }))
     col.place(ctx.ui.datePicker({ id: 'dp', value: '2026-10-15', min: '2026-10-05' }))
+    col.place(ctx.ui.qrCode({ id: 'qr', value: 'https://morgana.app/first', width: 50 }))
     col.place(ctx.ui.dateRange({ id: 'dr', start: '2026-10-02', end: '2026-10-04' }))
     col.place(ctx.ui.radioGroup({ id: 'rg', value: 'a', options: [{ label: 'A', value: 'a' }, { label: 'B', value: 'b' }, { label: 'C', value: 'c', description: 'third' }] }))
     col.place(ctx.ui.pagination({ id: 'pg', total: 200, pageSize: 10, page: 1 }))
@@ -95,6 +96,7 @@ export const methods = defineClientAction({
     u.get('cr').goTo(2)
     u.get('cpk').setValue('#123456')
     u.get('cl').open()
+    u.get('qr').setValue('https://morgana.app/second')
   },
 })
 `,
@@ -262,6 +264,26 @@ try {
     for (const ev of ['dp.changed', 'dr.changed', 'rg.changed', 'pg.changed', 'cr.changed', 'cpk.changed', 'cl.opened']) {
       expect(count(l, ev) === 1, `${ev} fired ${count(l, ev)}× — ${l}`)
     }
+  })
+  // Rasterise the rendered SVG in the page and decode it with an independent reader.
+  const jsQR = createRequire(path.join(root, 'packages/sdk-compile/package.json'))('jsqr')
+  const readQr = async () => {
+    const img = await page.$eval('[data-entity="qr"] svg', async (svg) => {
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg))
+      const im = new Image()
+      await new Promise((r, j) => { im.onload = r; im.onerror = j; im.src = url })
+      const c = document.createElement('canvas')
+      c.width = c.height = 400
+      const g = c.getContext('2d')
+      g.fillStyle = '#fff'; g.fillRect(0, 0, 400, 400)
+      g.drawImage(im, 0, 0, 400, 400)
+      return Array.from(g.getImageData(0, 0, 400, 400).data)
+    })
+    return jsQR(Uint8ClampedArray.from(img), 400, 400)?.data ?? null
+  }
+  await check('qrCode: scans, and setValue re-encodes', async () => {
+    const after = await readQr()
+    expect(after === 'https://morgana.app/second', `decoded ${after}`)
   })
   await check('no page errors', async () => expect(!errors.length, errors.join('; ')))
 } finally {

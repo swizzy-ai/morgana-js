@@ -62,6 +62,28 @@ export interface DateRangeHandle extends ObjectHandle<DateRangeProps> {
   track(event: string, opts?: TrackOptions): EventSource
 }
 
+// ── qrCode ──────────────────────────────────────────────────────────────────
+
+export interface QrCodeProps extends SharedProps {
+  /** Text or URL to encode (UTF-8, up to ~2,900 bytes at level L). */
+  value?: string
+  /** Error correction: L 7%, M 15% (default), Q 25%, H 30% — raised automatically when it fits. */
+  ecc?: 'L' | 'M' | 'Q' | 'H'
+  /** Module colour (default: the object's text colour). */
+  codeColor?: string
+  /** Background behind the modules (default white — scanners need contrast). */
+  codeBackground?: string
+  /** Accessible name (default "QR code"). */
+  label?: string
+}
+
+/** Size it with `width`/`height` props. */
+export interface QrCodeHandle extends ObjectHandle<QrCodeProps> {
+  getValue(): string
+  setValue(text: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
 // ── radioGroup ──────────────────────────────────────────────────────────────
 
 export interface RadioOption {

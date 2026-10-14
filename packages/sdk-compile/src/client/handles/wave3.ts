@@ -144,6 +144,12 @@ const commandPalette = (ctx: HandleCtx) => ({
   },
 })
 
+const qrCode = (ctx: HandleCtx) => ({
+  getValue: () => String(ctx.getProp('value') ?? ''),
+  /** Re-encodes and repaints. */
+  setValue: (text: string) => ctx.setProp('value', String(text ?? '')),
+})
+
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   datePicker,
   dateRange,
@@ -152,6 +158,7 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   collapsible,
   carousel,
   colorPicker,
+  qrCode,
   contextMenu,
   commandPalette,
 }
