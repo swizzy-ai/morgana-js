@@ -9,6 +9,8 @@ export default defineConfig({
     // extract, bundle) which cannot run on the edge. Verified post-build:
     // dist/server-render.js must not require('esbuild') or any node: module.
     'server-render': 'src/server-render.ts',
+    // Host capabilities both servers share (email, …). Same rule: worker-safe.
+    'server-host': 'src/server-host/index.ts',
   },
   format: ['esm', 'cjs'],
   target: 'es2022',

@@ -183,6 +183,33 @@ export interface FilesHandle {
   stat(path: string): Promise<FileMeta | null>
 }
 
+/** One message for `ctx.server.email.send`. Needs `html`, `text`, or both. */
+export interface EmailMessage {
+  to: string | string[]
+  /** Sender. Defaults to the `EMAIL_FROM` var. */
+  from?: string
+  subject: string
+  html?: string
+  text?: string
+  cc?: string | string[]
+  bcc?: string | string[]
+  replyTo?: string | string[]
+  headers?: Record<string, string>
+  tags?: Array<{ name: string; value: string }>
+  /** Same key → sent once, however many times the action retries. */
+  idempotencyKey?: string
+}
+
+export interface EmailResult {
+  /** The provider's message id. */
+  id: string
+  provider: string
+}
+
+export interface EmailHandle {
+  send(message: EmailMessage): Promise<EmailResult>
+}
+
 export interface AuthUser {
   id: string
   email?: string
@@ -330,10 +357,13 @@ export interface ServerApi {
   //     auth   → `ctx.auth` on the shared base (both lanes)
   //     events → `ctx.events` (publish / subscribe / channels / grant)
   //     emit   → `ctx.events.emit`
-  //     email  → removed for now. There was never an implementation behind
-  //              `ctx.server.email`; it was declared and never built, which is
-  //              the exact failure this codebase is trying to eliminate. It
-  //              returns when there is a real binding behind it.
+  //     ctx.email → email is a server concern and lives here only.
+  /**
+   * Transactional email — Resend over HTTP on both hosts. Configure with the
+   * `RESEND_API_KEY` secret and an `EMAIL_FROM` var; `EMAIL_PROVIDER=console`
+   * prints instead of sending.
+   */
+  email: EmailHandle
 }
 
 /**

@@ -70,11 +70,13 @@ export async function secrets({ action, name, value, local = false, dir = proces
       say(row('set', `${name} ${dim('(local — morgana dev reads it as ctx.vars.get(...))')}`))
       return
     }
-    const existed = name in all
+    if (!(name in all)) {
+      warn(`${name} was not set locally`)
+      return
+    }
     delete all[name]
     writeLocalSecrets(dir, all)
-    if (existed) say(row('removed', name))
-    else warn(`${name} was not set locally`)
+    say(row('removed', name))
     return
   }
 

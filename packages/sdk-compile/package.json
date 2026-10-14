@@ -35,6 +35,11 @@
       "types": "./dist/server-render.d.ts",
       "import": "./dist/server-render.js",
       "require": "./dist/server-render.cjs"
+    },
+    "./server-host": {
+      "types": "./dist/server-host.d.ts",
+      "import": "./dist/server-host.js",
+      "require": "./dist/server-host.cjs"
     }
   },
   "files": [

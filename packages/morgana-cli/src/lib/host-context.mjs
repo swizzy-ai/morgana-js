@@ -13,6 +13,7 @@ import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
 import { buildVarsHandle } from './secrets.mjs'
 import { createServerUi } from '@morgana/sdk-compile'
+import { createEmailHandle } from '@morgana/sdk-compile/server-host'
 
 /** @typedef {import('./store.mjs').StoreEngine} StoreEngine */
 
@@ -403,6 +404,12 @@ export async function makeHostContext(opts) {
       queue: {
         push: async (name, payload) => queue.push(name, payload),
       },
+      // The same implementation the worker builds — Resend over fetch, keyed by
+      // the RESEND_API_KEY secret. `console` prints to this terminal.
+      email: createEmailHandle({
+        getVar: (name) => ctx.vars.get(name),
+        log: (line) => console.log(line),
+      }),
     },
   }
 
