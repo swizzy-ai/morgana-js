@@ -12,6 +12,7 @@
  * keeps only the token's SHA-256, so a leaked store holds no live sessions.
  */
 import type { AuthUser } from '@morgana/sdk'
+import { GoogleTokenError, verifyGoogleIdToken } from './google'
 
 // ── Password hashing ────────────────────────────────────────────────────────
 // PBKDF2-HMAC-SHA-256 via WebCrypto (present on workerd and Node ≥ 20). The
@@ -196,6 +197,24 @@ export class AppAuth {
     const rec = id ? await this.storage.getUser(id) : null
     const ok = await verifyPassword(password, rec?.passwordHash ?? DUMMY_HASH)
     if (!rec || !rec.passwordHash || !ok) throw new AuthError('Email or password is incorrect', 401)
+    return { user: publicUser(rec), ...(await this.startSession(rec.id)) }
+  }
+
+  /**
+   * Sign in with an identity a provider has already verified (Google: a
+   * verified ID token). The verified email finds the account, or creates a
+   * password-less one. An existing password account with that email is the
+   * same person — the provider proved ownership of the address — so it is
+   * signed into, not duplicated.
+   */
+  async signInWithIdentity(identity: { email: string; name?: string; provider: string }): Promise<IssuedSession> {
+    const email = normEmail(identity.email)
+    const id = await this.storage.getUserIdByEmail(email)
+    let rec = id ? await this.storage.getUser(id) : null
+    if (!rec) {
+      const user = await this.createUser({ email, name: identity.name, provider: identity.provider })
+      rec = (await this.storage.getUser(user.id))!
+    }
     return { user: publicUser(rec), ...(await this.startSession(rec.id)) }
   }
 
@@ -389,6 +408,7 @@ export interface SessionRouteResult {
 export async function handleSessionRoute(
   auth: AppAuth,
   req: { method: string; path: string; token: string | null; body: unknown; secure: boolean },
+  opts: { googleClientId?: string; fetch?: typeof fetch } = {},
 ): Promise<SessionRouteResult | null> {
   const sub = req.path.replace(/^\/api\/session\/?/, '').replace(/\/+$/, '')
   const input = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>
@@ -414,13 +434,23 @@ export async function handleSessionRoute(
     if (sub === 'signin') {
       return issue(await auth.signIn({ email: String(input.email ?? ''), password: String(input.password ?? '') }))
     }
+    if (sub === 'google') {
+      const clientIds = String(opts.googleClientId ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+      if (!clientIds.length) {
+        return { status: 501, body: { success: false, message: 'Google sign-in is not configured — set the GOOGLE_CLIENT_ID var' } }
+      }
+      const identity = await verifyGoogleIdToken(String(input.credential ?? ''), { clientId: clientIds, fetch: opts.fetch })
+      return issue(await auth.signInWithIdentity({ email: identity.email, name: identity.name, provider: 'google' }))
+    }
     if (sub === 'signout') {
       await auth.signOut(req.token)
       return { status: 200, body: { success: true, data: { user: null } }, setCookie: clearSessionCookie(req.secure) }
     }
     return null
   } catch (err) {
-    if (err instanceof AuthError) return { status: err.status, body: { success: false, message: err.message } }
+    if (err instanceof AuthError || err instanceof GoogleTokenError) {
+      return { status: err.status, body: { success: false, message: err.message } }
+    }
     throw err
   }
 }

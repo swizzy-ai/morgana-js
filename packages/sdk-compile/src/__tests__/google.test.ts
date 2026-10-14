@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearGoogleKeyCache, verifyGoogleIdToken } from '../server-host'
+import { AppAuth, clearGoogleKeyCache, handleSessionRoute, verifyGoogleIdToken } from '../server-host'
 
 const b64url = (bytes: Uint8Array | string) => {
   const b = typeof bytes === 'string' ? new TextEncoder().encode(bytes) : bytes
@@ -65,5 +65,50 @@ describe('verifyGoogleIdToken', () => {
     for (const [name, run] of cases) {
       await expect(run(), name).rejects.toMatchObject({ status: 401 })
     }
+  })
+})
+
+describe('Google sign-in through the session route', () => {
+  beforeEach(() => clearGoogleKeyCache())
+
+  function memoryAuth() {
+    const users = new Map<string, any>()
+    const emails = new Map<string, string>()
+    const sessions = new Map<string, any>()
+    return new AppAuth({
+      getUser: async (id) => users.get(id) ?? null,
+      getUserIdByEmail: async (e) => emails.get(e) ?? null,
+      putUser: async (u) => void (users.set(u.id, u), emails.set(u.email, u.id)),
+      putSession: async (h, s) => void sessions.set(h, s),
+      getSession: async (h) => sessions.get(h) ?? null,
+      deleteSession: async (h) => void sessions.delete(h),
+    })
+  }
+
+  it('creates the user, links an existing email account, refuses a forged token', async () => {
+    const { kp, jwk } = await keypair()
+    const fetchJwks = (async () => new Response(JSON.stringify({ keys: [jwk] }))) as unknown as typeof fetch
+    const auth = memoryAuth()
+    const existing = await auth.signUp({ email: 'ada@example.com', password: 'password-1' })
+    const req = (credential: string) => ({
+      method: 'POST', path: '/api/session/google', token: null, secure: true, body: { credential },
+    })
+    const ok = await handleSessionRoute(auth, req(await sign(kp.privateKey, good)), { googleClientId: CLIENT, fetch: fetchJwks })
+    expect(ok?.status).toBe(200)
+    expect((ok?.body as any).data.user.id).toBe(existing.user.id)
+    expect(ok?.setCookie).toMatch(/^__Host-mg_session=/)
+
+    const fresh = await handleSessionRoute(auth, req(await sign(kp.privateKey, { ...good, email: 'new@example.com', sub: '9' })), { googleClientId: CLIENT, fetch: fetchJwks })
+    expect((fresh?.body as any).data.user.provider).toBe('google')
+    // A Google-created account has no password: password sign-in is refused.
+    await expect(auth.signIn({ email: 'new@example.com', password: 'anything-1' })).rejects.toMatchObject({ status: 401 })
+
+    const other = await keypair()
+    const forged = await handleSessionRoute(auth, req(await sign(other.kp.privateKey, good)), { googleClientId: CLIENT, fetch: fetchJwks })
+    expect(forged?.status).toBe(401)
+    expect(forged?.setCookie).toBeUndefined()
+
+    const unconfigured = await handleSessionRoute(auth, req('x.y.z'), {})
+    expect(unconfigured?.status).toBe(501)
   })
 })

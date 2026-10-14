@@ -394,6 +394,23 @@ export interface ClientAuthHandle {
   signUp(input: { email: string; password: string; name?: string }): Promise<AuthUser>
   signIn(input: { email: string; password: string }): Promise<AuthUser>
   signOut(): Promise<void>
+  /** Sign in with a Google ID token (the `credential` Google's button returns). */
+  signInWithGoogle(credential: string): Promise<AuthUser>
+  /**
+   * Render Google's sign-in button into an object (handle or id) and sign in
+   * when it is used. Needs the public var `GOOGLE_CLIENT_ID`.
+   */
+  renderGoogleButton(
+    target: string | { getElement(): Element | null } | Element,
+    opts?: {
+      theme?: 'outline' | 'filled_blue' | 'filled_black'
+      size?: 'large' | 'medium' | 'small'
+      text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin'
+      shape?: 'rectangular' | 'pill' | 'circle' | 'square'
+      onSignIn?: (user: AuthUser) => void
+      onError?: (error: Error) => void
+    },
+  ): Promise<void>
   hasRole(role: string): boolean
   /** Called with the new user (or null) whenever sign-in state changes. Returns unsubscribe. */
   onChange(listener: (user: AuthUser | null) => void): () => void

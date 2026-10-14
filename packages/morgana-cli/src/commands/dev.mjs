@@ -439,6 +439,9 @@ const server = http.createServer(async (req, res) => {
       token: tokenOf(req),
       body,
       secure: SECURE,
+    }, {
+      // Public var or local secret — the same lookup ctx.vars makes.
+      googleClientId: config.vars.private.GOOGLE_CLIENT_ID ?? config.vars.public.GOOGLE_CLIENT_ID,
     })
     if (!out) return sendJson(res, 404, { success: false, message: 'Not found' })
     if (out.setCookie) res.setHeader('set-cookie', out.setCookie)
