@@ -91,15 +91,23 @@ function client(base, hostHeader) {
     jar,
     request,
     get: (p) => request('GET', p, { raw: true }),
-    /** GET recording when the first body chunk arrived. */
-    timed: (p) =>
+    /** GET (or POST with `opts.body`) recording when the first body chunk arrived. */
+    timed: (p, opts = {}) =>
       new Promise((resolve, reject) => {
         const url = new URL(p, base)
         const lib = url.protocol === 'https:' ? https : http
         const t0 = Date.now()
         let first = -1
         let text = ''
-        const req = lib.request(url, { method: 'GET', headers: { ...(hostHeader ? { host: hostHeader } : {}), 'accept-encoding': 'identity' } }, (res) => {
+        const payload = opts.body === undefined ? null : JSON.stringify(opts.body)
+        const cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ')
+        const headers = {
+          ...(hostHeader ? { host: hostHeader } : {}),
+          'accept-encoding': 'identity',
+          ...(cookie ? { cookie } : {}),
+          ...(payload ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } : {}),
+        }
+        const req = lib.request(url, { method: payload ? 'POST' : 'GET', headers }, (res) => {
           res.setEncoding('utf8')
           res.on('data', (d) => {
             if (first < 0) first = Date.now() - t0
@@ -108,7 +116,7 @@ function client(base, hostHeader) {
           res.on('end', () => resolve({ status: res.statusCode, text, firstChunkMs: first, totalMs: Date.now() - t0 }))
         })
         req.on('error', reject)
-        req.end()
+        req.end(payload ?? undefined)
       }),
     post: (p, body) => request('POST', p, { body: body ?? {} }),
     run: (action, params = {}) => request('POST', `/api/actions/${action}/run`, { body: { params } }),
@@ -237,6 +245,72 @@ async function scenarios(c, label) {
     const r = await c.get('/orders/7/')
     expect(r.status === 200 && r.text.includes(`ORDER 7 for ${email}`), `status ${r.status}`)
   })
+  // ── server objects ────────────────────────────────────────────────────────
+  const room = `room-${Date.now()}`
+  const obj = (p = '') => `/api/objects/chat-room${p}`
+  await check('objects: create by name; a second create is refused', async () => {
+    const a = await c.request('POST', obj(), { body: { name: room, init: { title: 'E2E' } } })
+    expect(a.status === 200, a.text)
+    const b = await c.request('POST', obj(), { body: { name: room, init: {} } })
+    expect(b.status === 409, `duplicate create: ${b.status}`)
+  })
+  await check('objects: state plus computed, as committed', async () => {
+    const r = await c.request('GET', obj(`/${room}`))
+    expect(r.json?.data?.state?.title === 'E2E' && r.json?.data?.computed?.label === 'E2E (0)', r.text)
+  })
+  await check('objects: 50 concurrent calls on one instance lose no update', async () => {
+    const results = await Promise.all(Array.from({ length: 50 }, () => c.request('POST', obj(`/${room}/call/bump`), { body: {} })))
+    expect(results.every((r) => r.status === 200), `statuses ${[...new Set(results.map((r) => r.status))]}`)
+    const seen = results.map((r) => r.json?.data?.result).sort((x, y) => x - y)
+    expect(seen.join() === Array.from({ length: 50 }, (_, i) => i + 1).join(), `results ${seen.join()}`)
+    const r = await c.request('GET', obj(`/${room}`))
+    expect(r.json?.data?.state?.count === 50, `count ${r.json?.data?.state?.count}`)
+  })
+  await check('objects: access — sign-in, role and server-only methods refused from the browser', async () => {
+    const jar = new Map(c.jar)
+    c.jar.clear()
+    const anon = await c.request('POST', obj(`/${room}/call/post`), { body: { params: { text: 'x' } } })
+    expect(anon.status === 401, `anon post ${anon.status}`)
+    const serverOnly = await c.request('POST', obj(`/${room}/call/remindSoon`), { body: { params: { ms: 10 } } })
+    expect(serverOnly.status === 403, `server-only ${serverOnly.status}`)
+    for (const [k, v] of jar) c.jar.set(k, v)
+    const member = await c.request('POST', obj(`/${room}/call/post`), { body: { params: { text: 'member says hi' } } })
+    expect(member.status === 200 && member.json?.data?.result?.text === 'member says hi', member.text)
+  })
+  await check('objects: a streaming method streams, then commits its result', async () => {
+    const r = await c.timed(obj(`/${room}/call/answer`), { body: { params: { prompt: 'e2e' } } })
+    const lines = r.text.trim().split('\n').map((l) => JSON.parse(l))
+    const chunks = lines.filter((l) => 'chunk' in l).map((l) => l.chunk).join('')
+    expect(chunks === 'you asked: e2e ', `chunks ${JSON.stringify(chunks)}`)
+    expect(lines.at(-1)?.result?.saved, `final ${JSON.stringify(lines.at(-1))}`)
+    expect(r.firstChunkMs < r.totalMs - 200, `first chunk ${r.firstChunkMs}ms of ${r.totalMs}ms — buffered`)
+    const h = await c.request('POST', obj(`/${room}/call/history`), { body: {} })
+    expect((h.json?.data?.result ?? []).some((m) => m.user === 'ai'), 'answer not saved')
+  })
+  await check('objects: server code is trusted and fully featured (ctx.objects)', async () => {
+    const r = await c.run('objectsDemo', { room: `srv-${room}` })
+    const res = r.json?.data?.result
+    expect(res?.msg === 'from an action' && res?.chunks === 4 && res?.saved && res?.count === 2 && res?.listed, r.text)
+  })
+  await check('objects: alarms run a method later', async () => {
+    await c.run('objectsDemo', { room: `alarm-${room}`, op: 'remind', ms: 300 })
+    await new Promise((r) => setTimeout(r, 2500))
+    const s = await c.run('objectsDemo', { room: `alarm-${room}`, op: 'state' })
+    expect(s.json?.data?.result?.reminders === 1, s.text)
+  })
+  await check('objects: background jobs run after commit and change state through methods', async () => {
+    await c.run('objectsDemo', { room: `job-${room}`, op: 'summarize' })
+    await new Promise((r) => setTimeout(r, 1500))
+    const s = await c.run('objectsDemo', { room: `job-${room}`, op: 'state' })
+    expect(s.json?.data?.result?.summaries === 1, s.text)
+  })
+  await check('objects: list and remove', async () => {
+    const l = await c.request('GET', obj())
+    expect((l.json?.data?.items ?? []).some((i) => i.name === room), l.text)
+    const missing = await c.request('GET', obj('/no-such-room'))
+    expect(missing.status === 404, `missing ${missing.status}`)
+  })
+
   await check('unknown path is a 404', async () => {
     const r = await c.get('/nothing/here/')
     expect(r.status === 404, `status ${r.status}`)
@@ -270,6 +344,21 @@ async function browserScenario(base, hostRule) {
     })
     await check('the session cookie is invisible to page script', async () => {
       expect(!(await page.evaluate(() => document.cookie.includes('mg_session'))), 'document.cookie exposes the session')
+    })
+    await check('objects in the browser: bound state, method call, streamed answer, live events', async () => {
+      await page.goto(base + '/room/')
+      await page.waitForFunction(() => document.querySelector('[data-entity="room-title"]')?.textContent === 'Lobby', null, { timeout: 15000 })
+      const before = (await page.textContent('[data-entity="room-label"]')) ?? ''
+      const n = Number(/\((\d+)\)/.exec(before)?.[1] ?? -1)
+      await page.click('[data-entity="room-bump"]')
+      // The binding follows the object's live state over its WebSocket.
+      await page.waitForFunction((want) => document.querySelector('[data-entity="room-label"]')?.textContent === `Lobby (${want})`, n + 1, { timeout: 15000 })
+      await page.click('[data-entity="room-ask"]')
+      await page.waitForFunction(() => (document.querySelector('[data-entity="room-answer"]')?.textContent ?? '').endsWith('|done'), null, { timeout: 15000 })
+      const answer = await page.textContent('[data-entity="room-answer"]')
+      expect(answer === 'you asked: browser |done', `answer ${answer}`)
+      // The method emitted 'message'; the page's on('message') received it.
+      await page.waitForFunction(() => (document.querySelector('[data-entity="room-events"]')?.textContent ?? '').includes('[you asked: browser]'), null, { timeout: 15000 })
     })
     await check('no page errors', async () => expect(!errors.length, errors.join('; ')))
   } finally {

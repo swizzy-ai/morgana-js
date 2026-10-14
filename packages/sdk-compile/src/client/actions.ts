@@ -222,6 +222,7 @@ export function actionsPart(): string[] {
     '    channels:(ui.events && ui.events.channels) ? ui.events.channels : {},',
     '    log:function(){ var parts=Array.prototype.slice.call(arguments).map(String); logEvent({lane:"action",name:"log",message:parts.join(" ")}); if(typeof console!=="undefined") console.log.apply(console,parts); },',
     '    auth:pageAuth(),',
+    '    objects:ui.objects||{},',
     '    ai:serverOnly("ai"),',
     '    server:serverOnly("server"),',
     '    actions:makeActions() };',

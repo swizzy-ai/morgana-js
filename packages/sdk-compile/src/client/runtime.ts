@@ -11,6 +11,8 @@
  * meaning once the page is built, so they raise rather than pretend.
  */
 
+import { pageObjects } from './objects'
+import type { ObjectsMeta } from '../objects-api'
 import { qrMarkup } from '../qr'
 import { CREATABLE_KINDS } from '../kinds'
 import { STATE_PROPS, stateRules } from '../style/states'
@@ -852,6 +854,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
   ui['theme'] = theme
   ui['getTheme'] = theme.get
   ui['setTheme'] = theme.set
+  // ctx.objects — server objects, as far as each one's access allows a browser.
+  ui['objects'] = pageObjects((manifest() as { serverObjects?: ObjectsMeta }).serverObjects)
   ui['setState'] = (next: Record<string, unknown> | ((s: Record<string, unknown>) => Record<string, unknown>)) => {
     const state = ui['state'] as { set(p: string, v: unknown): void; getAll(): Record<string, unknown> }
     const patch = typeof next === 'function' ? next(state.getAll()) : next

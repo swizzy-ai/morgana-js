@@ -180,6 +180,9 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
       const out = await createInstance(sql, meta, name, init ?? {}, caller, invokeFor(type, caller))
       index.exec('INSERT OR REPLACE INTO instances (type, name, createdAt) VALUES (?, ?, ?)', type, name, Date.now())
       await settle(type, name, out, caller)
+      // Subscribers may have connected before the instance existed: give
+      // them its first state.
+      if (!out.stateChanged) publish(type, name, '__state', readSnapshot(sql, meta))
     })
   }
 
