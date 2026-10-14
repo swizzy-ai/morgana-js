@@ -23,6 +23,8 @@ import { makeHostContext } from '../lib/host-context.mjs'
 import { ChannelHub } from '../lib/channels.mjs'
 import { localPrivateVars } from '../lib/secrets.mjs'
 import { createLocalAppAuth, pageGate, tokenOf } from '../lib/app-auth.mjs'
+import { createObjectsHost } from '../lib/objects-host.mjs'
+import { acceptWebSocket } from '../lib/ws.mjs'
 import { handleSessionRoute, serializeSessionCookie, clearSessionCookie, findPageByPath, isParamAddress } from '@morgana/sdk-compile/server-host'
 import { isPageResult } from '@morgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
@@ -111,6 +113,32 @@ for (const s of stores) {
 // App end-users: the shared auth core over this SQLite file. The dev host is
 // plain http, so the cookie drops `Secure` (and with it the `__Host-` prefix).
 const appAuth = createLocalAppAuth(store)
+
+// Server objects: one SQLite file per instance under .data/objects, calls
+// serialized per instance — the cloud's one-Durable-Object-per-instance model.
+// A method's ctx is a server ctx running as the caller.
+const objectsHost = await createObjectsHost({
+  dist,
+  dataDir,
+  makeCtx: async (caller) =>
+    (
+      await makeHostContext({
+        store,
+        filesDir: path.join(dataDir, 'files'),
+        args: {},
+        config,
+        declaredStores: stores.map((s) => s.name),
+        enabledActions,
+        runAction: (n, p) => runAction(n, p, { session: { token: null, user: caller } }),
+        auth: appAuth,
+        session: { token: null, user: caller },
+        objects: objectsHost.api(caller),
+        dist,
+        graphCache,
+        channels,
+      })
+    ).ctx,
+})
 const SECURE = false
 
 /** Deployed server action modules, imported once and cached. */
@@ -235,6 +263,7 @@ async function runAction(name, params, reqCtx = {}) {
     request: reqCtx.request,
     response: reqCtx.response,
     streamSink: reqCtx.streamSink,
+    objects: objectsHost.api(reqCtx.session?.user ?? null),
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',
@@ -479,6 +508,13 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, out.status, out.body)
   }
 
+  // 2b. server objects — create, read, call (incl. streaming), list, remove.
+  //     Access rules are checked inside for every operation.
+  if (pathname.startsWith('/api/objects/')) {
+    const user = await appAuth.resolve(tokenOf(req))
+    if (await objectsHost.handleHttp(req, res, url, user, { readBody, sendJson })) return
+  }
+
   // 3. channels — the same surface the deployed host serves, so `ctx.events`
   //    means the same thing in development as it does deployed.
   //
@@ -651,6 +687,25 @@ const server = http.createServer(async (req, res) => {
   return send(res, 200, fs.readFileSync(full), MIME[path.extname(full)] ?? 'application/octet-stream')
 })
 
+// Live object subscriptions: WebSocket at /api/objects/<type>/<name>/live.
+server.on('upgrade', async (req, socket) => {
+  const m = /^\/api\/objects\/([a-z][a-z0-9-]*)\/([^/]+)\/live\/?$/.exec(new URL(req.url, 'http://local').pathname)
+  if (!m) return socket.end('HTTP/1.1 404 Not Found\r\n\r\n')
+  try {
+    const user = await appAuth.resolve(tokenOf(req))
+    const ws = acceptWebSocket(req, socket)
+    if (!ws) return
+    try {
+      objectsHost.subscribe(m[1], decodeURIComponent(m[2]), user, ws)
+    } catch (err) {
+      ws.send(JSON.stringify({ event: '__error', data: { status: err?.status ?? 500, message: String(err?.message ?? err) } }))
+      ws.close()
+    }
+  } catch {
+    socket.destroy()
+  }
+})
+
 // The requested port is a wish, not a promise: a stale instance (or anything
 // else on the box) holding it used to kill the boot with EADDRINUSE and leave
 // the user staring at a dead terminal. Walk upward from the request instead,
@@ -691,6 +746,7 @@ say(`  stores:  ${stores.map((s) => s.name).join(', ') || '(none)'}`)
 // clean one, because the next run silently attaches to the old process.
 const shutdown = () => {
   channels.closeAll()
+  objectsHost.close()
   server.close(() => process.exit(0))
   // Do not wait forever on a socket that is not closing politely.
   setTimeout(() => process.exit(0), 500).unref()

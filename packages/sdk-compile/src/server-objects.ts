@@ -309,6 +309,9 @@ export function discoverServerObjects(dir: string, warnings: string[] = [], expl
       }
       const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true)
       const found = findDefinitions(sf)
+      // defineServerObject modules belong to the current object pipeline
+      // (objects-compile.ts); this legacy one only reads customServerObject.
+      if (!found.length && /\bdefineServerObject\s*\(/.test(text)) continue
       if (!found.length) {
         warnings.push(`${path.relative(dir, file)} is in server-objects/ but exports no customServerObject(…) — ignored`)
         continue

@@ -18,6 +18,7 @@ import {
   bundleCustomObjects,
 } from './custom-objects'
 import { discoverServerObjects } from './server-objects'
+import { browserObjectMeta, compileServerObjects, objectTypesDts } from './objects-compile'
 import { createEmptyIR, type ProjectIR } from './ir'
 import {
   buildBrowserCompileCtx,
@@ -378,6 +379,15 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const serverTriggers = triggers.filter((t) => !isDesktopRun(t.run))
   const desktopTriggers = triggers.filter((t) => isDesktopRun(t.run))
 
+  // Server objects: compiled before pages render, because every page's
+  // manifest carries the browser's view of them (ctx.objects proxies).
+  const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
+  ir.serverObjects = browserObjectMeta(serverObjects)
+  if (serverObjects.length) {
+    fs.mkdirSync(path.join(dir, '.morgana'), { recursive: true })
+    fs.writeFileSync(path.join(dir, '.morgana', 'objects.d.ts'), objectTypesDts(dir, serverObjects))
+  }
+
   const pages: Record<string, string> = {}
   for (const page of ir.pages.values()) {
     pages[page.name] = renderPageHtml(ir, page.name)
@@ -492,6 +502,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     desktopTriggers,
     desktop: desktopDecl,
     serverObjects: discoveredObjects,
+    objects: serverObjects,
   })
 
   return {

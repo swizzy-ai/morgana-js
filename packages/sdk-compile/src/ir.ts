@@ -130,6 +130,8 @@ export interface ProjectIR {
   logs: string[]
   /** Public vars from morgana.config.ts — build-time constants, safe to ship. */
   vars: Record<string, unknown>
+  /** Server objects as the browser sees them (by camelCase key): name and member names. */
+  serverObjects?: Record<string, { name: string; methods: string[]; streaming: string[] }>
   /**
    * The project's custom object components, keyed by name. A node created by one
    * records `customObject` so the runtime knows which methods and lifecycle to

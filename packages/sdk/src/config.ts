@@ -241,6 +241,11 @@ export interface MorganaConfig {
   /** Apps to deploy — keyed by app name. Pages are added to the app by name. */
   apps?: Record<string, AppDefinition>
   /**
+   * Installed object libraries (npm package names). Each package lists its
+   * server objects in package.json: `"morgana": { "objects": ["dist/x.js"] }`.
+   */
+  libraries?: string[]
+  /**
    * The desktop lane's project-level declaration — backend package plus the
    * OS capability list the app may use. Absent means no desktop lane.
    */

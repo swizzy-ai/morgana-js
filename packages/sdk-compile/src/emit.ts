@@ -28,6 +28,8 @@ import { extractPageGraph } from './render/page-graph'
 
 export interface EmitInputs {
   ir: ProjectIR
+  /** defineServerObject modules: dist/server/objects/<name>.js + objects.json. */
+  objects?: Array<{ meta: unknown & { name: string }; code: string }>
   entry: string
   /** Project asset dir to copy verbatim into dist/assets (optional). */
   assetsDir?: string | null
@@ -134,6 +136,11 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
   write('assets/client.js', inputs.clientJs)
   write('assets/style.css', inputs.css)
   if (inputs.assetsDir) copyDir(inputs.assetsDir, path.join(outDir, 'assets'), files, outDir)
+  if (inputs.objects?.length) {
+    for (const o of inputs.objects) write(`server/objects/${o.meta.name}.js`, o.code)
+    write('server/objects.json', `${JSON.stringify(inputs.objects.map((o) => o.meta), null, 2)}
+`)
+  }
   for (const a of inputs.serverActions) {
     write(`server/actions/${a.name}.js`, a.code)
   }

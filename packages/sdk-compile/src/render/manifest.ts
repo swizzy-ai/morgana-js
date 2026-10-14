@@ -40,6 +40,8 @@ export interface PageManifest {
   breakpoints: Record<string, { minWidth?: number; maxWidth?: number }>
   /** Public vars from morgana.config.ts — build-time constants, safe to ship. */
   vars: Record<string, unknown>
+  /** Server objects reachable through ctx.objects (proxies are built from this). */
+  serverObjects: Record<string, { name: string; methods: string[]; streaming: string[] }>
   style: ReturnType<typeof serializeStyleCtx>
 }
 
@@ -113,6 +115,7 @@ export function buildManifest(ir: ProjectIR, pageName: string): PageManifest {
       ]),
     ),
     vars: (ir.vars ?? {}) as Record<string, unknown>,
+    serverObjects: ir.serverObjects ?? {},
     style: serializeStyleCtx(buildStyleCtx(ir)),
   }
 }

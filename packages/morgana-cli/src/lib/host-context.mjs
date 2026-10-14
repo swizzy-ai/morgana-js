@@ -309,6 +309,8 @@ export async function makeHostContext(opts) {
     },
     // End-user auth for this request — the same core the worker runs. Absent
     // only when a caller builds a context with no auth store (unit tests).
+    // Server objects for this invocation (built by the host, carried here).
+    ...(opts.objects ? { objects: opts.objects } : {}),
     ...(opts.auth
       ? {
           auth: buildServerAuth({
