@@ -566,6 +566,75 @@ export interface LoginProps extends FormProps {}
 export interface SignupProps extends FormProps {}
 export interface ListerProps extends ListProps {}
 
+export interface BlockquoteProps extends SharedProps {
+  content?: string
+  text?: string
+  cite?: string
+}
+
+export interface KbdProps extends SharedProps {
+  content?: string
+  keys?: string[]
+  size?: 'sm' | 'md' | 'lg'
+}
+
+export interface StatusProps extends SharedProps {
+  label?: string
+  value?: 'info' | 'success' | 'warning' | 'error' | 'neutral'
+  size?: 'sm' | 'md' | 'lg'
+}
+
+export interface SpinnerProps extends SharedProps {
+  label?: string
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+}
+
+export interface EmptyStateProps extends SharedProps {
+  title?: string
+  description?: string
+  icon?: string
+}
+
+export interface DataListItem {
+  label: string
+  value?: string
+}
+
+export interface DataListProps extends SharedProps {
+  items?: DataListItem[]
+  orientation?: 'horizontal' | 'vertical'
+  size?: 'sm' | 'md' | 'lg'
+}
+
+export interface AspectRatioProps extends SharedProps {
+  ratio?: string
+}
+
+export interface CodeBlockProps extends SharedProps {
+  content?: string
+  code?: string
+  language?: string
+  showLineNumbers?: boolean
+}
+
+export interface AvatarGroupMember {
+  src?: string
+  name?: string
+}
+
+export interface AvatarGroupProps extends SharedProps {
+  avatars?: AvatarGroupMember[]
+  max?: number
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+}
+
+export interface ProgressCircleProps extends SharedProps {
+  value?: number
+  max?: number
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+  showLabel?: boolean
+}
+
 export interface SeparatorProps extends SharedProps {
   orientation?: 'horizontal' | 'vertical'
   variant?: 'solid' | 'dashed' | 'dotted'
@@ -778,6 +847,18 @@ export type KnownObjectHandleProps =
   | LoginProps
   | SignupProps
   | ListerProps
+  | BlockquoteProps
+  | KbdProps
+  | StatusProps
+  | SpinnerProps
+  | EmptyStateProps
+  | DataListProps
+  | DataListItem
+  | AspectRatioProps
+  | CodeBlockProps
+  | AvatarGroupProps
+  | AvatarGroupMember
+  | ProgressCircleProps
   | SeparatorProps
   | SkeletonProps
   | BreadcrumbsProps

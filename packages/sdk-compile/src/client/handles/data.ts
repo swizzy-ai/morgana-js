@@ -564,6 +564,119 @@ function tagMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
+function statusMethods(ctx: HandleCtx): Record<string, unknown> {
+  return {
+    setLabel: (label: string) => {
+      ctx.setProp('label', label)
+      const node = ctx.el?.querySelector('[data-part="status-label"]')
+      if (node) node.textContent = String(label ?? '')
+    },
+    setValue: (value: string) => {
+      ctx.setProp('value', value)
+      ctx.el?.setAttribute('data-status', String(value))
+    },
+  }
+}
+
+function dataListMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return {
+    setItems: (items: Array<{ label?: string; value?: string }>) => {
+      ctx.setProp('items', items)
+      if (!ctx.el) return
+      ctx.el.innerHTML = (Array.isArray(items) ? items : [])
+        .map((item) => {
+          if (!item || typeof item !== 'object') return ''
+          return (
+            '<div data-part="row"><span data-part="term">' +
+            esc(String(item.label ?? '')) +
+            '</span><span data-part="detail">' +
+            esc(String(item.value ?? '')) +
+            '</span></div>'
+          )
+        })
+        .join('')
+    },
+  }
+}
+
+function avatarGroupMethods(ctx: HandleCtx): Record<string, unknown> {
+  const esc = (s: string): string =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const paint = (avatars: Array<{ src?: string; name?: string }>, max?: number): void => {
+    if (!ctx.el) return
+    const list = Array.isArray(avatars) ? avatars : []
+    const cap = typeof max === 'number' && max > 0 ? Math.floor(max) : list.length
+    const shown = list.slice(0, cap)
+    const rest = list.length - shown.length
+    ctx.el.innerHTML =
+      shown
+        .map((a) => {
+          const name = String(a?.name ?? '')
+          const src = typeof a?.src === 'string' ? a.src : ''
+          const initials = name.trim().split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2)
+          return (
+            `<span data-part="member" title="${esc(name)}">` +
+            (src !== '' ? `<img data-part="image" src="${esc(src)}" alt="${esc(name)}" />` : `<span data-part="initials">${esc(initials)}</span>`) +
+            '</span>'
+          )
+        })
+        .join('') + (rest > 0 ? `<span data-part="overflow">+${rest}</span>` : '')
+  }
+  return {
+    setAvatars: (avatars: Array<{ src?: string; name?: string }>) => {
+      ctx.setProp('avatars', avatars)
+      const max = Number(ctx.getProp('max') ?? 0)
+      paint(avatars, max > 0 ? max : undefined)
+    },
+  }
+}
+
+function progressCircleMethods(ctx: HandleCtx): Record<string, unknown> {
+  const paint = (value: number): void => {
+    const max = Number(ctx.getProp('max') ?? 100) || 100
+    const v = Math.max(0, Math.min(max, Number(value) || 0))
+    ctx.setProp('value', v)
+    if (!ctx.el) return
+    ctx.el.setAttribute('data-value', String(v))
+    const C = 2 * Math.PI * 44
+    const ring = ctx.el.querySelector('[data-part="ring"]') as unknown as { setAttribute(k: string, v: string): void } | null
+    ring?.setAttribute('stroke-dasharray', `${((v / max) * C).toFixed(1)} ${C.toFixed(1)}`)
+    const label = ctx.el.querySelector('[data-part="percent"]')
+    if (label) label.textContent = `${Math.round((v / max) * 100)}%`
+  }
+  return {
+    getValue: () => Number(ctx.getProp('value') ?? 0),
+    setValue: (value: number) => {
+      paint(Number(value))
+      ctx.emit('changed', { value: Number(ctx.getProp('value') ?? 0) })
+    },
+  }
+}
+
+function codeBlockMethods(ctx: HandleCtx): Record<string, unknown> {
+  return {
+    copyCode: () => {
+      const code = ctx.el?.querySelector('[data-part="source"]')?.textContent ?? String(ctx.getProp('content') ?? ctx.getProp('code') ?? '')
+      try {
+        const done = (navigator as unknown as { clipboard?: { writeText(t: string): Promise<void> } }).clipboard?.writeText(code)
+        if (done && typeof done.then === 'function') {
+          done.then(
+            () => ctx.emit('copied', { code }),
+            () => ctx.emit('copyFailed', { code }),
+          )
+        } else {
+          ctx.emit('copied', { code })
+        }
+      } catch {
+        ctx.emit('copyFailed', { code })
+      }
+    },
+  }
+}
+
+
 function treeMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -640,6 +753,11 @@ const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   stat: statMethods,
   tag: tagMethods,
   treeView: treeMethods,
+  status: statusMethods,
+  dataList: dataListMethods,
+  avatarGroup: avatarGroupMethods,
+  progressCircle: progressCircleMethods,
+  codeBlock: codeBlockMethods,
 }
 
 export function extendData(ctx: HandleCtx): void {

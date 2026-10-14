@@ -12,6 +12,7 @@ const SURFACE_KINDS = new Set([
   'tabs', 'accordion', 'dialog', 'dropdown', 'tooltip', 'form',
   'login', 'signup', 'header', 'main', 'footer', 'nav', 'section', 'article', 'slot', 'list',
   'link', 'button',
+  'blockquote', 'emptyState', 'aspectRatio',
 ])
 
 export interface CompileState {

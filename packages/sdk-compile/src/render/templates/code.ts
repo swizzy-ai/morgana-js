@@ -148,3 +148,27 @@ export function renderCode(ir: ProjectIR, node: RenderNode): string {
   html += '</pre>'
   return html
 }
+
+/**
+ * Code block: renderCode's output under a header with language + copy.
+ * The copy button writes through the clipboard API and emits
+ * `copied`/`copyFailed` — same contract as the toast copy path.
+ */
+export function renderCodeBlock(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  const attrList = baseAttrs(node)
+  const language = typeof props['language'] === 'string' ? props['language'] : ''
+  attrList.push(`data-language="${escAttr(language)}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'content', 'code', 'language'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<div ${attrList.join(' ')}>`
+  html += '<div data-part="header">'
+  if (language !== '') html += `<span data-part="language">${escHtml(language)}</span>`
+  html += '<button type="button" data-part="copy" aria-label="Copy code">Copy</button>'
+  html += '</div>'
+  html += `<div data-part="source">${escHtml(String(props['content'] ?? props['code'] ?? props['text'] ?? ''))}</div>`
+  html += '</div>'
+  void ir
+  return html
+}

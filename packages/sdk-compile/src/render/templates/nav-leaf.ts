@@ -172,3 +172,139 @@ export function renderSlot(ir: ProjectIR, node: RenderNode): string {
   }
   return `<div ${attrList.join(' ')}>${inner}</div>`
 }
+
+export function renderBlockquote(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'content', 'text', 'cite'])
+  attrList.push(...carryProps(props, skip))
+  const body = String(props['content'] ?? props['text'] ?? '')
+  let html = `<blockquote ${attrList.join(' ')}>`
+  html += `<div data-part="quote">${escHtml(body)}</div>`
+  if (props['cite'] !== undefined && props['cite'] !== '') {
+    html += `<cite data-part="cite">— ${escHtml(String(props['cite']))}</cite>`
+  }
+  html += node.children.map((c) => renderNode(ir, c)).join('')
+  html += '</blockquote>'
+  return html
+}
+
+export function renderKbd(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'content', 'keys', 'size'])
+  attrList.push(...carryProps(props, skip))
+  const keys = Array.isArray(props['keys'])
+    ? (props['keys'] as unknown[]).map((k) => String(k))
+    : String(props['content'] ?? '').split('+').map((k) => k.trim()).filter((k) => k !== '')
+
+  let html = `<span ${attrList.join(' ')}>`
+  html += keys.map((k) => `<kbd data-part="key">${escHtml(k)}</kbd>`).join('<span data-part="plus">+</span>')
+  html += '</span>'
+  return html
+}
+
+export function renderStatus(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const value = typeof props['value'] === 'string' ? props['value'] : 'neutral'
+  attrList.push(`data-status="${escAttr(value)}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'label', 'value', 'size'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<span ${attrList.join(' ')}>`
+  html += '<span data-part="dot" aria-hidden="true"></span>'
+  if (props['label'] !== undefined && props['label'] !== '') {
+    html += `<span data-part="status-label">${escHtml(String(props['label']))}</span>`
+  }
+  html += '</span>'
+  return html
+}
+
+export function renderSpinner(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  attrList.push('role="status"')
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'label', 'size'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<span ${attrList.join(' ')}>`
+  html += '<span data-part="track" aria-hidden="true"></span>'
+  if (props['label'] !== undefined && props['label'] !== '') {
+    html += `<span data-part="spinner-label">${escHtml(String(props['label']))}</span>`
+  } else {
+    html += '<span data-part="spinner-label" hidden>Loading</span>'
+  }
+  html += '</span>'
+  return html
+}
+
+export function renderEmptyState(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'title', 'description', 'icon'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<div ${attrList.join(' ')}>`
+  if (props['icon'] !== undefined && props['icon'] !== '') {
+    html += `<div data-part="empty-icon">${escHtml(String(props['icon']))}</div>`
+  }
+  if (props['title'] !== undefined && props['title'] !== '') {
+    html += `<div data-part="empty-title">${escHtml(String(props['title']))}</div>`
+  }
+  if (props['description'] !== undefined && props['description'] !== '') {
+    html += `<div data-part="empty-description">${escHtml(String(props['description']))}</div>`
+  }
+  html += node.children.map((c) => renderNode(ir, c)).join('')
+  html += '</div>'
+  return html
+}
+
+export function renderAspectRatio(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const ratio = typeof props['ratio'] === 'string' && props['ratio'] !== '' ? props['ratio'] : '16/9'
+  attrList.push(`data-ratio="${escAttr(ratio)}"`)
+  attrList.push(`style="aspect-ratio:${escAttr(ratio)}"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'ratio'])
+  attrList.push(...carryProps(props, skip))
+
+  let html = `<div ${attrList.join(' ')}>`
+  html += node.children.map((c) => renderNode(ir, c)).join('')
+  html += '</div>'
+  return html
+}
+
+export function renderAvatarGroup(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'avatars', 'max', 'size'])
+  attrList.push(...carryProps(props, skip))
+  const avatars = Array.isArray(props['avatars']) ? (props['avatars'] as Array<Record<string, unknown>>) : []
+  const max = Number(props['max'] ?? 0)
+  const shown = max > 0 ? avatars.slice(0, Math.floor(max)) : avatars
+  const rest = avatars.length - shown.length
+
+  const member = (a: Record<string, unknown>): string => {
+    const name = String(a?.['name'] ?? '')
+    const src = typeof a?.['src'] === 'string' ? a['src'] as string : ''
+    const initials = name.trim().split(/\s+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2)
+    return (
+      `<span data-part="member" title="${escAttr(name)}">` +
+      (src !== '' ? `<img data-part="image" src="${escAttr(src)}" alt="${escAttr(name)}" />` : `<span data-part="initials">${escHtml(initials)}</span>`) +
+      '</span>'
+    )
+  }
+  let html = `<div ${attrList.join(' ')}>`
+  html += shown.map(member).join('')
+  if (rest > 0) html += `<span data-part="overflow">+${rest}</span>`
+  html += '</div>'
+  return html
+}

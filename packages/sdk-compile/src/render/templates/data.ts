@@ -434,6 +434,51 @@ export function renderTag(ir: ProjectIR, node: RenderNode): string {
   return html
 }
 
+export function renderDataList(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'items', 'orientation', 'size'])
+  attrList.push(...carryProps(props, skip))
+  const items = Array.isArray(props['items']) ? (props['items'] as Array<Record<string, unknown>>) : []
+
+  let html = `<div ${attrList.join(' ')}>`
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    html += '<div data-part="row">'
+    html += `<span data-part="term">${escHtml(String(item['label'] ?? ''))}</span>`
+    html += `<span data-part="detail">${escHtml(String(item['value'] ?? ''))}</span>`
+    html += '</div>'
+  }
+  html += '</div>'
+  return html
+}
+
+export function renderProgressCircle(ir: ProjectIR, node: RenderNode): string {
+  const props = node.props
+  void ir
+  const attrList = baseAttrs(node)
+  attrList.push('role="progressbar"')
+  const max = Number(props['max'] ?? 100) || 100
+  const value = Math.max(0, Math.min(max, Number(props['value'] ?? 0)))
+  const R = 44
+  const C = 2 * Math.PI * R
+  const frac = value / max
+  attrList.push(`data-value="${value}"`)
+  attrList.push(`aria-valuenow="${Math.round(frac * 100)}" aria-valuemin="0" aria-valuemax="100"`)
+  const skip = new Set(['id', 'name', 'placement', 'data', 'address', 'app', 'value', 'max', 'size', 'showLabel'])
+  attrList.push(...carryProps(props, skip))
+
+  const track = `<circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--muted)" stroke-width="10" />`
+  const ring = `<circle data-part="ring" cx="50" cy="50" r="${R}" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)" />`
+  let html = `<div ${attrList.join(' ')}><svg viewBox="0 0 100 100" width="100%" role="presentation">${track}${ring}</svg>`
+  if (props['showLabel'] === true) {
+    html += `<span data-part="percent">${Math.round(frac * 100)}%</span>`
+  }
+  html += '</div>'
+  return html
+}
+
 function renderTreeNodes(nodes: Array<Record<string, unknown>>, selectedKey: string): string {
   let html = ''
   for (const node of nodes) {

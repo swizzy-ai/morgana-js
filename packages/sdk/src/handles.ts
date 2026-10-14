@@ -80,6 +80,18 @@ import type {
   LoginProps,
   SignupProps,
   ListerProps,
+  BlockquoteProps,
+  KbdProps,
+  StatusProps,
+  SpinnerProps,
+  EmptyStateProps,
+  DataListProps,
+  DataListItem,
+  AspectRatioProps,
+  CodeBlockProps,
+  AvatarGroupProps,
+  AvatarGroupMember,
+  ProgressCircleProps,
   SeparatorProps,
   SkeletonProps,
   BreadcrumbsProps,
@@ -946,6 +958,53 @@ export interface LoginHandle extends FormHandle {}
 export interface SignupHandle extends FormHandle {}
 
 export interface ListerHandle extends ListHandle {}
+
+export interface BlockquoteHandle extends ObjectHandle<BlockquoteProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface KbdHandle extends ObjectHandle<KbdProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface StatusHandle extends ObjectHandle<StatusProps> {
+  setLabel(label: string): void
+  setValue(value: string): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface SpinnerHandle extends ObjectHandle<SpinnerProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface EmptyStateHandle extends ObjectHandle<EmptyStateProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface DataListHandle extends ObjectHandle<DataListProps> {
+  setItems(items: DataListItem[]): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface AspectRatioHandle extends ObjectHandle<AspectRatioProps> {
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface CodeBlockHandle extends ObjectHandle<CodeBlockProps> {
+  copyCode(): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface AvatarGroupHandle extends ObjectHandle<AvatarGroupProps> {
+  setAvatars(avatars: AvatarGroupMember[]): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
+export interface ProgressCircleHandle extends ObjectHandle<ProgressCircleProps> {
+  getValue(): number
+  setValue(value: number): void
+  track(event: string, opts?: TrackOptions): EventSource
+}
 
 // ── Static display handles ──────────────────────────────────────────────────
 // Separator, skeleton, breadcrumbs, markdown and code are compile-rendered

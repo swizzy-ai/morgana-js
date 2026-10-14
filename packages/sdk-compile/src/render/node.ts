@@ -4,21 +4,28 @@
 import { baseAttrs, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
 import { iconFor, withIcon } from './icons';
 import { renderButton, renderCombobox, renderEditable, renderField, renderFileUpload, renderNumberInput, renderPinInput, renderRating, renderSelect, renderSlider, renderTagsInput, renderToggle } from './templates/form';
-import { renderChart, renderList, renderProgress, renderStat, renderSteps, renderTable, renderTag, renderTimeline, renderTreeView } from './templates/data';
+import { renderChart, renderDataList, renderList, renderProgress, renderProgressCircle, renderStat, renderSteps, renderTable, renderTag, renderTimeline, renderTreeView } from './templates/data';
 import { renderAlert, renderBadge, renderDialog, renderTabs } from './templates/overlay';
 import { renderImage } from './templates/media';
 import { renderForm, renderLabel } from './templates/form-surface';
 import { renderAccordion, renderDrawer, renderDropdown, renderPopover, renderToast, renderTooltip } from './templates/surfaces';
 import {
+  renderAspectRatio,
   renderAvatar,
+  renderAvatarGroup,
+  renderBlockquote,
   renderBreadcrumbs,
+  renderEmptyState,
+  renderKbd,
   renderMenu,
   renderSeparator,
   renderSkeleton,
   renderSlot,
+  renderSpinner,
+  renderStatus,
 } from './templates/nav-leaf';
 import { renderAudio, renderVideo } from './templates/media-surface';
-import { renderCode } from './templates/code';
+import { renderCode, renderCodeBlock } from './templates/code';
 import { renderMarkdown } from './markdown';
 import type { ProjectIR } from '../ir';
 
@@ -86,6 +93,16 @@ export const TAG_FOR_KIND: Record<string, string> = {
   editable: 'div',
   fileUpload: 'div',
   treeView: 'div',
+  blockquote: 'blockquote',
+  kbd: 'span',
+  status: 'span',
+  spinner: 'span',
+  emptyState: 'div',
+  aspectRatio: 'div',
+  avatarGroup: 'div',
+  dataList: 'div',
+  progressCircle: 'div',
+  codeBlock: 'div',
   toggle: 'input',
   form: 'form',
   login: 'form',
@@ -110,7 +127,8 @@ export const LAYOUT_PRIMITIVES = new Set([
  */
 export const TEMPLATED_KINDS = new Set([
   'button', 'input', 'textarea', 'numberInput', 'pinInput', 'combobox', 'tagsInput', 'rating', 'editable', 'fileUpload', 'select', 'checkbox', 'radio', 'switch', 'toggle',
-  'steps', 'timeline', 'stat', 'tag', 'treeView',
+  'steps', 'timeline', 'stat', 'tag', 'treeView', 'dataList', 'progressCircle',
+  'blockquote', 'kbd', 'status', 'spinner', 'emptyState', 'aspectRatio', 'avatarGroup', 'codeBlock',
   'table', 'tabs', 'dialog', 'badge', 'alert', 'image', 'list', 'lister', 'chart', 'progress',
   'form', 'login', 'signup', 'label',
   'accordion', 'dropdown', 'menu', 'tooltip', 'popover', 'drawer', 'toast',
@@ -233,6 +251,26 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderMarkdownNode(ir, view)
     case 'code':
       return renderCode(ir, view)
+    case 'codeBlock':
+      return renderCodeBlock(ir, view)
+    case 'blockquote':
+      return renderBlockquote(ir, view)
+    case 'kbd':
+      return renderKbd(ir, view)
+    case 'status':
+      return renderStatus(ir, view)
+    case 'spinner':
+      return renderSpinner(ir, view)
+    case 'emptyState':
+      return renderEmptyState(ir, view)
+    case 'aspectRatio':
+      return renderAspectRatio(ir, view)
+    case 'avatarGroup':
+      return renderAvatarGroup(ir, view)
+    case 'dataList':
+      return renderDataList(ir, view)
+    case 'progressCircle':
+      return renderProgressCircle(ir, view)
     default:
       return renderGeneric(ir, view)
   }
