@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/agents",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Agent loop for Morgana: Nanoagent runtime plus providers, action tools, and ctx.agents construction.",
   "license": "Apache-2.0",
