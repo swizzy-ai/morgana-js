@@ -12,6 +12,8 @@ export const NAV: Array<{ key: string; label: string; href: string }> = [
   { key: 'data', label: 'Data objects', href: '/objects-data/' },
   { key: 'display', label: 'Display objects', href: '/objects-display/' },
   { key: 'structure', label: 'Structure', href: '/objects-structure/' },
+  { key: 'more', label: 'More components', href: '/objects-more/' },
+  { key: 'themes', label: 'Themes & states', href: '/themes/' },
   { key: 'motion', label: 'Motion lab', href: '/motion/' },
   { key: 'style', label: 'Style lab', href: '/style/' },
   { key: 'lanes', label: 'Lanes', href: '/lanes/' },

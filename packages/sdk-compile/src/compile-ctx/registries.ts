@@ -22,22 +22,8 @@ function defineGradientChecked(state: CompileState, key: string, value: unknown)
   }
 }
 
-export const CREATABLE_KINDS = [
-  'page',
-  'box', 'container', 'grid', 'card', 'group', 'stage',
-  'vstack', 'hstack',
-  'tabs', 'accordion', 'dialog', 'dropdown', 'tooltip', 'popover', 'drawer', 'toast',
-  'form', 'login', 'signup', 'slot',
-  'header', 'main', 'footer', 'nav', 'section', 'article',
-  'text', 'markdown', 'code', 'label',
-  'button', 'input', 'textarea', 'select', 'checkbox', 'radio', 'switch', 'toggle',
-  'numberInput', 'pinInput', 'combobox', 'tagsInput', 'rating', 'editable', 'fileUpload', 'steps', 'timeline', 'stat', 'tag', 'treeView', 'dataList', 'progressCircle', 'blockquote', 'kbd', 'status', 'spinner', 'emptyState', 'aspectRatio', 'avatarGroup', 'codeBlock',
-  'slider',
-  'list', 'lister', 'table', 'chart', 'badge', 'avatar',
-  'alert', 'progress', 'skeleton', 'separator',
-  'image', 'video', 'audio',
-  'link', 'menu', 'breadcrumbs',
-] as const
+export { CREATABLE_KINDS } from '../kinds'
+import { CREATABLE_KINDS } from '../kinds'
 
 const TRANSFORMER_DOMAINS = [
   'effects', 'radius', 'spacing', 'dimensions', 'fonts',

@@ -289,6 +289,8 @@ export function inputBehaviors(): string[] {
     '});',
     'document.addEventListener("change", function(e){',
     '  var el = e.target && e.target.closest ? e.target.closest("input[type=\\"checkbox\\"],input[type=\\"radio\\"]") : null;',
+    '  // A radio group reports its value itself (behaviors/wave3).',
+    '  if(el && el.closest("[data-kind=\\"radioGroup\\"]")) el = null;',
     '  if(el){ var host = el.closest("[data-entity]"); dispatchPageEvent("changed", host?host.getAttribute("data-entity"):"", el, {checked:!!el.checked,value:el.value}); }',
     '  // A select inside a form reports its value so FormHandle.getValue works.',
     '  var sel = e.target && e.target.closest ? e.target.closest("select") : null;',

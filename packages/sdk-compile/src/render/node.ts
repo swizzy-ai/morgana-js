@@ -27,6 +27,7 @@ import {
 import { renderAudio, renderVideo } from './templates/media-surface';
 import { renderCode, renderCodeBlock } from './templates/code';
 import { renderMarkdown } from './markdown';
+import { renderCarousel, renderCollapsible, renderColorPicker, renderCommandPalette, renderContextMenu, renderDatePicker, renderPagination, renderRadioGroup } from './templates/wave3';
 import type { ProjectIR } from '../ir';
 
 export const TAG_FOR_KIND: Record<string, string> = {
@@ -103,6 +104,14 @@ export const TAG_FOR_KIND: Record<string, string> = {
   dataList: 'div',
   progressCircle: 'div',
   codeBlock: 'div',
+  datePicker: 'div',
+  radioGroup: 'div',
+  pagination: 'nav',
+  collapsible: 'div',
+  carousel: 'div',
+  colorPicker: 'div',
+  contextMenu: 'div',
+  commandPalette: 'div',
   toggle: 'input',
   form: 'form',
   login: 'form',
@@ -137,6 +146,7 @@ export const TEMPLATED_KINDS = new Set([
   'avatar', 'separator', 'skeleton', 'slot',
   'video', 'audio',
   'markdown', 'code',
+  'datePicker', 'radioGroup', 'pagination', 'collapsible', 'carousel', 'colorPicker', 'contextMenu', 'commandPalette',
 ])
 export function renderNode(ir: ProjectIR, id: string): string {  const node = ir.objects.get(id)
   if (!node) return ''
@@ -207,6 +217,22 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderTag(ir, view)
     case 'treeView':
       return renderTreeView(ir, view)
+    case 'datePicker':
+      return renderDatePicker(ir, view)
+    case 'radioGroup':
+      return renderRadioGroup(ir, view)
+    case 'pagination':
+      return renderPagination(ir, view)
+    case 'collapsible':
+      return renderCollapsible(ir, view)
+    case 'carousel':
+      return renderCarousel(ir, view)
+    case 'colorPicker':
+      return renderColorPicker(ir, view)
+    case 'contextMenu':
+      return renderContextMenu(ir, view)
+    case 'commandPalette':
+      return renderCommandPalette(ir, view)
     // ── Forms ──
     case 'form':
     case 'login':

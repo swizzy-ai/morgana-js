@@ -19,7 +19,7 @@ Project shape: `morgana.config.ts`, `src/actions/{compile,server,client}/`,
 `src/objects/`, `assets/`. Scaffold with `morgana init <name>` (global
 `morgana` must be the linked `@morgana/cli` — `morgana --version` is the tell).
 
-## 2. Object catalog (18 handles, all under `ctx.ui.*`)
+## 2. Object catalog (89 kinds, all under `ctx.ui.*`)
 
 Every handle shares: `get/set/setProps/make/setWithBreakpoint/bind/place/
 clone/copy/move/remove/when/track/emit/animate`. `ctx.ui.get(id)` is the only
@@ -82,6 +82,21 @@ Styling: `make()` words — surfaces (`card elevated glass-card dark-glass`), ef
 
 Gradients: named via `ctx.ui.transformers.gradients.add(name, {type, angle, stops})` (linear/radial/conic, validated at define time — bad specs fail the build naming the action). Apply anywhere a background works: `make('gradient:sunset')`, bare `make('sunset')` once registered, `bg: 'gradient:sunset'`. Boundary: NOT `color` (no gradient text color in CSS) or `borderColor` (needs border-image). Stock pack = one file (`actions/compile/gradients.ts`, 16 backgrounds) + a hooks entry — install by copying. Registry ships in the style JSON so the browser resolves the same names at runtime.
 
+- **datePicker**: value (`YYYY-MM-DD`), min, max, placeholder, name, disabled, weekStart. Methods: `getValue/setValue/clear/open/close/isOpen`. Events: `changed {value}`, `opened`, `closed`. Calendar built client-side (the visitor's "today").
+- **radioGroup**: options (`label value description disabled`), value, name, orientation, disabled. Methods: `getValue/setValue/setOptions`. Event: `changed {value}` (once — the generic radio change is suppressed inside groups).
+- **pagination**: page, total + pageSize (or pages), siblings. Methods: `getPage/getPages/setPage/next/prev/setTotal`. Event: `changed {page}`.
+- **collapsible**: title, content, open, disabled; placed children render in the panel. Methods: `open/close/toggle/isOpen`. Events: `opened`, `closed`.
+- **carousel**: items (`src alt title caption`) or placed children as slides, index, autoplay (ms; pauses on hover, focus and reduced motion), loop. Methods: `getIndex/count/goTo/next/prev`. Event: `changed {index}`.
+- **colorPicker**: value (`#rrggbb`), swatches, name, disabled. Methods: `getValue/setValue`. Event: `changed {value}` on commit, not per drag step.
+- **contextMenu**: items (`label value disabled separator shortcut`); placed children are the right-click area. Methods: `open(x?, y?)/close/isOpen/setItems`. Events: `opened`, `selected {value}`, `closed`.
+- **commandPalette**: items (+ `group`, `shortcut`), placeholder, hotkey (`mod+k` default), open, emptyText. Type to filter, arrows + Enter, Esc. Methods: `open/close/toggle/isOpen/setItems`. Events: `opened`, `selected {value,label}`, `closed`.
+
+**Every object is styled by props — never `class`/`style`.** Every kind accepts the full style surface (`StyleProps`): `width height minW minH maxW maxH pad gap bg color surface radius border borderTop… borderColor borderWidth boxShadow effect opacity font fontFamily fontSize fontWeight lineHeight textDecoration textTransform cursor overflow transition`. Framework CSS lives in `@layer morgana`; an object's props are unlayered, so they always win (a primary button's `bg` used to lose to its variant). Proven for all 89 kinds by `tools/style-check.mjs`.
+
+States: `hover`, `focus` (keyboard focus + focus-within), `active`, `disabled` each take the same props: `{ bg: 'primary', hover: { bg: '#4338CA' }, transition: 'fast' }`. They win over base styles from the sheet or from runtime `set()`, and `set('hover', {...})` works at runtime. (`disabled: true` is still the component flag; only an object is a state style.)
+
+Themes: `ctx.ui.themes.define('brand', { primary, primaryForeground, background, foreground, card, cardForeground, muted, mutedForeground, border, accent, accentForeground, danger, success, warning, shadow, fontFamily, dark: {…} })`. Apply like any make word: `make('theme:brand')`, bare `make('brand')` (a defined theme wins over built-in words), or `{ theme: 'brand' }` — on a page or any subtree; themes nest. Built in: `light` and `dark`. Colour mode: `mode: 'light' | 'dark' | 'system'` on a page or object; `ctx.ui.setTheme('dark' | 'light' | 'system' | '<theme>')` repaints live. Theme colour names in props follow the theme: `bg: 'primary'`, `color: 'muted-foreground'`, `borderColor: 'accent'`.
+
 Animation: `handle.animate.<preset>(opts)` — 16 presets + `animate(name)` + `animate.to(keyframes)`. Always promised, always emits `<id>.animated`. Infinite runs never settle: fire and forget. Reduced motion settles silently (one console note per page).
 
 ## 3. Gotchas that cost hours (all proven in docs)
@@ -97,18 +112,28 @@ Animation: `handle.animate.<preset>(opts)` — 16 presets + `animate(name)` + `a
 9. **Object ids are project-global, not per-page.** Duplicate explicit ids now fail fast naming both claimants — prefix shared ids per page (`d-<page>-…`).
 
 10. **Pages have three render modes.** `render: 'static'` prerenders (default), `'spa'` serves a shell, `'server'` renders per request from `server/pages/<name>.json`. A server page needs an owning `on: 'http.get /<address>/'` action or it serves its prerender (build warns).
-11. **Server actions load objects, never state.** `await ctx.ui.get(id)` then `.setProps(...)`, then `return ctx.ui.pages.render(name)` (or the flat alias `ctx.ui.renderPage(name)` � same call, and the only form the cloud sandbox guarantees). `ctx.state` in an action is that action's own short-lived state � it connects to no page. The whole server-ui surface is async on both hosts so one shape works everywhere.
+11. **Server actions load objects, never state.** `await ctx.ui.get(id)` then `.setProps(...)`, then `return ctx.ui.pages.render(name)` (or the flat alias `ctx.ui.renderPage(name)` — same call, and the only form the cloud sandbox guarantees). `ctx.state` in an action is that action's own short-lived state — it connects to no page. The whole server-ui surface is async on both hosts so one shape works everywhere.
 12. **Address is the URL.** Pages emit to `dist/<address>/index.html`; `/pages/<name>.html` is a permanent alias. `address` is required, unique, and must not collide with /api, /assets, /apps, /pages.
+
+13. **Auth is per app, and server and client are different surfaces.** Server `ctx.auth`: `user`, `hasRole`, `require(role?)` (401/403), `signUp/signIn/signInAs` (set the session cookie on this response), `signOut`, `users.get/findByEmail/create/setRoles/setPassword`, `passwordReset.create/complete`, `emailVerification.create/verify`. Client `ctx.auth`: `user`, `ready`, `signUp/signIn/signOut`, `signInWithGoogle(credential)`, `renderGoogleButton(target)`, `onChange`. Sessions are an HttpOnly cookie — page script cannot read it. App users are never project members. Deployed, sign-in works only on the project's own host (`<project>.<APPS_DOMAIN>`), not the shared `/apps/` preview.
+14. **Gate pages, not just actions.** `pages.create({ access: 'member' | { role: 'admin' }, redirect: 'login' })` — the host refuses before any HTML is served (including the `/pages/<name>.html` alias). `http.get` routes owning a gated page are gated the same way.
+15. **Secrets are vars you set, not config.** `morgana secrets set NAME value` (deployed, encrypted) or `--local` (`.morgana/secrets.json` for dev); read with `ctx.vars.get('NAME')` in server actions only.
+16. **Email:** `ctx.server.email.send({ to, subject, html | text })` — Resend via the `RESEND_API_KEY` secret, sender from `EMAIL_FROM`; `EMAIL_PROVIDER=console` prints instead.
+17. **Collection writes name declared columns.** Both hosts refuse undeclared fields (the error names the field and suggests `type: 'json'`). `set(name, id, data)` upserts one record.
+18. **Param routes:** `address: 'products/:id'` — literal pages win; params reach server pages as `ctx.args.id`. Files: `ctx.server.files.*` (R2 when deployed). Responses: `ctx.server.respond(body, { status, contentType })` on both hosts.
 
 ## 4. Gap map vs Chakra UI (surveyed chakra-ui@main, 76 recipes)
 
 Morgana's 18 handles cover Chakra's core: button/input/select/tabs/dialog/alert/badge/progress/table/switch/checkbox/avatar-ish/link/text/textarea-ish/form/image. Chakra vocabulary worth adopting: sizes (`2xs–2xl`), button variants (`solid subtle surface outline ghost plain`), input variants (`outline subtle flushed`), dialog sizes (`xs–full`) + placement (`center top bottom`), tabs variants (`line subtle enclosed outline`), table variants (`line outline`), badge/tag variants (`solid subtle outline surface`), switch (`solid raised`).
 
-**Missing components** (no Morgana handle): tooltip, popover, menu, accordion, slider, number-input, pin-input, combobox, tags-input, date-picker, color-picker, drawer (dialog variant exists), toast, skeleton (template exists), avatar, breadcrumb, pagination, steps, timeline, stat, tabs-content parts, tree-view, textarea (distinct), radio-group (distinct), rating, QR-code, marquee, carousel, collapsible.
+**Still missing** (no Morgana kind yet): QR-code, marquee, date-range picker. Everything else on the original gap list now ships — see §2.
 
 **Structural difference**: Chakra components are compound (`Dialog.Root/Trigger/Content/Header/Footer`); Morgana handles are single objects with props + `data-part` internals. Match prop-for-prop where handles exist; new handles follow the single-object shape, not the compound one.
 
 ## 5. Verify like the docs do
+
+Framework-level checks (repo root): `node tools/e2e.mjs` (full stack on `morgana dev`; `--worker <url> --token --project` for a real worker), `node tools/style-check.mjs --browser <chrome>` (every kind styled by props), `node tools/components-check.mjs --browser <chrome>` (component behaviour and events).
+
 
 `morgana build` (zero `✖`), `morgana dev --port <n>`, then a real browser
 (headless lies about reduced motion): every page loads with no `pageerror`,

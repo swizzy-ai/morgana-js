@@ -34,7 +34,7 @@ const flag = (n) => {
 const browserPath = flag('browser')
 if (!browserPath) throw new Error('--browser <chrome executable> is required')
 
-const registries = fs.readFileSync(path.join(root, 'packages/sdk-compile/src/compile-ctx/registries.ts'), 'utf8')
+const registries = fs.readFileSync(path.join(root, 'packages/sdk-compile/src/kinds.ts'), 'utf8')
 const block = /CREATABLE_KINDS = \[([\s\S]*?)\] as const/.exec(registries)[1]
 let kinds = [...block.matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).filter((k) => k !== 'page')
 if (flag('kinds')) kinds = flag('kinds').split(',')

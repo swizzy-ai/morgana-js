@@ -9,6 +9,7 @@ import { overlayBehaviors } from './overlay'
 import { inputBehaviors } from './inputs'
 import { formBehaviors } from './forms'
 import { navBehaviors } from './nav'
+import { wave3Behaviors } from './wave3'
 
 export function behaviorsPart(): string[] {
   return [
@@ -17,7 +18,8 @@ export function behaviorsPart(): string[] {
     ...inputBehaviors(),
     ...formBehaviors(),
     ...navBehaviors(),
+    ...wave3Behaviors(),
   ]
 }
 
-export { tableBehaviors, overlayBehaviors, inputBehaviors, formBehaviors, navBehaviors }
+export { tableBehaviors, overlayBehaviors, inputBehaviors, formBehaviors, navBehaviors, wave3Behaviors }

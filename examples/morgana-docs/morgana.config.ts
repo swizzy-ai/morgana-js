@@ -21,6 +21,8 @@ export default defineConfig({
         'objectsData',
         'objectsDisplay',
         'objectsStructure',
+        'objectsMore',
+        'themesPage',
         'motion',
         'style',
         'lanes',

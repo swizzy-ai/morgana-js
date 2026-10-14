@@ -12,6 +12,7 @@ import { extendInputs } from './inputs'
 import { extendFeedback } from './feedback'
 import { extendData } from './data'
 import { extendAnimate } from './animate'
+import { extendWave3 } from './wave3'
 
 export type { HandleCtx }
 export { extend }
@@ -23,4 +24,5 @@ export function extendHandle(ctx: HandleCtx): void {
   extendFeedback(ctx)
   extendData(ctx)
   extendAnimate(ctx)
+  extendWave3(ctx)
 }

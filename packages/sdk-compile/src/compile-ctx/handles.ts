@@ -13,6 +13,9 @@ const SURFACE_KINDS = new Set([
   'login', 'signup', 'header', 'main', 'footer', 'nav', 'section', 'article', 'slot', 'list',
   'link', 'button',
   'blockquote', 'emptyState', 'aspectRatio',
+  // Containers among the newer kinds: their placed children render inside
+  // them (collapsible panel, carousel slides, context-menu area).
+  'collapsible', 'carousel', 'contextMenu',
 ])
 
 export interface CompileState {

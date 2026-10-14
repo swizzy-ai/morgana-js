@@ -23,13 +23,19 @@ import type {
   LinkHandle, ListHandle, ObjectHandle, PageHandle, Placement, TextHandle, TrackOptions, Unsubscribe, WhenSource,
   TransformerConfigApi,
   TableHandle, DialogHandle, AccordionHandle, PopoverHandle, DrawerHandle, ToastHandle, DropdownHandle, MenuHandle, TooltipHandle, AvatarHandle, TextareaHandle, LabelHandle, NumberInputHandle, PinInputHandle, StepsHandle, TimelineHandle, StatHandle, TagHandle, ComboboxHandle, TagsInputHandle, TreeViewHandle, RatingHandle, EditableHandle, FileUploadHandle, SeparatorHandle, SkeletonHandle, BreadcrumbsHandle, VideoHandle, AudioHandle, MarkdownHandle, CodeHandle, ContainerHandle, GridHandle, CardHandle, GroupHandle, StageHandle, VStackHandle, HStackHandle, HeaderHandle, MainHandle, FooterHandle, NavHandle, SectionHandle, ArticleHandle, SlotHandle, LoginHandle, SignupHandle, ListerHandle, SelectHandle, TabsHandle, BadgeHandle, AlertHandle, ToggleHandle, FormHandle, ProgressHandle,
+  BlockquoteHandle, KbdHandle, StatusHandle, SpinnerHandle, EmptyStateHandle, DataListHandle, AspectRatioHandle, CodeBlockHandle, AvatarGroupHandle, ProgressCircleHandle,
 } from '../handles'
+import type {
+  DatePickerProps, DatePickerHandle, RadioGroupProps, RadioGroupHandle, PaginationProps, PaginationHandle, CollapsibleProps, CollapsibleHandle,
+  CarouselProps, CarouselHandle, ColorPickerProps, ColorPickerHandle, ContextMenuProps, ContextMenuHandle, CommandPaletteProps, CommandPaletteHandle,
+} from '../components'
 import type { MeasureApi } from '../layout'
 import type { IconsApi } from '../icons'
 import type { PageTrackableEvent } from '../trackables'
 import type {
   BoxProps, ButtonProps, ImageProps, InputProps, SliderProps, LinkProps, PageProps, TextProps,
   TableProps, DialogProps, AccordionProps, PopoverProps, DrawerProps, ToastProps, DropdownProps, MenuProps, TooltipProps, AvatarProps, TextareaProps, LabelProps, NumberInputProps, PinInputProps, ListProps, ChartProps, StepsProps, TimelineProps, StatProps, TagProps, ComboboxProps, TagsInputProps, TreeViewProps, RatingProps, EditableProps, FileUploadProps, SeparatorProps, SkeletonProps, BreadcrumbsProps, VideoProps, AudioProps, MarkdownProps, CodeProps, ContainerProps, GridPrimitiveProps, CardProps, GroupProps, StageProps, VStackProps, HStackProps, HeaderProps, MainProps, FooterProps, NavProps, SectionProps, ArticleProps, SlotProps, LoginProps, SignupProps, ListerProps, SelectProps, TabsProps, BadgeProps, AlertProps, ToggleProps, FormProps, ProgressProps,
+  BlockquoteProps, KbdProps, StatusProps, SpinnerProps, EmptyStateProps, DataListProps, AspectRatioProps, CodeBlockProps, AvatarGroupProps, ProgressCircleProps,
 } from '../props'
 
 /** Frontend state — the single source of truth for the UI. */
@@ -123,6 +129,24 @@ export interface UiApi {
   checkbox: Creatable<ToggleProps, ToggleHandle>
   form: Creatable<FormProps, FormHandle>
   progress: Creatable<ProgressProps, ProgressHandle>
+  datePicker: Creatable<DatePickerProps, DatePickerHandle>
+  radioGroup: Creatable<RadioGroupProps, RadioGroupHandle>
+  pagination: Creatable<PaginationProps, PaginationHandle>
+  collapsible: Creatable<CollapsibleProps, CollapsibleHandle>
+  carousel: Creatable<CarouselProps, CarouselHandle>
+  colorPicker: Creatable<ColorPickerProps, ColorPickerHandle>
+  contextMenu: Creatable<ContextMenuProps, ContextMenuHandle>
+  commandPalette: Creatable<CommandPaletteProps, CommandPaletteHandle>
+  blockquote: Creatable<BlockquoteProps, BlockquoteHandle>
+  kbd: Creatable<KbdProps, KbdHandle>
+  status: Creatable<StatusProps, StatusHandle>
+  spinner: Creatable<SpinnerProps, SpinnerHandle>
+  emptyState: Creatable<EmptyStateProps, EmptyStateHandle>
+  dataList: Creatable<DataListProps, DataListHandle>
+  aspectRatio: Creatable<AspectRatioProps, AspectRatioHandle>
+  codeBlock: Creatable<CodeBlockProps, CodeBlockHandle>
+  avatarGroup: Creatable<AvatarGroupProps, AvatarGroupHandle>
+  progressCircle: Creatable<ProgressCircleProps, ProgressCircleHandle>
 
   // ── Registered kinds without a concrete handle — the full catalog ────────
   container: Creatable<ContainerProps, ContainerHandle>

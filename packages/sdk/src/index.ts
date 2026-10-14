@@ -492,3 +492,6 @@ export { defineConfig } from './config'
 // Action factories — generic/event actions + compile-time actions
 export type { ActionConfig, ActionDef } from './actions'
 export { defineServerAction, defineClientAction, defineDesktopAction } from './actions'
+
+// Newer components: props and handles.
+export type * from './components'

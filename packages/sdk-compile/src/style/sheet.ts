@@ -3,6 +3,7 @@
  */
 import { allThemeCss, rootThemeCss } from './themes';
 import { stateRules } from './states';
+import { wave3Styles } from './wave3';
 import { buildStyleCtx, cssDeclsToString, resolvePropsToCss } from './props';
 import { resolvePartStyles } from './parts';
 import { animationClasses, animationKeyframes } from '../compile-ctx/tokens';
@@ -254,6 +255,7 @@ export function renderStyleCss(ir: ProjectIR): string {
     '[data-part="cell-fill"]{display:block;height:100%;background:var(--primary);border-radius:inherit}',
     '[data-part="overlay"]{cursor:default}',
   ]
+  lines.push(...wave3Styles())
   // Animation + behavior classes, and the keyframes they reference.
   lines.push(...tokenClassRules(ir))
   const needsKeyframes = skeletonUses || tokenClassRules(ir).length > 0

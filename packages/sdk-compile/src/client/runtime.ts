@@ -11,6 +11,7 @@
  * meaning once the page is built, so they raise rather than pretend.
  */
 
+import { CREATABLE_KINDS } from '../kinds'
 import { STATE_PROPS, stateRules } from '../style/states'
 import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } from '../style/props'
 import { resolveMakeToken } from '../compile-ctx/tokens'
@@ -192,6 +193,15 @@ function applyAttr(el: HTMLElement, prop: string, value: unknown): void {
 }
 
 /** Write one prop to the page. Structural props go through the resolver. */
+const WAVE3_PROPS: Record<string, { prop: string; fn: string; coerce?: (v: unknown) => unknown }> = {
+  datePicker: { prop: 'value', fn: 'dpSet' },
+  radioGroup: { prop: 'value', fn: 'rgSet' },
+  pagination: { prop: 'page', fn: 'pgPaint' },
+  collapsible: { prop: 'open', fn: 'clSet', coerce: (v) => v === true || v === 'true' },
+  carousel: { prop: 'index', fn: 'crGo' },
+  colorPicker: { prop: 'value', fn: 'cpSet' },
+}
+
 function applyProp(id: string, kind: string, el: HTMLElement, prop: string, value: unknown, all?: Record<string, unknown>): void {
   if (prop === 'id' || prop === 'data-entity') return
   // Handle-semantic props paint through the same helpers the handle methods
@@ -211,6 +221,16 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
     const spec = { ...(all ?? {}), [prop]: value } as { kind?: string; series?: unknown; labels?: unknown; palette?: unknown }
     repaintChartEl(el, { kind: String(spec.kind ?? (all?.['chartKind'] as string) ?? 'bar'), series: spec.series, labels: spec.labels, palette: spec.palette })
     return
+  }
+  // The newer components' semantic props paint through the same painter the
+  // handle methods and user interactions use (behaviors/wave3).
+  const wave3 = WAVE3_PROPS[kind]
+  if (wave3 && wave3.prop === prop) {
+    const painter = (typeof window !== 'undefined' ? (window as unknown as { __mg3?: Record<string, (...a: unknown[]) => unknown> }).__mg3 : undefined)?.[wave3.fn]
+    if (painter) {
+      painter(el, wave3.coerce ? wave3.coerce(value) : value)
+      return
+    }
   }
   // Theme scope and colour mode are attributes the stylesheet scopes on.
   if (prop === 'theme' || prop === 'mode') {
@@ -568,18 +588,7 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
     return handle
   }
 
-  const CREATABLE = [
-    'box', 'container', 'grid', 'card', 'group', 'stage', 'vstack', 'hstack',
-    'tabs', 'accordion', 'dialog', 'dropdown', 'tooltip',
-    'form', 'login', 'signup', 'slot',
-    'header', 'main', 'footer', 'nav', 'section', 'article',
-    'text', 'markdown', 'code', 'label',
-    'button', 'input', 'textarea', 'select', 'checkbox', 'radio', 'switch', 'toggle',
-    'list', 'lister', 'table', 'chart', 'badge', 'avatar',
-    'alert', 'progress', 'skeleton', 'separator',
-    'image', 'video', 'audio',
-    'link', 'menu', 'breadcrumbs',
-  ] as const
+  const CREATABLE = CREATABLE_KINDS.filter((k) => k !== 'page')
 
   const ui: Record<string, unknown> = {
     get: (name: string) => makeObject(name),
