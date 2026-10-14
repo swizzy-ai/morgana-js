@@ -21,6 +21,7 @@ import { pathToFileURL } from 'node:url'
 import { StoreEngine } from '../lib/store.mjs'
 import { makeHostContext } from '../lib/host-context.mjs'
 import { ChannelHub } from '../lib/channels.mjs'
+import { localPrivateVars } from '../lib/secrets.mjs'
 import { isPageResult } from '@morgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
 
@@ -84,16 +85,16 @@ const desktopApis = readJsonSafe('desktop/apis.json', [])
 const apis = [...serverApis, ...desktopApis]
 const triggers = readJsonSafe('server/triggers.json', [])
 const stores = readJsonSafe('server/stores.json', [])
-// Public vars ship in the manifest; private vars come from this process's env
-// (MORGANA_VAR_<NAME>), so a secret never lands in a build artefact.
+// Public vars ship in the manifest; private vars (secrets) come from
+// .morgana/secrets.json and MORGANA_VAR_<NAME>, so a secret never lands in a
+// build artefact. Read per invocation so `morgana secrets set --local` takes
+// effect without a restart.
 const config = {
   vars: {
     public: manifest.vars ?? {},
-    private: Object.fromEntries(
-      Object.entries(process.env)
-        .filter(([k]) => k.startsWith('MORGANA_VAR_'))
-        .map(([k, v]) => [k.slice('MORGANA_VAR_'.length).toLowerCase(), v]),
-    ),
+    get private() {
+      return localPrivateVars(dir)
+    },
   },
 }
 

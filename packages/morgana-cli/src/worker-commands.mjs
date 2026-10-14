@@ -73,6 +73,28 @@ export const WORKER_COMMANDS = {
     },
   },
 
+  secrets: {
+    describe: 'set, list or remove the secrets server actions read via ctx.vars',
+    usage: 'morgana secrets <set|list|remove> [NAME] [VALUE] [--local]',
+    flags: {
+      ...TARGET_FLAGS,
+      local: { type: 'boolean', describe: 'use .morgana/secrets.json (morgana dev) instead of the worker' },
+    },
+    async run(args, { str, bool, positional }) {
+      const { secrets } = await import('./commands/secrets.mjs')
+      await secrets({
+        action: positional(args, 0, ''),
+        name: positional(args, 1, ''),
+        value: positional(args, 2, ''),
+        local: bool(args, 'local'),
+        url: str(args, 'url'),
+        project: str(args, 'project'),
+        env: str(args, 'env'),
+        token: str(args, 'token'),
+      })
+    },
+  },
+
   status: {
     describe: 'what the worker currently holds for this project',
     usage: 'morgana status --url <worker>',

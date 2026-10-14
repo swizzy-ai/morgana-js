@@ -11,6 +11,7 @@ import path from 'node:path'
 import { StoreEngine } from './store.mjs'
 import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
+import { buildVarsHandle } from './secrets.mjs'
 import { createServerUi } from '@morgana/sdk-compile'
 
 /** @typedef {import('./store.mjs').StoreEngine} StoreEngine */
@@ -250,7 +251,9 @@ export async function makeHostContext(opts) {
     ...(opts.desktop ? { desktop: opts.desktop } : {}),
     ai,
     log,
-    vars: { ...(config.vars?.public ?? {}), ...(config.vars?.private ?? {}) },
+    // The SDK's VarsHandle (get/set/getAll), same as the worker. It used to be a
+    // plain object here, so `ctx.vars.get(...)` threw under `morgana dev` only.
+    vars: buildVarsHandle({ ...(config.vars?.public ?? {}), ...(config.vars?.private ?? {}) }),
     events: {
       emit: (event, payload) => log('emit', event, payload ?? ''),
       // A real publish, not a log line. It lands in the channel hub, which is

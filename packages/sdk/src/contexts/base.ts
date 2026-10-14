@@ -19,8 +19,10 @@ import type { ActionsHandle, AiHandle, AssetsHandle, AuthHandle, LogHandle } fro
 import type { EventApi } from '../events'
 
 /**
- * Shared vars handle. On the server this reads public + private vars
- * (morgana.config.ts); in the browser only public vars ever reach the page.
+ * Shared vars handle. On the server this reads public vars (morgana.config.ts)
+ * plus the project's secrets (`morgana secrets set NAME value`, or `--local`
+ * for `morgana dev`); in the browser only public vars ever reach the page.
+ * `set` writes a per-invocation overlay, never the stored value.
  */
 export interface VarsHandle {
   get(key: string): unknown
