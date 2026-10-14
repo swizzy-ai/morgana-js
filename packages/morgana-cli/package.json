@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "The Morgana CLI — build and deploy a Morgana project.",
   "license": "Apache-2.0",
