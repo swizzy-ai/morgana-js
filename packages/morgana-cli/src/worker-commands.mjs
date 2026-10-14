@@ -95,6 +95,23 @@ export const WORKER_COMMANDS = {
     },
   },
 
+  domains: {
+    describe: 'serve the project at a hostname you own (DNS-verified)',
+    usage: 'morgana domains <add|verify|list|remove> [hostname]',
+    flags: TARGET_FLAGS,
+    async run(args, { str, positional }) {
+      const { domains } = await import('./commands/domains.mjs')
+      await domains({
+        action: positional(args, 0, ''),
+        hostname: positional(args, 1, ''),
+        url: str(args, 'url'),
+        project: str(args, 'project'),
+        env: str(args, 'env'),
+        token: str(args, 'token'),
+      })
+    },
+  },
+
   status: {
     describe: 'what the worker currently holds for this project',
     usage: 'morgana status --url <worker>',
