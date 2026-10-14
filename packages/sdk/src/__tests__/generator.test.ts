@@ -78,9 +78,9 @@ describe('registry generator', () => {
 
       const dts = readFileSync(result.outPath!, 'utf8')
       expect(dts).toContain(
-        'commitTurn: ActionContract<{ sessionId: string; userContent: string; assistantContent: string; }, { ok: boolean; }>',
+        '"commitTurn": ActionContract<{ sessionId: string; userContent: string; assistantContent: string; }, { ok: boolean; }>',
       )
-      expect(dts).toContain('chatUI: ActionContract<{ question?: string | undefined; }, { ok: boolean; }>')
+      expect(dts).toContain('"chatUI": ActionContract<{ question?: string | undefined; }, { ok: boolean; }>')
       expect(dts).not.toContain('legacy')
       expect(dts).toContain("import type { ActionContract } from '@studiomorgana/sdk'")
       expect(dts).toContain('interface AppEvents {}')
@@ -110,6 +110,6 @@ describe('registry generator', () => {
 
   it('renders unknown members for contracts missing input/output', () => {
     const dts = renderRegistryDts([{ name: 'odd', file: 'odd.ts', lane: 'action' }], new Map())
-    expect(dts).toContain('odd: ActionContract<unknown, unknown>')
+    expect(dts).toContain('"odd": ActionContract<unknown, unknown>')
   })
 })

@@ -440,6 +440,11 @@ const server = http.createServer(async (req, res) => {
       if (route.method !== req.method) continue
       const params = matchRoute(route.path, pathname)
       if (!params) continue
+      // `auth: 'member'` — a signed-in user of this app, refused before the
+      // action runs. The worker answers the same 401 (routes/apis.ts).
+      if (route.auth === 'member' && !(await appAuth.resolve(tokenOf(req)).catch(() => null))) {
+        return sendJson(res, 401, { success: false, message: 'Sign in required' })
+      }
       // A server page's owning route is gated like the page, before the action
       // runs — the render must not happen for a visitor who may not see it.
       if (req.method === 'GET') {

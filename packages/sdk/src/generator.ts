@@ -140,6 +140,31 @@ function extractContract(sf: ts.SourceFile, checker: ts.TypeChecker): Extracted 
 }
 
 
+const camel = (s: string) => s.replace(/[-_.]([a-z0-9])/gi, (_m, c: string) => c.toUpperCase())
+
+/**
+ * Which action a file's `Contract` describes. Actions are named by their export
+ * (`export const createCard = defineServerAction(…)` is `createCard`), not by
+ * the file. One action exported: that one. Several: the one named after the
+ * file (`create-card.ts` → `createCard`), or none — a contract cannot be
+ * shared between actions with different shapes.
+ */
+function contractTarget(sf: ts.SourceFile, file: string): string | null {
+  const actions: string[] = []
+  for (const st of sf.statements) {
+    if (!isExported(st) || !ts.isVariableStatement(st)) continue
+    for (const d of st.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name) || !d.initializer || !ts.isCallExpression(d.initializer)) continue
+      const callee = d.initializer.expression
+      if (ts.isIdentifier(callee) && /^define\w*Action$/.test(callee.text)) actions.push(d.name.text)
+    }
+  }
+  if (actions.length === 1) return actions[0]!
+  const byFile = camel(path.basename(file, '.ts'))
+  if (actions.includes(byFile)) return byFile
+  return actions.length ? null : byFile
+}
+
 /** Render the registry declaration file for the given entries. */
 export function renderRegistryDts(entries: RegistryEntry[], bodies: Map<string, Extracted>): string {
   const lines: string[] = [
@@ -156,7 +181,7 @@ export function renderRegistryDts(entries: RegistryEntry[], bodies: Map<string, 
   ]
   for (const e of entries) {
     const b = bodies.get(e.name)
-    lines.push(`    ${e.name}: ActionContract<${b?.input ?? 'unknown'}, ${b?.output ?? 'unknown'}>`)
+    lines.push(`    ${JSON.stringify(e.name)}: ActionContract<${b?.input ?? 'unknown'}, ${b?.output ?? 'unknown'}>`)
   }
   lines.push('  }', '  interface AppEvents {}', '}', '', 'export {}', '')
   return lines.join('\n')
@@ -184,10 +209,10 @@ export function generateRegistry(opts: GenerateRegistryOptions): GeneratedRegist
     const checker = program.getTypeChecker()
 
     for (const file of files) {
-      const name = path.basename(file, '.ts')
       const sf = program.getSourceFile(file)
-      if (!sf) {
-        untyped.push(name)
+      const name = sf ? contractTarget(sf, file) : path.basename(file, '.ts')
+      if (!sf || !name) {
+        untyped.push(path.basename(file, '.ts'))
         continue
       }
       const contract = extractContract(sf, checker)

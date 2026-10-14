@@ -47,6 +47,20 @@ export interface Trigger {
 }
 
 const HTTP_RE = /^http\.([a-z]+)\s+(\/\S*)$/i
+
+/**
+ * Paths both hosts answer before any user route: the page root, compiled
+ * assets, and the platform API (sessions, server objects, events, …). A route
+ * there compiles but can never be reached, so it is refused at build time.
+ */
+export const RESERVED_HTTP_PREFIXES = ['/api/', '/assets/', '/pages/', '/apps/'] as const
+
+/** The reserved prefix a route path falls under, or null. */
+export function reservedPath(p: string): string | null {
+  if (p === '/') return "'/' (the entry page)"
+  const hit = RESERVED_HTTP_PREFIXES.find((r) => p === r.slice(0, -1) || p.startsWith(r))
+  return hit ? `'${hit}'` : null
+}
 const CRON_RE = /^cron\((.+)\)$/i
 const FRONTEND_SELECTOR_RE = /^[a-z#][\w#.\-]*\.(click|change|input|submit|hover|focus|blur|scroll|dblclick)$/i
 
@@ -64,6 +78,21 @@ export function isFrontendEvent(on: string): boolean {
   const seg = t.includes('.') ? (t.split('.').pop() ?? '') : t
   if (/^[a-z#][\w#.\-]*$/i.test(t) && !t.includes(':') && !t.includes('/') && !t.includes('(') && canonicalEvent(seg) !== null) return true
   return false
+}
+
+/**
+ * Which family an `on` selector belongs to — the same tests `deriveRoutes`
+ * applies, in the same order. `unknown` is a selector nothing would fire.
+ */
+export function classifyOn(on: string): 'compile' | 'object' | 'http' | 'cron' | 'backend' | 'browser' | 'unknown' {
+  const t = on.trim()
+  if (t === 'compile') return 'compile'
+  if (/^object:/i.test(t)) return parseObjectSelector(t) ? 'object' : 'unknown'
+  if (HTTP_RE.test(t)) return 'http'
+  if (CRON_RE.test(t)) return 'cron'
+  if (isBackendEvent(t)) return 'backend'
+  if (isFrontendEvent(t)) return 'browser'
+  return 'unknown'
 }
 
 /** Normalize a state subscription selector to `state:<path>` form. */
@@ -123,6 +152,11 @@ export function deriveRoutes(
     }
     const http = HTTP_RE.exec(t)
     if (http) {
+      const reserved = reservedPath(http[2]!)
+      if (reserved) {
+        errors.push(`action "${actionName}": on '${t}' — ${reserved} is the host's own and never reaches an action; use another path, e.g. '/v1${http[2]}'`)
+        return
+      }
       const key = `${http[1]!.toUpperCase()} ${http[2]}`
       if (!seenApi.has(key)) {
         seenApi.add(key)

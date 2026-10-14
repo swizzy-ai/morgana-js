@@ -84,6 +84,19 @@ export const COMMANDS = {
     },
   },
 
+  spec: {
+    describe: 'print the API surface — server objects, ctx, ui kinds, events, …',
+    usage: 'morgana spec [topic] [--all] [--json]',
+    flags: {
+      all: { type: 'boolean', describe: 'every topic, one document' },
+      json: { type: 'boolean', describe: 'structured output' },
+    },
+    async run(args, { bool }) {
+      const { spec } = await import('./commands/spec.mjs')
+      spec({ words: args.positionals, json: bool(args, 'json'), all: bool(args, 'all') })
+    },
+  },
+
   dev: {
     describe: 'compile, serve dist/ locally, and recompile on change',
     usage: 'morgana dev [port] [--port <n>] [--no-watch]',

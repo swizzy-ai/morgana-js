@@ -525,6 +525,8 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
 
 export { scanProject } from './extract'
 export { generateTypes } from './types'
+export { buildSpec, renderAllSpecs, renderSpec, specTopics } from './spec'
+export type { SpecDoc, SpecMember, SpecSection } from './spec'
 export type { GenerateTypesOptions, GeneratedTypes } from './types'
 export type { SdkActionMeta } from './extract'
 export type { ProjectIR } from './ir'

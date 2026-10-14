@@ -45,6 +45,22 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
 
+  examples/team-board:
+    dependencies:
+      '@studiomorgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+    devDependencies:
+      '@studiomorgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+      '@studiomorgana/sdk-compile':
+        specifier: workspace:^
+        version: link:../../packages/sdk-compile
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
   packages/desktop-electron:
     dependencies:
       '@studiomorgana/cli':
