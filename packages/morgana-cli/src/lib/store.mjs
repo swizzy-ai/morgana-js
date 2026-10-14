@@ -76,8 +76,12 @@ function coerce(value, type) {
       return Number.isNaN(d.getTime()) ? null : d.toISOString()
     }
     case 'string':
-    default:
       return typeof value === 'string' ? value : String(value)
+    default:
+      // An undeclared field keeps its value, as on the worker. Stringifying it
+      // here turned `tags: ['a', 'b']` into "a,b" and numbers into strings
+      // under `morgana dev` only.
+      return value
   }
 }
 

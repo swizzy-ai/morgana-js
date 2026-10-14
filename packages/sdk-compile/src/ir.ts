@@ -45,6 +45,14 @@ export interface PageNode {
   app: string | null
   /** How this page is served. Normalized during compile (default 'static'). */
   render: 'static' | 'spa' | 'server'
+  /**
+   * Who may load the page. Enforced by the host before any HTML is served, so
+   * a gated page's markup never reaches a visitor who may not see it.
+   * Absent = public.
+   */
+  access?: 'member' | { role: string[] }
+  /** Where a refused visitor is sent (an address or URL). Absent = a plain 401/403. */
+  redirect?: string
 }
 
 export interface AppNode {

@@ -22,6 +22,8 @@ import { StoreEngine } from '../lib/store.mjs'
 import { makeHostContext } from '../lib/host-context.mjs'
 import { ChannelHub } from '../lib/channels.mjs'
 import { localPrivateVars } from '../lib/secrets.mjs'
+import { createLocalAppAuth, pageGate, tokenOf } from '../lib/app-auth.mjs'
+import { handleSessionRoute, serializeSessionCookie, clearSessionCookie } from '@morgana/sdk-compile/server-host'
 import { isPageResult } from '@morgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
 
@@ -105,6 +107,11 @@ const store = new StoreEngine({ file: path.join(dataDir, 'morgana.db') })
 for (const s of stores) {
   if (s && typeof s.name === 'string') await store.create(s.name, s.shape ?? { columns: [] })
 }
+
+// App end-users: the shared auth core over this SQLite file. The dev host is
+// plain http, so the cookie drops `Secure` (and with it the `__Host-` prefix).
+const appAuth = createLocalAppAuth(store)
+const SECURE = false
 
 /** Deployed server action modules, imported once and cached. */
 const actionModules = new Map()
@@ -211,7 +218,7 @@ const graphCache = new Map()
  * Run a deployed action. `params` becomes ctx.args, exactly as the browser's
  * `ctx.actions.run` and the http routes deliver it.
  */
-async function runAction(name, params) {
+async function runAction(name, params, reqCtx = {}) {
   const mod = await getAction(name)
   const { ctx, logs } = await makeHostContext({
     store,
@@ -220,7 +227,12 @@ async function runAction(name, params) {
     config,
     declaredStores: stores.map((s) => s.name),
     enabledActions,
-    runAction,
+    // Action → action stays inside this request: same user, same cookie sink.
+    runAction: (n, p) => runAction(n, p, reqCtx),
+    auth: appAuth,
+    session: reqCtx.session,
+    onSession: reqCtx.onSession,
+    request: reqCtx.request,
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',
@@ -246,6 +258,55 @@ async function runAction(name, params) {
     throw err
   }
 }
+
+/**
+ * Per-request auth state: the session the request carried, and a sink that
+ * turns an action's signIn/signOut into the Set-Cookie on this response.
+ */
+async function requestContext(req, url, body, params = {}) {
+  const token = tokenOf(req)
+  const user = token ? await appAuth.resolve(token) : null
+  const cookies = []
+  return {
+    cookies,
+    session: { token, user },
+    onSession: (s) =>
+      cookies.push(
+        s
+          ? serializeSessionCookie(s.token, { secure: SECURE, maxAgeSeconds: (s.expiresAt - Date.now()) / 1000 })
+          : clearSessionCookie(SECURE),
+      ),
+    request: {
+      method: req.method,
+      url: req.url,
+      path: url.pathname,
+      query: Object.fromEntries(url.searchParams),
+      headers: { ...req.headers },
+      body,
+      params,
+      user,
+      ip: req.socket?.remoteAddress,
+    },
+  }
+}
+
+/** An auth refusal thrown by an action (ctx.auth.require) keeps its status. */
+function errorStatus(err, fallback = 500) {
+  const s = Number(err?.status)
+  return s >= 400 && s < 500 ? s : fallback
+}
+
+// Gated pages, by every path their HTML can be fetched from: the address, the
+// `/pages/<name>.html` alias, and the raw file under dist/.
+const gatedPages = (manifest.pages ?? []).filter((p) => p && p.access)
+const bareAddress = (a) => (a === '/' ? '' : String(a ?? '').replace(/^\/+|\/+$/g, '').toLowerCase())
+const gatedFiles = new Map()
+for (const p of gatedPages) {
+  const addr = bareAddress(p.address)
+  gatedFiles.set(`pages/${p.name}.html`.toLowerCase(), p)
+  gatedFiles.set(addr ? `${addr}/index.html` : 'index.html', p)
+}
+const gatedPageAt = (pathname) => gatedPages.find((p) => bareAddress(p.address) === bareAddress(pathname))
 
 async function readBody(req) {
   let raw = ''
@@ -276,6 +337,13 @@ function matchRoute(pattern, pathname) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://local')
   const pathname = url.pathname
+  const refuse = (r) => {
+    if (r.location) {
+      res.writeHead(r.status, { location: r.location, 'cache-control': 'no-store' })
+      return res.end()
+    }
+    return send(res, r.status, r.body)
+  }
 
   // 1. http routes declared in morgana.config.ts, from dist/server/apis.json
   if (
@@ -289,17 +357,26 @@ const server = http.createServer(async (req, res) => {
       if (route.method !== req.method) continue
       const params = matchRoute(route.path, pathname)
       if (!params) continue
+      // A server page's owning route is gated like the page, before the action
+      // runs — the render must not happen for a visitor who may not see it.
+      if (req.method === 'GET') {
+        const owned = gatedPageAt(pathname)
+        const refused = owned ? await pageGate(appAuth, owned, req) : null
+        if (refused) return refuse(refused)
+      }
       try {
         const body = await readBody(req)
         for (const [k, v] of url.searchParams) if (!(k in body)) body[k] = v
-        const result = await runAction(route.action, { ...body, ...params })
+        const rc = await requestContext(req, url, body, params)
+        const result = await runAction(route.action, { ...body, ...params }, rc)
+        if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
         // An action returning a rendered page answers with the page itself —
         // this is the action-as-router path. Everything else keeps the JSON
         // envelope.
         if (isPageResult(result)) return send(res, 200, result.html, MIME['.html'])
         return sendJson(res, 200, { success: true, data: { result } })
       } catch (err) {
-        return sendJson(res, 500, { success: false, message: String(err?.message ?? err) })
+        return sendJson(res, errorStatus(err), { success: false, message: String(err?.message ?? err) })
       }
     }
   }
@@ -311,15 +388,34 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readBody(req)
       const params = body && typeof body === 'object' && 'params' in body ? body.params : body
-      const result = await runAction(name, params ?? {})
+      const rc = await requestContext(req, url, params ?? {})
+      const result = await runAction(name, params ?? {}, rc)
+      if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
       return sendJson(res, 200, { success: true, data: { result } })
     } catch (err) {
       const missing = err?.code === 'ACTION_MISSING' || String(err?.message).includes('Cannot find module')
-      return sendJson(res, missing ? 404 : 500, {
+      return sendJson(res, missing ? 404 : errorStatus(err), {
         success: false,
         message: `Action "${name}" failed: ${String(err?.message ?? err)}`,
       })
     }
+  }
+
+  // 2a. the page's session — sign up / in / out, and who is signed in. The
+  //     same handler the worker answers with, so the client runtime has one
+  //     code path.
+  if (pathname === '/api/session' || pathname.startsWith('/api/session/')) {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    const out = await handleSessionRoute(appAuth, {
+      method: req.method,
+      path: pathname,
+      token: tokenOf(req),
+      body,
+      secure: SECURE,
+    })
+    if (!out) return sendJson(res, 404, { success: false, message: 'Not found' })
+    if (out.setCookie) res.setHeader('set-cookie', out.setCookie)
+    return sendJson(res, out.status, out.body)
   }
 
   // 3. channels — the same surface the deployed host serves, so `ctx.events`
@@ -451,6 +547,8 @@ const server = http.createServer(async (req, res) => {
     const entry = [...pageRoutes.values()].find((r) => r.name === entryName) ?? pageRoutes.get('/')
     if (!entry) return send(res, 404, 'no entry page — run `morgana build` first')
     if (entry.address !== '/') return redirect(`/${entry.address}/`)
+    const refused = await pageGate(appAuth, gatedPageAt('/'), req)
+    if (refused) return refuse(refused)
     if (serveFile('index.html')) return
     return send(res, 404, 'no entry page — run `morgana build` first')
   }
@@ -458,14 +556,22 @@ const server = http.createServer(async (req, res) => {
   const hit = bare === '' ? undefined : pageRoutes.get(bare.toLowerCase())
   if (hit && hit.address !== '/') {
     if (!pathname.endsWith('/')) return redirect(`/${hit.address}/`)
+    const refused = await pageGate(appAuth, gatedPageAt(hit.address), req)
+    if (refused) return refuse(refused)
     // A render:'server' page owned by an http route never reaches here — step 1
     // runs the action and answers with the rendered page. Reaching here means
     // no action claimed the address, so the prerender serves as the fallback.
     if (serveFile(path.join(hit.address, 'index.html'))) return
   }
 
-  // 6. static output, with traversal refused
+  // 6. static output, with traversal refused. A gated page's HTML is reachable
+  //    here too, so the same gate applies — otherwise the alias bypasses it.
   const rel = decodeURIComponent(pathname).replace(/^\/+/, '')
+  const gatedFile = gatedFiles.get(rel.toLowerCase())
+  if (gatedFile) {
+    const refused = await pageGate(appAuth, gatedFile, req)
+    if (refused) return refuse(refused)
+  }
   const full = path.join(dist, rel)
   if (!path.resolve(full).startsWith(path.resolve(dist)) || !fs.existsSync(full) || fs.statSync(full).isDirectory()) {
     return send(res, 404, 'not found')

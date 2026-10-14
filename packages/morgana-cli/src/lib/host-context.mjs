@@ -13,7 +13,7 @@ import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
 import { buildVarsHandle } from './secrets.mjs'
 import { createServerUi } from '@morgana/sdk-compile'
-import { createEmailHandle } from '@morgana/sdk-compile/server-host'
+import { buildServerAuth, createEmailHandle } from '@morgana/sdk-compile/server-host'
 
 /** @typedef {import('./store.mjs').StoreEngine} StoreEngine */
 
@@ -165,6 +165,10 @@ class Queue {
  * @param {{ os: unknown, app: unknown, objects: unknown }} [opts.desktop] opaque desktop surface (built by the backend package) attached verbatim as ctx.desktop
  * @param {string} [opts.base]                     public base URL for assets
  * @param {string} [opts.dataDir]                  durable root (agents.json lives here)
+ * @param {import('@morgana/sdk-compile/server-host').AppAuth} [opts.auth] app end-user auth
+ * @param {{ token: string|null, user: unknown }} [opts.session]  this request's session
+ * @param {(s: { token: string, expiresAt: number } | null) => void} [opts.onSession] cookie sink
+ * @param {object} [opts.request]                  the incoming HTTP request, when there is one
  */
 /**
  * Builds the action context for one invocation.
@@ -286,6 +290,18 @@ export async function makeHostContext(opts) {
         return fs.existsSync(p) ? fs.readFileSync(p) : null
       },
     },
+    // End-user auth for this request — the same core the worker runs. Absent
+    // only when a caller builds a context with no auth store (unit tests).
+    ...(opts.auth
+      ? {
+          auth: buildServerAuth({
+            auth: opts.auth,
+            user: opts.session?.user ?? null,
+            token: opts.session?.token ?? null,
+            onSession: opts.onSession ?? (() => {}),
+          }),
+        }
+      : {}),
     actions: {
       run: async (name, params) => {
         if (!enabledActions.includes(name)) {
@@ -375,7 +391,9 @@ export async function makeHostContext(opts) {
     })(),
     server: {
       env: process.env,
-      request: {
+      // The real request for http routes and page renders; an invocation with
+      // no HTTP request behind it (queue, cron, action → action) says so.
+      request: opts.request ?? {
         method: 'INVOKE',
         url: '/',
         path: '/',

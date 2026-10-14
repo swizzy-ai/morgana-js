@@ -15,7 +15,7 @@
 
 import type { ActionContract } from '../contracts'
 import type { AppsHandle } from '../apps'
-import type { ActionsHandle, AiHandle, AssetsHandle, AuthHandle, LogHandle } from './server'
+import type { ActionsHandle, AiHandle, AssetsHandle, LogHandle } from './server'
 import type { EventApi } from '../events'
 
 /**
@@ -47,14 +47,8 @@ export interface BaseContext<C extends ActionContract = ActionContract> {
   assets: AssetsHandle
   /** AI ops — text and structured generation. */
   ai: AiHandle
-  /**
-   * Auth — a spine surface on BOTH lanes, one shape everywhere: the
-   * authenticated user for this invocation, session lookup, role checks and
-   * signIn/signUp/signOut. The lane decides only the transport (server: the
-   * incoming request's session; browser: the page session). Optional —
-   * projects without auth configured omit it.
-   */
-  auth?: AuthHandle
+  // `auth` is per lane, not shared: `ServerContext.auth` (request session,
+  // user admin) and `ClientContext.auth` (the page's signed-in user).
   log: LogHandle
   /**
    * ★ THE event system — the ONLY event surface on both lanes.

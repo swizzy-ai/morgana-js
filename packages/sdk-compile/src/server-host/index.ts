@@ -6,3 +6,19 @@
  */
 export { createEmailHandle } from './email'
 export type { EmailHandle, EmailHostDeps, EmailMessage, EmailResult } from './email'
+export {
+  AppAuth,
+  AuthError,
+  buildServerAuth,
+  clearSessionCookie,
+  handleSessionRoute,
+  hashPassword,
+  pageAccessRefusal,
+  publicUser,
+  readSessionToken,
+  serializeSessionCookie,
+  sessionCookieName,
+  verifyPassword,
+  SESSION_TTL_MS,
+} from './auth'
+export type { AppAuthStorage, AppSessionRecord, AppUserRecord, IssuedSession, PageAccess, SessionRouteResult } from './auth'

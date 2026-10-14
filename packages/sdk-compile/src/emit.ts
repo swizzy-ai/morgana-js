@@ -197,7 +197,14 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     `${JSON.stringify(
       {
         entry: inputs.entry,
-        pages: [...inputs.ir.pages.values()].map((p) => ({ name: p.name, address: p.address, app: p.app, render: p.render })),
+        pages: [...inputs.ir.pages.values()].map((p) => ({
+          name: p.name,
+          address: p.address,
+          app: p.app,
+          render: p.render,
+          ...(p.access ? { access: p.access } : {}),
+          ...(p.redirect ? { redirect: p.redirect } : {}),
+        })),
         apps: [...inputs.ir.apps.values()].map((a) => ({
           name: a.name,
           displayName: a.displayName,

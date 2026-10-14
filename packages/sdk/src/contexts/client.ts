@@ -15,6 +15,7 @@
 
 import type { ActionContract, AppEventName, AppEventPayload, EventScope } from '../contracts'
 import type { BaseContext } from './base'
+import type { AuthUser } from './server'
 import type { EventApi, EventSubscribeOptions } from '../events'
 import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
@@ -378,7 +379,29 @@ export type Creatable<
  *     page                 → `ctx.ui.page` (current) / `ctx.ui.pages` (all)
  *     element/triggerEvent → `ctx.event.element` / `ctx.event.name`
  */
+/**
+ * Browser-lane auth — the page's signed-in user.
+ *
+ * The session lives in an HttpOnly cookie the page cannot read; these methods
+ * call the host's `/api/session` endpoints, which set and clear it. `user` is
+ * null until `ready` settles (one request per page load, made on first use).
+ */
+export interface ClientAuthHandle {
+  readonly user: AuthUser | null
+  /** Resolves with the current user once the session has been checked. */
+  readonly ready: Promise<AuthUser | null>
+  refresh(): Promise<AuthUser | null>
+  signUp(input: { email: string; password: string; name?: string }): Promise<AuthUser>
+  signIn(input: { email: string; password: string }): Promise<AuthUser>
+  signOut(): Promise<void>
+  hasRole(role: string): boolean
+  /** Called with the new user (or null) whenever sign-in state changes. Returns unsubscribe. */
+  onChange(listener: (user: AuthUser | null) => void): () => void
+}
+
 export interface ClientContext<C extends ActionContract = ActionContract> extends BaseContext<C> {
+  /** The page's signed-in user — see `ClientAuthHandle`. */
+  auth: ClientAuthHandle
   /**
    * The structured trigger event — EVERYTHING about what fired this action:
    * `name` (the event), `element` (the DOM element that triggered it, null

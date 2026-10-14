@@ -218,15 +218,37 @@ export interface AuthUser {
   [key: string]: unknown
 }
 
-export interface AuthHandle {
-  /** The authenticated user for this invocation — null when unauthenticated. */
-  user: AuthUser | null
-  getSession(): Promise<{ user: unknown; token: string | null }>
+/**
+ * Server-lane auth — the end-users of *this app* (not Morgana project members).
+ *
+ * `user` is resolved from the request's session cookie before the action runs.
+ * `signIn`/`signUp`/`signInAs` start a session and set the cookie on this
+ * response; `signOut` revokes it. `require` throws a 401/403 the host turns
+ * into that status, so a guarded action is one line.
+ */
+export interface ServerAuthHandle {
+  /** The signed-in user for this request — null when signed out. */
+  readonly user: AuthUser | null
   hasRole(role: string): boolean
-  signIn(input: Record<string, unknown>): Promise<unknown>
-  signUp(input: Record<string, unknown>): Promise<unknown>
+  /** The user, or throw 401 (signed out) / 403 (missing every listed role). */
+  require(role?: string | string[]): AuthUser
+  signUp(input: { email: string; password: string; name?: string }): Promise<AuthUser>
+  signIn(input: { email: string; password: string }): Promise<AuthUser>
+  /** Start a session for an existing user — invites, magic links, OAuth callbacks. */
+  signInAs(userId: string): Promise<AuthUser>
   signOut(): Promise<void>
+  /** User administration. Lookups are by id or email; there is no listing. */
+  users: {
+    get(id: string): Promise<AuthUser | null>
+    findByEmail(email: string): Promise<AuthUser | null>
+    create(input: { email: string; password?: string; name?: string; roles?: string[] }): Promise<AuthUser>
+    setRoles(id: string, roles: string[]): Promise<AuthUser>
+    setPassword(id: string, password: string): Promise<void>
+  }
 }
+
+/** @deprecated Use `ServerAuthHandle` (server) or `ClientAuthHandle` (browser). */
+export type AuthHandle = ServerAuthHandle
 
 /**
  * AI ops — text and structured generation, plus agents and the tools they call.
@@ -371,6 +393,8 @@ export interface ServerApi {
  * on `ctx.server`. `C` is the action's own Contract.
  */
 export interface ServerContext<C extends ActionContract = ActionContract> extends BaseContext<C> {
+  /** End-user auth for this request — see `ServerAuthHandle`. */
+  auth: ServerAuthHandle
   /** Every server/edge concern: collections, files, queue, events, HTTP… */
   server: ServerApi
   /**

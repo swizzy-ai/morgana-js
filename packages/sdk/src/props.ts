@@ -213,6 +213,13 @@ export interface PageProps extends SharedProps {
    * `spa` serves a client-routed shell, `server` renders per request.
    */
   render?: 'static' | 'spa' | 'server'
+  /**
+   * Who may load this page: `'public'` (default), `'member'` (any signed-in
+   * user) or `{ role }`. The host checks the session before serving any HTML.
+   */
+  access?: 'public' | 'member' | { role: string | string[] }
+  /** Where a visitor who may not see the page is sent, e.g. `'login'`. */
+  redirect?: string
   title?: string
   meta?: string
   favicon?: string

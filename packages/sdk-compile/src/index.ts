@@ -289,6 +289,31 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
       } else {
         page.render = 'static'
       }
+      const access = nodeProps['access']
+      if (access === undefined || access === 'public') {
+        delete page.access
+      } else if (access === 'member') {
+        page.access = 'member'
+      } else if (
+        access && typeof access === 'object' &&
+        (typeof (access as { role?: unknown }).role === 'string' ||
+          (Array.isArray((access as { role?: unknown }).role) &&
+            ((access as { role: unknown[] }).role).every((r) => typeof r === 'string')))
+      ) {
+        const role = (access as { role: string | string[] }).role
+        page.access = { role: Array.isArray(role) ? [...role] : [role] }
+      } else {
+        throw new Error(
+          `page "${page.name}" has invalid access ${JSON.stringify(access)} — want 'public', 'member' or { role: 'admin' | ['a', 'b'] }`,
+        )
+      }
+      const redirect = nodeProps['redirect']
+      if (redirect !== undefined) {
+        if (typeof redirect !== 'string' || !redirect.trim()) {
+          throw new Error(`page "${page.name}" redirect must be an address like 'login' or a URL`)
+        }
+        page.redirect = redirect.trim()
+      }
     }
   }
 
