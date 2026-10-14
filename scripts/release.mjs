@@ -37,7 +37,9 @@ const PACKAGES = ['sdk', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli
 
 const sh = (cmd, opts = {}) => execSync(cmd, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts }).trim()
 const run = (cmd, args, cwd = root) => {
-  const r = spawnSync(cmd, args, { cwd, stdio: 'inherit', shell: true })
+  // A shell only where Windows needs one to find `pnpm.cmd`. It joins args
+  // unquoted, so git — whose tag message has a space — runs without it.
+  const r = spawnSync(cmd, args, { cwd, stdio: 'inherit', shell: cmd !== 'git' })
   if (r.status !== 0) fail(`${cmd} ${args.join(' ')} failed (exit ${r.status})`)
 }
 const step = (msg) => console.log(`\n\x1b[1m▸ ${msg}\x1b[0m`)
