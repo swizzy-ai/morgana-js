@@ -138,6 +138,8 @@ export interface ProjectIR {
    * attach. Pure-`define` components never reach the client.
    */
   customObjects: Map<string, CustomObjectDecl>
+  /** `@font-face` rules and font variables from `config.fonts` (style/fonts.ts). */
+  fontCss?: string
 }
 
 /**

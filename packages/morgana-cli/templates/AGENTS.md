@@ -71,6 +71,13 @@ return ctx.ui.pages.render('card')
 
 - **Styling is props only.** `pad`, `gap`, `bg`, `radius`, `layout`, `font`… and
   `make('card')`. Never `class`, never `style`.
+- **Text:** `font` is the type scale — `display-lg display h1 h2 h3 h4 h5 h6
+  headline title subtitle body-lg body body-me body-sm caption mono`. `family`
+  is a font declared in `morgana.config.ts` `fonts` (Google fonts are
+  self-hosted at build). `fontWeight: 'semibold'`, `tracking: 'tight'`,
+  `stroke: { width, color }` adjust it. Never load a font with CSS.
+- **Assets:** files in `assets/` are served at `/assets/…`; build URLs with
+  `ctx.assets.url('img/x.png')`.
 - **Object ids are global to the project.** Duplicate id = build error. Prefix
   per page; inside a custom object derive child ids from `ctx.id`.
 - **Create objects only in compile actions.** At runtime, `ctx.ui.get(id)` and

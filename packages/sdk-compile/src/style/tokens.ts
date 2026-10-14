@@ -65,21 +65,39 @@ export const SURFACE_TOKENS: Record<string, Record<string, string>> = {
   'dark-glass': { background: 'rgba(18, 18, 23, 0.75)', color: '#F4F4F5', 'backdrop-filter': 'blur(16px)', border: '1px solid rgba(255, 255, 255, 0.1)' },
 }
 
+// Kept here, not imported from the SDK: this module runs in the page runtime,
+// which only sees a stand-in SDK. fonts.test.ts asserts both copies agree.
+export const FONT_WEIGHTS: Record<string, number> = {
+  thin: 100, extralight: 200, light: 300, regular: 400, normal: 400,
+  medium: 500, semibold: 600, bold: 700, extrabold: 800, black: 900,
+}
+export const TRACKING: Record<string, string> = {
+  tighter: '-0.05em', tight: '-0.025em', normal: '0em', wide: '0.025em', wider: '0.05em', widest: '0.1em',
+}
+
+// Heading words take the project's `text.headings` font, `mono` its
+// `text.mono` font; with none declared the fallbacks apply. The words must
+// match FONT_TOKENS in the SDK (asserted in fonts.test.ts).
+const HEADING = { 'font-family': 'var(--font-headings, inherit)' }
+
 export const TEXT_SCALE: Record<string, Record<string, string>> = {
   'body-sm': { 'font-size': '12px', 'font-weight': '400', 'line-height': '1.33' },
   'body-me': { 'font-size': '14px', 'font-weight': '400', 'line-height': '1.43' },
   body: { 'font-size': '14px', 'font-weight': '400', 'line-height': '1.43' },
   'body-lg': { 'font-size': '16px', 'font-weight': '400', 'line-height': '1.63' },
-  h1: { 'font-size': '36px', 'font-weight': '700', 'line-height': '1.14', 'letter-spacing': '-0.025em' },
-  h2: { 'font-size': '28px', 'font-weight': '700', 'line-height': '1.29', 'letter-spacing': '-0.02em' },
-  h3: { 'font-size': '20px', 'font-weight': '600', 'line-height': '1.3', 'letter-spacing': '-0.015em' },
-  display: { 'font-size': '52px', 'font-weight': '800', 'line-height': '1.08' },
-  'display-lg': { 'font-size': '60px', 'font-weight': '800', 'line-height': '1.07' },
+  h1: { ...HEADING, 'font-size': '36px', 'font-weight': '700', 'line-height': '1.14', 'letter-spacing': '-0.025em' },
+  h2: { ...HEADING, 'font-size': '28px', 'font-weight': '700', 'line-height': '1.29', 'letter-spacing': '-0.02em' },
+  h3: { ...HEADING, 'font-size': '20px', 'font-weight': '600', 'line-height': '1.3', 'letter-spacing': '-0.015em' },
+  h4: { ...HEADING, 'font-size': '18px', 'font-weight': '600', 'line-height': '1.35', 'letter-spacing': '-0.01em' },
+  h5: { ...HEADING, 'font-size': '16px', 'font-weight': '600', 'line-height': '1.4' },
+  h6: { ...HEADING, 'font-size': '14px', 'font-weight': '600', 'line-height': '1.43' },
+  display: { ...HEADING, 'font-size': '52px', 'font-weight': '800', 'line-height': '1.08' },
+  'display-lg': { ...HEADING, 'font-size': '60px', 'font-weight': '800', 'line-height': '1.07' },
   caption: { 'font-size': '11px', 'font-weight': '600', 'line-height': '1.45', 'letter-spacing': '0.09em', 'text-transform': 'uppercase' },
-  title: { 'font-size': '20px', 'font-weight': '600', 'line-height': '1.3' },
+  title: { ...HEADING, 'font-size': '20px', 'font-weight': '600', 'line-height': '1.3' },
   subtitle: { 'font-size': '16px', 'font-weight': '400', 'line-height': '1.5' },
-  headline: { 'font-size': '28px', 'font-weight': '700', 'line-height': '1.29' },
-  mono: { 'font-size': '13px', 'font-weight': '400', 'line-height': '1.54', 'font-family': 'JetBrains Mono, Fira Code, monospace' },
+  headline: { ...HEADING, 'font-size': '28px', 'font-weight': '700', 'line-height': '1.29' },
+  mono: { 'font-size': '13px', 'font-weight': '400', 'line-height': '1.54', 'font-family': 'var(--font-mono, JetBrains Mono, Fira Code, monospace)' },
 }
 
 export const SPACING_WORDS: Record<string, Array<[string, number]>> = {

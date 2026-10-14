@@ -41,7 +41,7 @@ describe('generateTypes', () => {
 
     expect(r.actions).toEqual(['greet'])
     expect(r.customObjects).toEqual(['videoPlayer'])
-    expect(r.written.sort()).toEqual(['.morgana/objects.d.ts', '.morgana/types/registry.d.ts', '.morgana/ui.d.ts'])
+    expect(r.written.sort()).toEqual(['.morgana/fonts.d.ts', '.morgana/objects.d.ts', '.morgana/types/registry.d.ts', '.morgana/ui.d.ts'])
 
     expect(read('.morgana/types/registry.d.ts')).toContain('"greet": ActionContract<{ name: string; }, { message: string; }>')
     expect(read('.morgana/ui.d.ts')).toContain('"videoPlayer": CustomCreatable<typeof __c0>')

@@ -10,7 +10,9 @@ export const boardPage = defineClientAction({
     const page = ctx.ui.pages.create({ name: 'board', address: '/' })
     page.app('board')
 
-    const title = ctx.ui.text({ id: 'board-title', content: 'Team Board', font: 'h2' })
+    // `font` picks the step of the type scale; h2 is a heading, so it is set in
+    // the `display` font (config.text.headings). `tracking` tightens it a touch.
+    const title = ctx.ui.text({ id: 'board-title', content: 'Team Board', font: 'h2', tracking: 'tight' })
     title.bind('object:board/main.label') // follows the server object's state, live
 
     const add = ctx.ui.box({ id: 'add-row' })

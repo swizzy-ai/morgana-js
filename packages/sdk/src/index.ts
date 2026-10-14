@@ -281,6 +281,11 @@ export type {
   FormProps,
   ProgressProps,
   LayoutToken,
+  FontToken,
+  FontWeightWord,
+  TrackingWord,
+  FontRegistry,
+  FontFamilyName,
   AlignToken,
   JustifyToken,
   SurfaceToken,
@@ -318,6 +323,9 @@ export {
 // Token vocabularies (runtime — the engine bridge test checks these against
 // the engine's PropSchema so the two stay in lockstep).
 export {
+  FONT_TOKENS,
+  FONT_WEIGHTS,
+  TRACKING,
   LAYOUT_TOKENS,
   ALIGN_TOKENS,
   JUSTIFY_TOKENS,
@@ -505,7 +513,7 @@ export {
 
 
 // Config — the single morgana.config.ts
-export type { MorganaConfig, ConfigVars, Hook, ServerApiRoute, ServerApiCors, ServerApiMethod, TransformerConfigChanges, TransformerDomainChanges, AppDefinition, DesktopWindow, AiProviderConfig, DesktopConfig } from './config'
+export type { MorganaConfig, ConfigVars, Hook, ServerApiRoute, ServerApiCors, ServerApiMethod, TransformerConfigChanges, TransformerDomainChanges, AppDefinition, DesktopWindow, AiProviderConfig, DesktopConfig, FontSource } from './config'
 export { defineConfig } from './config'
 
 // Action factories — generic/event actions + compile-time actions

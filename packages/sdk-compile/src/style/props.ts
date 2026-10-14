@@ -3,6 +3,7 @@
  */
 import { ALIGN_MAP, ALERT_VARIANTS, BADGE_VARIANTS, BUTTON_VARIANTS, DIALOG_SIZES, DIMENSION_WORDS, JUSTIFY_MAP, LAYOUT_WORDS, PROGRESS_VARIANTS, RADIUS_SCALE, RADIUS_WORDS, SHADOW_SCALE, SPACING_SCALE, SPACING_WORDS, SURFACE_TOKENS, TABLE_DENSITY, TABLE_VARIANTS, TEXT_SCALE } from './tokens';
 import type { ProjectIR } from '../ir';
+import { FONT_WEIGHTS, TRACKING } from './tokens';
 import { defineGradient, gradientToCss, resolveGradient } from '../compile-ctx/tokens/gradients';
 import { defineTheme, hasTheme, type ThemeSpec } from './themes';
 
@@ -383,9 +384,20 @@ export function resolvePropsToCss(
     const v = dimToCss(props['fontSize'], ctx)
     if (v) css['font-size'] = v
   }
-  if (props['fontWeight'] !== undefined) css['font-weight'] = String(props['fontWeight'])
+  if (props['fontWeight'] !== undefined) css['font-weight'] = fontWeightCss(props['fontWeight'])
   if (typeof props['fontStyle'] === 'string') css['font-style'] = props['fontStyle'] as string
   if (typeof props['fontFamily'] === 'string') css['font-family'] = props['fontFamily'] as string
+  if (typeof props['family'] === 'string' && props['family'] !== '') css['font-family'] = familyCss(props['family'] as string)
+  if (props['tracking'] !== undefined) {
+    const t = props['tracking']
+    css['letter-spacing'] = typeof t === 'number' ? `${t}em` : (TRACKING as Record<string, string>)[String(t)] ?? String(t)
+  }
+  const stroke = props['stroke'] as { width?: number; color?: string } | undefined
+  if (stroke && typeof stroke === 'object') {
+    css['-webkit-text-stroke'] = `${stroke.width ?? 1}px ${stroke.color ? colorValue(stroke.color) : 'currentColor'}`
+    // Draw the outline under the fill, so a thick stroke does not eat the glyph.
+    css['paint-order'] = 'stroke fill'
+  }
   if (typeof props['textDecoration'] === 'string') css['text-decoration'] = props['textDecoration'] as string
   if (typeof props['textTransform'] === 'string') css['text-transform'] = props['textTransform'] as string
   // make('hidden') / make('visible') — the visibility words in the token
@@ -527,6 +539,20 @@ export function resolvePropsToCss(
   }
   // Unknown bare tokens carry no CSS of their own (kept as data-prop-token in HTML).
   return css
+}
+
+/** `bold` → 700; numbers and other CSS pass through. */
+export function fontWeightCss(v: unknown): string {
+  return String((FONT_WEIGHTS as Record<string, number>)[String(v)] ?? v)
+}
+
+/**
+ * `family: 'brand'` → the declared font's variable, falling back to the name
+ * itself, so an undeclared single family (`'Georgia'`) still works. A full CSS
+ * stack (commas, quotes) passes through.
+ */
+export function familyCss(v: string): string {
+  return /^[A-Za-z][\w-]*$/.test(v) ? `var(--font-${v}, ${v})` : v
 }
 
 export function cssDeclsToString(css: Record<string, string>): string {

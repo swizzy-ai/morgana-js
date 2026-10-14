@@ -43,6 +43,11 @@ props for that state. Light and dark come from `mode`, or
 **There is no `class` and no `style`.** Everything stylable is reachable as a
 prop or a `make()` word; reaching for CSS means a prop is missing.
 
+Text has its own props: `font` picks a step of the type scale (`'h2'`,
+`'body'`, `'caption'`…), `family` a font declared in the config,
+`fontWeight`, `tracking` and `stroke` adjust it — see
+[fonts and assets](10-fonts-and-assets.md).
+
 ## Binding to data
 
 An object can follow a value instead of being set by hand. Bound to a server

@@ -16,6 +16,33 @@ import type { Dim, GridSpec, OverflowToken } from './layout'
 /** StyleResolver layout tokens (container direction). */
 export const LAYOUT_TOKENS = ['col', 'column', 'row', 'grid', 'stacked', 'none', 'horizontal', 'vertical', 'h', 'v'] as const
 export type LayoutToken = (typeof LAYOUT_TOKENS)[number]
+/**
+ * The type scale: each word sets size, weight, line height and tracking.
+ * Heading words use the `headings` font and `mono` the `mono` font when
+ * `config.text` names them. Words added with `transformers.fonts` work too.
+ */
+export const FONT_TOKENS = [
+  'display-lg', 'display', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'headline', 'title', 'subtitle',
+  'body-lg', 'body', 'body-me', 'body-sm', 'caption', 'mono',
+] as const
+export type FontToken = (typeof FONT_TOKENS)[number]
+
+export const FONT_WEIGHTS = {
+  thin: 100, extralight: 200, light: 300, regular: 400, normal: 400,
+  medium: 500, semibold: 600, bold: 700, extrabold: 800, black: 900,
+} as const
+export type FontWeightWord = keyof typeof FONT_WEIGHTS
+
+export const TRACKING = { tighter: '-0.05em', tight: '-0.025em', normal: '0em', wide: '0.025em', wider: '0.05em', widest: '0.1em' } as const
+export type TrackingWord = keyof typeof TRACKING
+
+/**
+ * Fonts the project declares in `config.fonts`. Augmented by the generated
+ * `.morgana/fonts.d.ts`, so `family` only accepts a declared name.
+ */
+export interface FontRegistry {}
+export type FontFamilyName = [keyof FontRegistry] extends [never] ? string : keyof FontRegistry & string
+
 /** StyleResolver align tokens (cross-axis). */
 export const ALIGN_TOKENS = ['start', 'center', 'end', 'stretch', 'baseline', 'left', 'right'] as const
 export type AlignToken = (typeof ALIGN_TOKENS)[number]
@@ -109,12 +136,21 @@ export interface VisualProps {
   /** Shadow / glow word (`raised`, `floating`, `glow`, …). */
   effect?: string
   opacity?: number | string
-  font?: string
+  /** A step of the type scale — size, weight, line height and tracking in one word. */
+  font?: FontToken | (string & {})
+  /** A font declared in `morgana.config.ts` `fonts` (typed by `morgana types`). */
+  family?: FontFamilyName
+  /** @deprecated Declare the font in `config.fonts` and use `family`. Raw CSS. */
   fontFamily?: string
   fontSize?: Dim
-  fontWeight?: string | number
+  /** `thin` … `black`, or 100–900. */
+  fontWeight?: FontWeightWord | number | (string & {})
   fontStyle?: string
   lineHeight?: string | number
+  /** Letter spacing: a word, or em as a number (`0.05`). */
+  tracking?: TrackingWord | number
+  /** Outlined text: `{ width: 1, color: 'primary' }`. Width in px. */
+  stroke?: { width?: number; color?: ColorValue }
   textDecoration?: string
   textTransform?: 'uppercase' | 'lowercase' | 'capitalize' | 'none'
   cursor?: string
@@ -218,7 +254,7 @@ export interface BoxProps extends SharedProps {
 
 export interface TextProps extends SharedProps {
   content?: string
-  font?: string
+  font?: FontToken | (string & {})
   align?: TextAlignToken
   surface?: SurfaceToken
   radius?: string | number

@@ -131,8 +131,11 @@ export interface TransformerConfigChanges {
   spacing?: TransformerDomainChanges<Array<[string, number]>>
   /** Bare dimension words → width/height writes. */
   dimensions?: TransformerDomainChanges<{ prop: string; value: string }>
-  /** Bare font words → the object's `font` token. */
-  fonts?: TransformerDomainChanges<string>
+  /**
+   * Bare font words → the object's `font` token. A value is a font size, or a
+   * full style: `{ 'font-size': '64px', 'font-weight': '800', 'letter-spacing': '-0.03em' }`.
+   */
+  fonts?: TransformerDomainChanges<string | Record<string, string>>
   /** Bare surface words → canonical surface token. */
   surfaces?: TransformerDomainChanges<string>
   /** Bare layout words → the container `layout` token. */
@@ -256,7 +259,51 @@ export interface MorganaConfig {
    * `on: 'compile'` actions can mutate further via `ctx.ui.transformers`.
    */
   transformers?: TransformerConfigChanges
+  /**
+   * The project's fonts, by the name objects use in `family`:
+   *
+   *   fonts: {
+   *     brand:   { google: 'Inter', weights: [400, 600, 700] },
+   *     display: { file: 'fonts/Clash.woff2', weight: '600 700' },   // in assets/
+   *     serif:   'Georgia, serif',                                    // a CSS stack
+   *   }
+   *
+   * Google fonts are downloaded at build and served from the project's own
+   * /assets — no request to Google from your visitors.
+   */
+  fonts?: Record<string, FontSource>
+  /** Which declared font each kind of text uses by default. */
+  text?: {
+    /** Everything — the page font. */
+    body?: string
+    /** The heading words of the scale: display, h1–h6, headline, title. */
+    headings?: string
+    /** `font: 'mono'`, code blocks. */
+    mono?: string
+  }
 }
+
+/** A font: a CSS stack, a Google font, or files in `assets/`. */
+export type FontSource =
+  | string
+  | {
+      /** The family name on Google Fonts, e.g. 'Inter'. */
+      google: string
+      /** Weights to include. Default [400, 700]. */
+      weights?: number[]
+      /** Include italics. */
+      italic?: boolean
+      /** What to show while it loads, or if it cannot. Default `system-ui, sans-serif`. */
+      fallback?: string
+    }
+  | {
+      /** A file in `assets/` (or several, best format first): 'fonts/Clash.woff2'. */
+      file: string | string[]
+      /** The weight or range the file covers: 400, or '100 900' for a variable font. */
+      weight?: number | string
+      style?: 'normal' | 'italic'
+      fallback?: string
+    }
 
 export function defineConfig(config: MorganaConfig): MorganaConfig {
   return config

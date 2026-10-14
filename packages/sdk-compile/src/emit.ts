@@ -33,6 +33,8 @@ export interface EmitInputs {
   entry: string
   /** Project asset dir to copy verbatim into dist/assets (optional). */
   assetsDir?: string | null
+  /** Generated files for dist/assets — downloaded fonts: `{ rel: '_fonts/x.woff2', file }`. */
+  extraAssets?: Array<{ rel: string; file: string }>
   pages: Record<string, string>
   clientJs: string
   css: string
@@ -136,6 +138,12 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
   write('assets/client.js', inputs.clientJs)
   write('assets/style.css', inputs.css)
   if (inputs.assetsDir) copyDir(inputs.assetsDir, path.join(outDir, 'assets'), files, outDir)
+  for (const a of inputs.extraAssets ?? []) {
+    const to = path.join(outDir, 'assets', a.rel)
+    fs.mkdirSync(path.dirname(to), { recursive: true })
+    fs.copyFileSync(a.file, to)
+    files.push(`assets/${a.rel}`)
+  }
   if (inputs.objects?.length) {
     for (const o of inputs.objects) write(`server/objects/${o.meta.name}.js`, o.code)
     write('server/objects.json', `${JSON.stringify(inputs.objects.map((o) => o.meta), null, 2)}\n`)

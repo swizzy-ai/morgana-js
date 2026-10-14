@@ -20,6 +20,8 @@ import {
 import { discoverServerObjects } from './server-objects'
 import { browserObjectMeta, compileServerObjects } from './objects-compile'
 import { refreshProjectTypes } from './types'
+import { resolveFonts } from './style/fonts'
+import { TEXT_SCALE } from './style/tokens'
 import { createEmptyIR, type ProjectIR } from './ir'
 import {
   buildBrowserCompileCtx,
@@ -63,6 +65,23 @@ export interface CompileResult extends EmitResult {
    * serialized. Additive — existing readers ignore it.
    */
   ir: ProjectIR
+}
+
+/**
+ * `font` words that are neither in the type scale nor added by the project's
+ * `transformers.fonts`. They style nothing, which is easy to miss — `h4`
+ * looked plausible for long enough to ship in an example.
+ */
+function unknownFontWords(ir: ProjectIR): string[] {
+  const custom = new Set(ir.transformerMutations.filter((m) => m.domain === 'fonts' && m.op !== 'remove').map((m) => m.key.toLowerCase()))
+  const out: string[] = []
+  for (const [id, node] of ir.objects) {
+    const f = node.props['font']
+    if (typeof f === 'string' && !TEXT_SCALE[f] && !TEXT_SCALE[f.toLowerCase()] && !custom.has(f.toLowerCase())) {
+      out.push(`object "${id}": font '${f}' is not a type-scale word (${Object.keys(TEXT_SCALE).join(', ')}) — it has no effect`)
+    }
+  }
+  return out
 }
 
 /** Order compile actions: hook `run` order first, then the remainder sorted. */
@@ -355,7 +374,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
   ir.serverObjects = browserObjectMeta(serverObjects)
   // Every build refreshes the project types, so the editor never lags the code.
-  refreshProjectTypes({ dir, actionsDirs: opts.actionsDirs }, serverObjects, warnings)
+  refreshProjectTypes({ dir, actionsDirs: opts.actionsDirs, fonts: Object.keys(scan.config.fonts ?? {}) }, serverObjects, warnings)
 
   const bindingErrors: string[] = []
   const objectErrors: string[] = []
@@ -410,6 +429,9 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     minify,
     customObjectsJs,
   )
+  const fonts = await resolveFonts({ dir, config: scan.config, warnings })
+  ir.fontCss = fonts.css
+  warnings.push(...unknownFontWords(ir))
   const css = minify ? await minifyCss(renderStyleCss(ir)) : renderStyleCss(ir)
   // The channel access action, generated from whatever `ctx.channels
   // .create(name, { permissions })` captured during the compile lane. Emitted alongside the real
@@ -487,6 +509,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
         return null
       }
     })(),
+    extraAssets: fonts.files,
     pages,
     clientJs,
     css,

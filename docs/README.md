@@ -20,6 +20,7 @@ and typechecks — so the snippets compile.
 | 7 | [Built-in events](07-events.md) | Every `on` you can write |
 | 8 | [Types](08-types.md) | `morgana types` and contracts |
 | 9 | [The full example](09-example.md) | The team board, start to finish, deployed |
+| 10 | [Fonts and assets](10-fonts-and-assets.md) | Google and self-hosted fonts, the type scale, weights, tracking, outlines; the `assets/` folder |
 
 ## The docs explain; `morgana spec` lists
 
