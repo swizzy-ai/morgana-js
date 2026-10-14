@@ -324,29 +324,30 @@ export interface ServerAuthDeps {
 }
 
 export function buildServerAuth(deps: ServerAuthDeps) {
-  let user = deps.user
+  // `user` is a plain property, updated in place by signIn/signOut — not a
+  // getter, because the worker copies this object into the QuickJS sandbox and
+  // an accessor does not survive that copy.
   const handle = {
-    get user() {
-      return user
-    },
-    hasRole: (role: string) => !!user && (user.roles ?? []).includes(role),
+    user: deps.user as AuthUser | null,
+    hasRole: (role: string) => !!handle.user && (handle.user.roles ?? []).includes(role),
     require(role?: string | string[]) {
+      const user = handle.user
       if (!user) throw new AuthError('Sign in required', 401)
       if (role !== undefined) {
         const roles = Array.isArray(role) ? role : [role]
-        if (!roles.some((r) => (user!.roles ?? []).includes(r))) throw new AuthError('Not allowed', 403)
+        if (!roles.some((r) => (user.roles ?? []).includes(r))) throw new AuthError('Not allowed', 403)
       }
       return user
     },
     async signUp(input: { email: string; password: string; name?: string }) {
       const s = await deps.auth.signUp(input)
-      user = s.user
+      handle.user = s.user
       deps.onSession({ token: s.token, expiresAt: s.expiresAt })
       return s.user
     },
     async signIn(input: { email: string; password: string }) {
       const s = await deps.auth.signIn(input)
-      user = s.user
+      handle.user = s.user
       deps.onSession({ token: s.token, expiresAt: s.expiresAt })
       return s.user
     },
@@ -355,13 +356,13 @@ export function buildServerAuth(deps: ServerAuthDeps) {
       const u = await deps.auth.getUser(userId)
       if (!u) throw new AuthError(`No user "${userId}"`, 404)
       const s = await deps.auth.startSession(userId)
-      user = u
+      handle.user = u
       deps.onSession(s)
       return u
     },
     async signOut() {
       await deps.auth.signOut(deps.token)
-      user = null
+      handle.user = null
       deps.onSession(null)
     },
     users: {

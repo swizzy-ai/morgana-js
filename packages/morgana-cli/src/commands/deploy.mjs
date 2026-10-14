@@ -328,6 +328,9 @@ async function main({ base, projectId, envName, bearer, dist }) {
     name: p.name,
     address: p.address,
     render: p.render ?? 'static',
+    // Page gating — the worker enforces it before serving any HTML.
+    ...(p.access ? { access: p.access } : {}),
+    ...(p.redirect ? { redirect: p.redirect } : {}),
     html: safeRead(path.join(dist, 'pages', `${p.name}.html`)),
     // The request-time render graph — only render:'server' pages emit one.
     graph: p.render === 'server' ? readGraph(p.name) : null,
@@ -338,7 +341,15 @@ async function main({ base, projectId, envName, bearer, dist }) {
     {
       name: 'main',
       displayName: (manifest.apps ?? [])[0]?.displayName ?? 'App',
-      pages: pages.map((p) => ({ name: p.name, address: p.address, render: p.render, html: p.html, graph: p.graph })),
+      pages: pages.map((p) => ({
+        name: p.name,
+        address: p.address,
+        render: p.render,
+        html: p.html,
+        graph: p.graph,
+        ...(p.access ? { access: p.access } : {}),
+        ...(p.redirect ? { redirect: p.redirect } : {}),
+      })),
     },
   ]
 
@@ -405,8 +416,18 @@ async function main({ base, projectId, envName, bearer, dist }) {
   say(`verify   ok — page loads, ${check.assets} referenced asset(s) all 200`)
 
   say(`\ndeployed ${projectId} (${envName})`)
-  say(`  ${liveUrl}`)
-  return { liveUrl, revision, deployRes }
+  // The project's own origin is where sign-in works; the /apps/ URL is a
+  // shared-origin preview that serves pages but refuses sessions.
+  if (deployRes.hostUrl) {
+    say(`  ${deployRes.hostUrl}`)
+    say(dim(`  preview (no sign-in): ${liveUrl}`))
+  } else {
+    say(`  ${liveUrl}`)
+    if (pages.some((p) => p.access)) {
+      warn('this worker has no APPS_DOMAIN, so the project has no own host — sign-in and gated pages need one')
+    }
+  }
+  return { liveUrl, hostUrl: deployRes.hostUrl, revision, deployRes }
 }
 
 function safeRead(p) {

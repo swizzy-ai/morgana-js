@@ -13,7 +13,7 @@ import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
 import { buildVarsHandle } from './secrets.mjs'
 import { createServerUi } from '@morgana/sdk-compile'
-import { buildServerAuth, createEmailHandle } from '@morgana/sdk-compile/server-host'
+import { assertDeclaredFields, buildServerAuth, createEmailHandle } from '@morgana/sdk-compile/server-host'
 
 /** @typedef {import('./store.mjs').StoreEngine} StoreEngine */
 
@@ -216,12 +216,15 @@ export async function makeHostContext(opts) {
    * that forgets to `await` now fails here, loudly, instead of working locally
    * and throwing somewhere else.
    */
+  // Writes name declared columns only — the same check the worker makes, so a
+  // field the author forgot to declare fails here instead of vanishing deployed.
+  const declared = async (name, data) => assertDeclaredFields(name, await store.shape(name), data)
   const collections = {
     get: async (name, id) => store.get(name, id),
-    set: async (name, id, data) => store.set(name, id, data),
-    add: async (name, data) => store.add(name, data),
-    insert: async (name, record) => store.insert(name, record),
-    update: async (name, id, data) => store.update(name, id, data),
+    set: async (name, id, data) => (await declared(name, data), store.set(name, id, data)),
+    add: async (name, data) => (await declared(name, data), store.add(name, data)),
+    insert: async (name, record) => (await declared(name, record), store.insert(name, record)),
+    update: async (name, id, data) => (await declared(name, data), store.update(name, id, data)),
     remove: async (name, id) => store.remove(name, id),
     delete: async (name, id) => store.remove(name, id),
     count: async (name, o) => store.count(name, o),
