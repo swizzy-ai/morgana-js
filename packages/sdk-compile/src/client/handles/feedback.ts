@@ -45,6 +45,11 @@ function alertMethods(ctx: HandleCtx): Record<string, unknown> {
       setShown(true)
     },
     hide: () => setShown(false),
+    /** What the × does: hide, and say so. */
+    dismiss: () => {
+      setShown(false)
+      ctx.emit('dismissed', {})
+    },
     isVisible: () => ctx.el?.style.display !== 'none',
     setVariant: (variant: string) => {
       ctx.setProp('variant', variant)

@@ -523,8 +523,9 @@ export interface ListHandle extends ObjectHandle<ListProps> {
   /** Suppress state-driven restamps (e.g. during streaming). */
   lock(): void
   unlock(): void
-  /** Bind a collection as this feed's source, records mapped to a template. */
-  subscribe(store: string, opts?: { as?: string; scope?: Record<string, unknown> }): void
+  // No `subscribe(store)`: it was declared and never implemented. A live feed
+  // is a channel — publish from the server action that writes the record,
+  // `ctx.events.subscribe('channel:<name>', null, (e) => list.append(e.payload))`.
   track(event: ListTrackableEvent | (string & {}), opts?: TrackOptions): EventSource
 }
 
