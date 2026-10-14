@@ -32,7 +32,7 @@ const flag = (n) => {
   return i >= 0 ? argv[i + 1] : undefined
 }
 const browserPath = flag('browser')
-if (!browserPath) throw new Error('--browser <chrome executable> is required')
+// Without --browser, Playwright's own Chromium (`npx playwright-core install chromium`).
 
 const registries = fs.readFileSync(path.join(root, 'packages/sdk-compile/src/kinds.ts'), 'utf8')
 const block = /CREATABLE_KINDS = \[([\s\S]*?)\] as const/.exec(registries)[1]
@@ -127,7 +127,7 @@ for (let i = 0; i < 60; i++) {
 
 const require = createRequire(path.join(root, 'package.json'))
 const { chromium } = require('playwright-core')
-const browser = await chromium.launch({ executablePath: browserPath })
+const browser = await chromium.launch(browserPath ? { executablePath: browserPath } : {})
 const rows = []
 try {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })

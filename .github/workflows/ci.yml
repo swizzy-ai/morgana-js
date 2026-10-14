@@ -67,6 +67,21 @@ jobs:
       - name: Full-stack scenarios (morgana dev)
         run: node tools/e2e.mjs
 
+      # Real-browser checks over every component kind: styled by props
+      # (incl. hover, themes, runtime set), typed methods exist at runtime,
+      # and the newer components' interactions and events.
+      - name: Browser for UI checks
+        run: npx playwright-core install --with-deps chromium
+
+      - name: Every kind is styled by its props
+        run: node tools/style-check.mjs
+
+      - name: Every typed handle method exists at runtime
+        run: node tools/api-check.mjs
+
+      - name: Component behaviour and events
+        run: node tools/components-check.mjs
+
       - name: The demo compiles
         working-directory: examples/sdk-compile-demo
         run: node build.mjs

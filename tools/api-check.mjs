@@ -22,7 +22,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const cli = path.join(root, 'packages', 'morgana-cli', 'bin', 'morgana.mjs')
 const bi = process.argv.indexOf('--browser')
 const browserPath = bi >= 0 ? process.argv[bi + 1] : undefined
-if (!browserPath) throw new Error('--browser <chrome executable> is required')
+// Without --browser, Playwright's own Chromium (`npx playwright-core install chromium`).
 
 const sdk = (f) => fs.readFileSync(path.join(root, 'packages/sdk/src', f), 'utf8')
 const typeSrc = sdk('handles.ts') + '\n' + sdk('components.ts')
@@ -118,7 +118,7 @@ for (let n = 0; n < 60; n++) {
 }
 const require = createRequire(path.join(root, 'package.json'))
 const { chromium } = require('playwright-core')
-const browser = await chromium.launch({ executablePath: browserPath })
+const browser = await chromium.launch(browserPath ? { executablePath: browserPath } : {})
 let report = {}
 const errors = []
 try {

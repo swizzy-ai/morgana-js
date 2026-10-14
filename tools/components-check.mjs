@@ -21,7 +21,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const cli = path.join(root, 'packages', 'morgana-cli', 'bin', 'morgana.mjs')
 const i = process.argv.indexOf('--browser')
 const browserPath = i >= 0 ? process.argv[i + 1] : undefined
-if (!browserPath) throw new Error('--browser <chrome executable> is required')
+// Without --browser, Playwright's own Chromium (`npx playwright-core install chromium`).
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mg-comp-'))
 const w = (rel, text) => {
@@ -126,7 +126,7 @@ const expect = (c, m) => {
 
 const require = createRequire(path.join(root, 'package.json'))
 const { chromium } = require('playwright-core')
-const browser = await chromium.launch({ executablePath: browserPath })
+const browser = await chromium.launch(browserPath ? { executablePath: browserPath } : {})
 try {
   const page = await browser.newPage({ viewport: { width: 1200, height: 1600 } })
   const errors = []
