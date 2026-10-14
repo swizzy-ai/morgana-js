@@ -12,7 +12,7 @@ export const objectsDemo = defineServerAction({
     // Server code may call what the browser may not (remindSoon has no access rule).
     const msg = await room.post({ text: 'from an action' })
     const chunks: string[] = []
-    const stream = room.answer({ prompt: 'server side' })
+    const stream = room.relay({ text: 'a b c d' })
     for await (const c of stream) chunks.push(String(c))
     const result = await stream.result
     const state = await room.state()

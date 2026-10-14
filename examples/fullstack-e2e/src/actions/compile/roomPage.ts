@@ -1,6 +1,6 @@
 import { defineClientAction } from '@morgana/sdk'
 
-/** A page driven by a server object: bound state, a streamed answer, live events. */
+/** A page driven by a server object: bound state, a streamed method, live events. */
 export const roomPage = defineClientAction({
   config: { on: 'compile' },
   handler: (ctx) => {

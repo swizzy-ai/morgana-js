@@ -247,7 +247,7 @@ async function scenarios(c, label) {
   })
   // ── server objects ────────────────────────────────────────────────────────
   const room = `room-${Date.now()}`
-  const obj = (p = '') => `/api/objects/chat-room${p}`
+  const obj = (p = '') => `/api/server-objects/chat-room${p}`
   await check('objects: create by name; a second create is refused', async () => {
     const a = await c.request('POST', obj(), { body: { name: room, init: { title: 'E2E' } } })
     expect(a.status === 200, a.text)
@@ -278,14 +278,14 @@ async function scenarios(c, label) {
     expect(member.status === 200 && member.json?.data?.result?.text === 'member says hi', member.text)
   })
   await check('objects: a streaming method streams, then commits its result', async () => {
-    const r = await c.timed(obj(`/${room}/call/answer`), { body: { params: { prompt: 'e2e' } } })
+    const r = await c.timed(obj(`/${room}/call/relay`), { body: { params: { text: 'one two three' } } })
     const lines = r.text.trim().split('\n').map((l) => JSON.parse(l))
     const chunks = lines.filter((l) => 'chunk' in l).map((l) => l.chunk).join('')
-    expect(chunks === 'you asked: e2e ', `chunks ${JSON.stringify(chunks)}`)
+    expect(chunks === 'one two three ', `chunks ${JSON.stringify(chunks)}`)
     expect(lines.at(-1)?.result?.saved, `final ${JSON.stringify(lines.at(-1))}`)
     expect(r.firstChunkMs < r.totalMs - 200, `first chunk ${r.firstChunkMs}ms of ${r.totalMs}ms — buffered`)
     const h = await c.request('POST', obj(`/${room}/call/history`), { body: {} })
-    expect((h.json?.data?.result ?? []).some((m) => m.user === 'ai'), 'answer not saved')
+    expect((h.json?.data?.result ?? []).some((m) => m.text === 'one two three'), 'streamed text not saved')
   })
   await check('objects: server code is trusted and fully featured (ctx.objects)', async () => {
     const r = await c.run('objectsDemo', { room: `srv-${room}` })
@@ -356,9 +356,9 @@ async function browserScenario(base, hostRule) {
       await page.click('[data-entity="room-ask"]')
       await page.waitForFunction(() => (document.querySelector('[data-entity="room-answer"]')?.textContent ?? '').endsWith('|done'), null, { timeout: 15000 })
       const answer = await page.textContent('[data-entity="room-answer"]')
-      expect(answer === 'you asked: browser |done', `answer ${answer}`)
+      expect(answer === 'from the browser |done', `answer ${answer}`)
       // The method emitted 'message'; the page's on('message') received it.
-      await page.waitForFunction(() => (document.querySelector('[data-entity="room-events"]')?.textContent ?? '').includes('[you asked: browser]'), null, { timeout: 15000 })
+      await page.waitForFunction(() => (document.querySelector('[data-entity="room-events"]')?.textContent ?? '').includes('[from the browser]'), null, { timeout: 15000 })
     })
     await check('no page errors', async () => expect(!errors.length, errors.join('; ')))
   } finally {

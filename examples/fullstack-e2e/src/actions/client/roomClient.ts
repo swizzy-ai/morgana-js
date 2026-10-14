@@ -24,7 +24,7 @@ export const roomAsk = defineClientAction({
   handler: async (ctx) => {
     const out = ctx.ui.get('room-answer')!
     out.set('content', '')
-    const stream = ctx.objects.chatRoom.get('lobby').answer({ prompt: 'browser' })
+    const stream = ctx.objects.chatRoom.get('lobby').relay({ text: 'from the browser' })
     for await (const chunk of stream) out.set('content', String(out.get('content') ?? '') + String(chunk))
     await stream.result
     out.set('content', `${String(out.get('content'))}|done`)

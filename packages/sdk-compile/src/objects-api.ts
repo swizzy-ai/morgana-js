@@ -73,9 +73,8 @@ function streamCall(run: (onChunk: (c: unknown) => void) => Promise<unknown>): A
   }
 }
 
-const RESERVED = new Set(['name', 'type', 'state', 'on', 'watch', 'remove', 'then'])
-
 export function makeInstanceProxy(meta: ObjectsMeta[string], name: string, t: ObjectsTransport): Record<string, unknown> {
+  const RESERVED = ['name', 'type', 'state', 'on', 'watch', 'remove', 'then']
   const proxy: Record<string, unknown> = {
     name,
     type: meta.name,
@@ -102,7 +101,7 @@ export function makeInstanceProxy(meta: ObjectsMeta[string], name: string, t: Ob
     remove: () => t.remove(meta.name, name),
   }
   for (const m of meta.methods) {
-    if (RESERVED.has(m)) continue
+    if (RESERVED.includes(m)) continue
     proxy[m] = meta.streaming.includes(m)
       ? (params?: Record<string, unknown>) => streamCall((onChunk) => t.stream(meta.name, name, m, params ?? {}, onChunk))
       : (params?: Record<string, unknown>) => t.call(meta.name, name, m, params ?? {})
@@ -131,3 +130,18 @@ export function makeObjectsApi(metas: ObjectsMeta, t: ObjectsTransport): Record<
   }
   return api
 }
+
+/**
+ * The same three functions as source, for hosts that run server code in a
+ * sandbox (the cloud's QuickJS): the guest builds its proxies from this and
+ * a flat transport, because host objects with nested functions do not cross
+ * the WASM bridge. Taken from the compiled functions themselves, so there is
+ * one implementation; `__mgObjectsApi` names the entry whatever the bundler
+ * called it.
+ */
+export const OBJECTS_API_SRC = [
+  streamCall.toString(),
+  makeInstanceProxy.toString(),
+  makeObjectsApi.toString(),
+  `var __mgObjectsApi = ${makeObjectsApi.name};`,
+].join('\n')

@@ -69,6 +69,9 @@ const table = (collection: string) => `c_${ident(collection)}`
 export function ensureSchema(sql: ObjectSql, meta: ObjectMeta): void {
   sql.exec('CREATE TABLE IF NOT EXISTS __meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)')
   sql.exec('CREATE TABLE IF NOT EXISTS __schedule (id TEXT PRIMARY KEY, at INTEGER NOT NULL, method TEXT NOT NULL, params TEXT NOT NULL)')
+  // Deferred jobs, written in the commit that deferred them: a job survives a
+  // restart or an evicted Durable Object, and runs at least once.
+  sql.exec('CREATE TABLE IF NOT EXISTS __jobs (id TEXT PRIMARY KEY, at INTEGER NOT NULL, job TEXT NOT NULL, params TEXT NOT NULL, caller TEXT, attempts INTEGER NOT NULL DEFAULT 0)')
   for (const c of Object.keys(meta.collections)) {
     sql.exec(`CREATE TABLE IF NOT EXISTS ${table(c)} (id TEXT PRIMARY KEY, seq INTEGER NOT NULL, data TEXT NOT NULL)`)
   }
@@ -119,6 +122,7 @@ export interface PendingSchedule {
   params: Record<string, unknown>
 }
 export interface PendingJob {
+  id: string
   job: string
   params: Record<string, unknown>
 }
@@ -265,12 +269,13 @@ export class Journal {
 
   defer(job: string, params: Record<string, unknown> = {}): void {
     if (!this.meta.jobs.includes(job)) throw new Error(`self.defer: "${job}" is not a job of "${this.meta.name}"`)
-    this.jobs.push({ job, params: structuredClone(params ?? {}) })
+    this.jobs.push({ id: newId(), job, params: structuredClone(params ?? {}) })
   }
 
-  /** Apply everything atomically. */
-  commit(): void {
+  /** Apply everything atomically (`computed` and the deferring caller ride along). */
+  commit(computed?: Record<string, unknown>, caller: unknown = null): void {
     this.sql.transaction(() => {
+      if (computed) this.sql.exec("INSERT OR REPLACE INTO __meta (k, v) VALUES ('computed', ?)", JSON.stringify(computed))
       if (this.stateChanged) this.sql.exec("INSERT OR REPLACE INTO __meta (k, v) VALUES ('state', ?)", JSON.stringify(this.state))
       for (const [c, pend] of this.writes) {
         for (const [id, row] of pend) {
@@ -287,6 +292,9 @@ export class Journal {
       }
       for (const s of this.schedules) {
         this.sql.exec('INSERT INTO __schedule (id, at, method, params) VALUES (?, ?, ?, ?)', newId(), s.at, s.method, JSON.stringify(s.params))
+      }
+      for (const j of this.jobs) {
+        this.sql.exec('INSERT INTO __jobs (id, at, job, params, caller) VALUES (?, ?, ?, ?, ?)', j.id, Date.now(), j.job, JSON.stringify(j.params), JSON.stringify(caller ?? null))
       }
     })
   }
@@ -307,10 +315,52 @@ export function toTime(when: number | string | Date): number {
   return t
 }
 
-/** The next scheduled run, or null. */
+/** The next scheduled run or pending job, or null. */
 export function nextScheduledAt(sql: ObjectSql): number | null {
-  const r = sql.exec('SELECT MIN(at) AS at FROM __schedule')[0]
+  const r = sql.exec('SELECT MIN(at) AS at FROM (SELECT at FROM __schedule UNION ALL SELECT at FROM __jobs)')[0]
   return r && r['at'] !== null && r['at'] !== undefined ? Number(r['at']) : null
+}
+
+export interface StoredJob {
+  id: string
+  job: string
+  params: Record<string, unknown>
+  caller: unknown
+  attempts: number
+}
+
+/** Jobs due to run (not removed — see finishJob / failJob). */
+export function dueJobs(sql: ObjectSql, now = Date.now()): StoredJob[] {
+  return sql.exec('SELECT id, job, params, caller, attempts FROM __jobs WHERE at <= ? ORDER BY at', now).map((r) => ({
+    id: String(r['id']),
+    job: String(r['job']),
+    params: JSON.parse(String(r['params'])) as Record<string, unknown>,
+    caller: r['caller'] ? JSON.parse(String(r['caller'])) : null,
+    attempts: Number(r['attempts'] ?? 0),
+  }))
+}
+
+/** A job is held back while it runs, so a second sweep does not start it again. */
+export function claimJob(sql: ObjectSql, id: string, leaseMs = 15 * 60_000): void {
+  sql.exec('UPDATE __jobs SET at = ? WHERE id = ?', Date.now() + leaseMs, id)
+}
+
+export function finishJob(sql: ObjectSql, id: string): void {
+  sql.exec('DELETE FROM __jobs WHERE id = ?', id)
+}
+
+export const MAX_JOB_ATTEMPTS = 3
+
+/** Retry with backoff (2s, 8s); dropped after MAX_JOB_ATTEMPTS. Returns true when dropped. */
+export function failJob(sql: ObjectSql, id: string): boolean {
+  const r = sql.exec('SELECT attempts FROM __jobs WHERE id = ?', id)[0]
+  const attempts = Number(r?.['attempts'] ?? 0) + 1
+  if (!r || attempts >= MAX_JOB_ATTEMPTS) {
+    finishJob(sql, id)
+    return true
+  }
+  sql.exec('UPDATE __jobs SET attempts = ?, at = ? WHERE id = ?', attempts, Date.now() + 2000 * 4 ** (attempts - 1), id)
+  return false
 }
 
 /** Due schedule entries, removed from the table. */

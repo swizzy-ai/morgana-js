@@ -7,7 +7,7 @@
 import { makeObjectsApi, type ObjectsMeta, type ObjectsTransport, type Snapshot } from '../objects-api'
 
 const base = (type: string, name?: string) =>
-  `/api/objects/${encodeURIComponent(type)}${name === undefined ? '' : `/${encodeURIComponent(name)}`}`
+  `/api/server-objects/${encodeURIComponent(type)}${name === undefined ? '' : `/${encodeURIComponent(name)}`}`
 
 async function json(res: Response): Promise<unknown> {
   const body = (await res.json().catch(() => ({}))) as { success?: boolean; data?: unknown; message?: string }

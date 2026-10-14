@@ -11,6 +11,10 @@ import {
   SELF_BUILDER_SRC,
   SerialQueue,
   takeDue,
+  dueJobs,
+  claimJob,
+  finishJob,
+  failJob,
   validateObjectMeta,
   type Invoke,
   type ObjectMeta,
@@ -88,14 +92,21 @@ const def = {
         out.push(w)
         yield w
       }
-      self.db.messages.add({ text: out.join(' '), user: 'ai' })
+      self.db.messages.add({ text: out.join(' '), user: 'stream' })
       self.set({ count: self.state.count + 1 })
       return { saved: out.length }
+    },
+    summarizeLater: async (self: any) => {
+      self.defer('summarize', { n: 1 })
+    },
+    deferThenFail: async (self: any) => {
+      self.defer('summarize', { n: 2 })
+      throw new Error('no')
     },
     answerThenFail: async function* (self: any) {
       self.set({ count: 500 })
       yield 'partial'
-      throw new Error('model went away')
+      throw new Error('source went away')
     },
   },
 }
@@ -106,7 +117,7 @@ const meta: ObjectMeta = {
   collections: def.collections,
   methods: Object.keys(def.methods),
   streaming: ['answer'],
-  jobs: [],
+  jobs: ['summarize'],
   computed: Object.keys(def.computed),
   access: { read: 'public', post: 'member', increment: { role: 'admin' } },
   hasOnCreate: true,
@@ -173,6 +184,29 @@ describe('server object kernel', () => {
     expect(nextScheduledAt(sql)).toBeNull()
   })
 
+  it('deferred jobs are durable: written with the commit, retried, then dropped', async () => {
+    const sql = sqliteAdapter()
+    await createInstance(sql, meta, 'g', {}, null, invoke)
+    await expect(callMethod(sql, meta, 'g', 'deferThenFail', {}, null, invoke)).rejects.toThrow('no')
+    expect(dueJobs(sql)).toEqual([])
+    const caller = { id: 'u1', email: 'a@b.c', roles: [] }
+    const out = await callMethod(sql, meta, 'g', 'summarizeLater', {}, caller as never, invoke)
+    expect(out.jobs.map((j) => j.job)).toEqual(['summarize'])
+    const [job] = dueJobs(sql)
+    expect(job).toMatchObject({ job: 'summarize', params: { n: 1 }, caller, attempts: 0 })
+    expect(nextScheduledAt(sql)).toBeLessThanOrEqual(Date.now())
+    claimJob(sql, job.id)
+    expect(dueJobs(sql)).toEqual([])
+    expect(failJob(sql, job.id)).toBe(false)
+    expect(dueJobs(sql, Date.now() + 3000)[0]?.attempts).toBe(1)
+    expect(failJob(sql, job.id)).toBe(false)
+    expect(failJob(sql, job.id)).toBe(true)
+    expect(dueJobs(sql, Date.now() + 1e9)).toEqual([])
+    await callMethod(sql, meta, 'g', 'summarizeLater', {}, null, invoke)
+    finishJob(sql, dueJobs(sql)[0].id)
+    expect(nextScheduledAt(sql)).toBeNull()
+  })
+
   it('undeclared columns are refused, unknown methods 404, missing instance 404', async () => {
     const sql = sqliteAdapter()
     await expect(callMethod(sql, meta, 'nope', 'post', {}, null, invoke)).rejects.toMatchObject({ status: 404 })
@@ -202,7 +236,7 @@ describe('server object kernel', () => {
     const sql = sqliteAdapter()
     await createInstance(sql, meta, 'g', {}, null, invoke)
     const chunks: unknown[] = []
-    await expect(callMethod(sql, meta, 'g', 'answerThenFail', {}, null, invoke, (c) => void chunks.push(c))).rejects.toThrow('model went away')
+    await expect(callMethod(sql, meta, 'g', 'answerThenFail', {}, null, invoke, (c) => void chunks.push(c))).rejects.toThrow('source went away')
     expect(chunks).toEqual(['partial'])
     expect(readSnapshot(sql, meta)!.state.count).toBe(0)
   })

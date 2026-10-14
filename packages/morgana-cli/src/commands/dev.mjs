@@ -510,7 +510,7 @@ const server = http.createServer(async (req, res) => {
 
   // 2b. server objects — create, read, call (incl. streaming), list, remove.
   //     Access rules are checked inside for every operation.
-  if (pathname.startsWith('/api/objects/')) {
+  if (pathname.startsWith('/api/server-objects/')) {
     const user = await appAuth.resolve(tokenOf(req))
     if (await objectsHost.handleHttp(req, res, url, user, { readBody, sendJson })) return
   }
@@ -687,9 +687,9 @@ const server = http.createServer(async (req, res) => {
   return send(res, 200, fs.readFileSync(full), MIME[path.extname(full)] ?? 'application/octet-stream')
 })
 
-// Live object subscriptions: WebSocket at /api/objects/<type>/<name>/live.
+// Live object subscriptions: WebSocket at /api/server-objects/<type>/<name>/live.
 server.on('upgrade', async (req, socket) => {
-  const m = /^\/api\/objects\/([a-z][a-z0-9-]*)\/([^/]+)\/live\/?$/.exec(new URL(req.url, 'http://local').pathname)
+  const m = /^\/api\/server-objects\/([a-z][a-z0-9-]*)\/([^/]+)\/live\/?$/.exec(new URL(req.url, 'http://local').pathname)
   if (!m) return socket.end('HTTP/1.1 404 Not Found\r\n\r\n')
   try {
     const user = await appAuth.resolve(tokenOf(req))

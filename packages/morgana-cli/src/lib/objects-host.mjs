@@ -18,7 +18,11 @@ import {
   accessRefusal,
   assertInstanceName,
   callMethod,
+  claimJob,
   createInstance,
+  dueJobs,
+  failJob,
+  finishJob,
   destroyInstance,
   ensureSchema,
   Journal,
@@ -134,18 +138,37 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
     timers.set(
       k,
       setTimeout(() => {
-        void queue
-          .run(k, async () => {
-            for (const due of takeDue(storage(type, name))) {
-              await settle(type, name, await callMethod(storage(type, name), typeOf(type).meta, name, due.method, due.params, null, invokeFor(type, null)), null)
-            }
-          })
-          .catch((err) => console.error(`[morgana] ${type} "${name}" scheduled run failed:`, err?.message ?? err))
-          .finally(() => arm(type, name))
+        void sweep(type, name).finally(() => arm(type, name))
       }, delay),
     )
   }
 
+  /** Due schedules run as methods (in the queue); due jobs run beside it. */
+  async function sweep(type, name) {
+    const k = key(type, name)
+    await queue
+      .run(k, async () => {
+        for (const due of takeDue(storage(type, name))) {
+          await settle(type, name, await callMethod(storage(type, name), typeOf(type).meta, name, due.method, due.params, null, invokeFor(type, null)), null)
+        }
+      })
+      .catch((err) => console.error(`[morgana] ${type} "${name}" scheduled run failed:`, err?.message ?? err))
+    const sql = storage(type, name)
+    await Promise.all(
+      dueJobs(sql).map(async (j) => {
+        claimJob(sql, j.id)
+        try {
+          await runJob(type, name, j.job, j.params, j.caller)
+          finishJob(sql, j.id)
+        } catch (err) {
+          const dropped = failJob(sql, j.id)
+          console.error(`[morgana] job ${type}.${j.job} failed${dropped ? ' — giving up' : ', will retry'}:`, err?.message ?? err)
+        }
+      }),
+    )
+  }
+
+  /** A job: reads a snapshot, does slow work, changes state only via self.call. */
   async function runJob(type, name, job, params, caller) {
     const { meta, def } = typeOf(type)
     const sql = storage(type, name)
@@ -157,14 +180,11 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
     await def.jobs[job](self, params)
   }
 
-  /** After a commit: events, live state, jobs, alarms. */
-  async function settle(type, name, out, caller) {
+  /** After a commit: events, live state, then wake the sweeper for jobs/alarms. */
+  async function settle(type, name, out) {
     for (const e of out.events) publish(type, name, e.event, e.data)
     if (out.stateChanged) publish(type, name, '__state', { state: out.state, computed: out.computed })
-    for (const j of out.jobs) {
-      setImmediate(() => runJob(type, name, j.job, j.params, caller).catch((err) => console.error(`[morgana] job ${type}.${j.job} failed:`, err?.message ?? err)))
-    }
-    if (out.scheduled) arm(type, name)
+    if (out.scheduled || out.jobs.length) arm(type, name)
     return out
   }
 
@@ -252,13 +272,13 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
     /** ctx.objects for server code running as `caller`. */
     api: (caller) => makeObjectsApi(browserMeta, serverTransport(caller)),
     /**
-     * The browser surface — `/api/objects/...`. Returns false when the path
+     * The browser surface — `/api/server-objects/...`. Returns false when the path
      * is not an objects route. Access is checked for every operation.
      */
     async handleHttp(req, res, url, user, { readBody, sendJson: send }) {
       // Every answer reports "handled", so the caller never routes on.
       const sendJson = (...a) => (send(...a), true)
-      const m = /^\/api\/objects\/([a-z][a-z0-9-]*)(?:\/([^/]+))?(?:\/(call)\/([A-Za-z_][A-Za-z0-9_]*)|\/(get-or-create|live))?\/?$/.exec(url.pathname)
+      const m = /^\/api\/server-objects\/([a-z][a-z0-9-]*)(?:\/([^/]+))?(?:\/(call)\/([A-Za-z_][A-Za-z0-9_]*)|\/(get-or-create|live))?\/?$/.exec(url.pathname)
       if (!m) return false
       const [, type, rawName, , method, verb] = m
       const name = rawName === undefined ? undefined : decodeURIComponent(rawName)
@@ -310,7 +330,7 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
         return sendJson(res, status, { success: false, message: String(err?.message ?? err) })
       }
     },
-    /** WebSocket subscribe: `/api/objects/<type>/<name>/live`. */
+    /** WebSocket subscribe: `/api/server-objects/<type>/<name>/live`. */
     subscribe(type, name, user, ws) {
       check(type, 'subscribe', user)
       assertInstanceName(name)

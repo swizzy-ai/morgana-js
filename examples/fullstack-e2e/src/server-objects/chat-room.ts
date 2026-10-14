@@ -1,7 +1,7 @@
 import { defineServerObject } from '@morgana/sdk'
 
 /**
- * A chat room: durable state, its own message table, a streaming "AI" method,
+ * A chat room: durable state, its own message table, a streaming method,
  * a scheduled reminder and a background job — every server-object feature the
  * e2e suite checks, on both hosts.
  */
@@ -21,7 +21,7 @@ export default defineServerObject({
     list: 'public',
     post: 'member',
     history: 'public',
-    answer: 'public',
+    relay: 'public',
     bump: 'public',
     close: { role: 'admin' },
   },
@@ -46,14 +46,14 @@ export default defineServerObject({
       self.set({ count: before + 1 })
       return before + 1
     },
-    /** Streams an answer word by word, then saves it as one message. */
-    answer: async function* (self, p: { prompt: string }) {
-      const words = `you asked: ${p.prompt}`.split(' ')
+    /** A streaming method: sends the text word by word, then saves it as one message. */
+    relay: async function* (self, p: { text: string }) {
+      const words = p.text.split(' ')
       for (const w of words) {
         await new Promise((r) => setTimeout(r, 150))
         yield `${w} `
       }
-      const msg = self.db.messages.add({ text: words.join(' '), user: 'ai' })
+      const msg = self.db.messages.add({ text: p.text, user: self.caller?.email ?? 'server' })
       self.set({ count: self.state.count + 1 })
       self.emit('message', msg)
       return { saved: msg.id }

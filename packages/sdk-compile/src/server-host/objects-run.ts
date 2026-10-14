@@ -173,8 +173,7 @@ async function transact(
   const journal = new Journal(sql, meta, baseState)
   const host = makeSelfHost(journal, name, caller, undefined, onChunk)
   const out = await invoke({ kind, name: member, params: structuredClone(params ?? {}), host })
-  journal.commit()
-  sql.exec("INSERT OR REPLACE INTO __meta (k, v) VALUES ('computed', ?)", JSON.stringify(out.computed ?? {}))
+  journal.commit(out.computed ?? {}, caller)
   return {
     result: out.result === undefined ? null : structuredClone(out.result),
     state: journal.state,
@@ -242,6 +241,7 @@ export function destroyInstance(sql: ObjectSql, meta: ObjectMeta): boolean {
   sql.transaction(() => {
     sql.exec('DELETE FROM __meta')
     sql.exec('DELETE FROM __schedule')
+    sql.exec('DELETE FROM __jobs')
     for (const c of Object.keys(meta.collections)) sql.exec(`DELETE FROM c_${c}`)
   })
   return existed
