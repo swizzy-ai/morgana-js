@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.morgana/
+.wrangler/
+*.log
+.env*
+!.env.example
+world.json
+pnpm-lock.yaml
+package-lock.json
