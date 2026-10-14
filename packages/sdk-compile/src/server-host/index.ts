@@ -26,3 +26,5 @@ export { verifyGoogleIdToken, GoogleTokenError, clearGoogleKeyCache } from './go
 export type { GoogleIdentity } from './google'
 export { assertDeclaredFields, undeclaredFields } from './collections'
 export { findPageByPath, isParamAddress, matchAddress, PARAM_SEGMENT_RE } from './routes'
+export * from './objects'
+export * from './objects-run'

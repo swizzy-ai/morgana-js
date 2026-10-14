@@ -17,6 +17,7 @@ import type { ActionContract, AppEventName, AppEventPayload, EventScope } from '
 import type { BaseContext } from './base'
 import type { AuthUser } from './server'
 import type { ThemeSpec } from '../props'
+import type { ObjectsApi } from '../objects'
 import type { EventApi, EventSubscribeOptions } from '../events'
 import type {
   BoxHandle, BreakpointsApi, ButtonHandle, ChartHandle, EventHandler, EventSource, ImageHandle, InputHandle, SliderHandle,
@@ -456,6 +457,8 @@ export interface ClientAuthHandle {
 export interface ClientContext<C extends ActionContract = ActionContract> extends BaseContext<C> {
   /** The page's signed-in user — see `ClientAuthHandle`. */
   auth: ClientAuthHandle
+  /** Server objects, as far as each object's `access` allows a browser. */
+  objects: ObjectsApi
   /**
    * The structured trigger event — EVERYTHING about what fired this action:
    * `name` (the event), `element` (the DOM element that triggered it, null

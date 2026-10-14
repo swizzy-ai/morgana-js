@@ -495,3 +495,7 @@ export { defineServerAction, defineClientAction, defineDesktopAction } from './a
 
 // Newer components: props and handles.
 export type * from './components'
+
+// Server objects (defineServerObject) and the typed ctx.objects surface.
+export { defineServerObject } from './objects'
+export type * from './objects'

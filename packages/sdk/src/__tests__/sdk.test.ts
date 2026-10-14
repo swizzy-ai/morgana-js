@@ -428,10 +428,12 @@ describe('context surface guards', () => {
     expect(noAuth).toBe(true)
   })
 
-  it('ctx.objects is deprecated and absent from the browser context', () => {
-    type BrowserKeys = keyof ClientContext
-    const noObjects: 'objects' extends BrowserKeys ? false : true = true
-    expect(noObjects).toBe(true)
+  it('ctx.objects is the server-objects API (create/get/getOrCreate/list), not the old world-objects surface', () => {
+    type Api = ClientContext['objects'][string]
+    const hasCreate: 'create' extends keyof Api ? true : false = true
+    const hasGetOrCreate: 'getOrCreate' extends keyof Api ? true : false = true
+    const noLegacyRun: 'run' extends keyof Api ? false : true = true
+    expect([hasCreate, hasGetOrCreate, noLegacyRun]).toEqual([true, true, true])
   })
 
   it('ctx.page lives at ctx.ui.page — not at the context root', () => {

@@ -13,6 +13,7 @@
  *   Do not re-add them to `ServerApi`.
  */
 
+import type { ObjectsApi } from '../objects'
 import type { ActionContract, ActionInput, ActionOutput, ActionName, AppEventName, AppEventPayload, EventScope, RunOptions } from '../contracts'
 import type { AgentsHandle, ToolsHandle } from '../ai-agents'
 import type { BaseContext } from './base'
@@ -417,6 +418,8 @@ export interface ServerApi {
 export interface ServerContext<C extends ActionContract = ActionContract> extends BaseContext<C> {
   /** End-user auth for this request — see `ServerAuthHandle`. */
   auth: ServerAuthHandle
+  /** Server objects by camelCase name — `ctx.objects.chatRoom.getOrCreate('general')`. */
+  objects: ObjectsApi
   /** Every server/edge concern: collections, files, queue, events, HTTP… */
   server: ServerApi
   /**
