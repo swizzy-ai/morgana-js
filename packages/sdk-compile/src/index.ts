@@ -7,6 +7,7 @@
  * third-party packages. Runtime-only APIs on the ctx still throw.
  */
 
+import { PARAM_SEGMENT_RE } from './server-host/routes'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { AppDefinition, CustomObjectDefinition, MorganaConfig } from '@morgana/sdk'
@@ -267,6 +268,12 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
           if (seg === '' || seg === '.' || seg === '..' || seg.includes('\\')) {
             throw new Error(`page "${page.name}" address "/${page.address}/" has an illegal segment "${seg}"`)
           }
+          if (seg.startsWith(':') && !PARAM_SEGMENT_RE.test(seg)) {
+            throw new Error(`page "${page.name}" address "/${page.address}/" has a bad param "${seg}" — use :name (letters, digits, _)`)
+          }
+        }
+        if (/^:[^/]*$/.test(page.address)) {
+          warnings.push(`page "${page.name}" address "/${page.address}/" matches every one-segment URL — literal pages still win, but consider a prefix`)
         }
         const first = page.address.split('/')[0]!.toLowerCase()
         if (RESERVED.has(first)) {

@@ -12,6 +12,16 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
 
+  examples/fullstack-e2e:
+    dependencies:
+      '@morgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+    devDependencies:
+      '@morgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+
   examples/morgana-docs:
     dependencies:
       '@morgana/sdk':

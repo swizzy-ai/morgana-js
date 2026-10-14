@@ -17,6 +17,7 @@
  *   manifest.json
  */
 
+import { isParamAddress } from './server-host/routes'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -120,7 +121,10 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     // the app with zero config. `pages/<name>.html` stays as a permanent alias.
     const addr = inputs.ir.pages.get(name)?.address ?? `/${name}`
     const canonical = addr === '/' ? 'index.html' : `${addr}/index.html`
-    if (canonical !== `pages/${name}.html`) write(canonical, html)
+    // A param address (`products/:id`) has no single file — the host matches
+    // the URL and serves `pages/<name>.html`. (`:` is not even a legal file
+    // name on Windows.)
+    if (canonical !== `pages/${name}.html` && !isParamAddress(addr)) write(canonical, html)
     // Server pages ship their render graph: the request-time load-set-render
     // path needs the object subgraph, and only it — never the whole project.
     if (inputs.ir.pages.get(name)?.render === 'server') {

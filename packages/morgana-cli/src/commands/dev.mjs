@@ -23,7 +23,7 @@ import { makeHostContext } from '../lib/host-context.mjs'
 import { ChannelHub } from '../lib/channels.mjs'
 import { localPrivateVars } from '../lib/secrets.mjs'
 import { createLocalAppAuth, pageGate, tokenOf } from '../lib/app-auth.mjs'
-import { handleSessionRoute, serializeSessionCookie, clearSessionCookie } from '@morgana/sdk-compile/server-host'
+import { handleSessionRoute, serializeSessionCookie, clearSessionCookie, findPageByPath, isParamAddress } from '@morgana/sdk-compile/server-host'
 import { isPageResult } from '@morgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
 
@@ -327,7 +327,11 @@ for (const p of gatedPages) {
   gatedFiles.set(`pages/${p.name}.html`.toLowerCase(), p)
   gatedFiles.set(addr ? `${addr}/index.html` : 'index.html', p)
 }
-const gatedPageAt = (pathname) => gatedPages.find((p) => bareAddress(p.address) === bareAddress(pathname))
+// Param addresses (`products/:id`) match by pattern, literal pages first.
+const gatedPageAt = (pathname) => {
+  const hit = findPageByPath(manifest.pages ?? [], pathname)
+  return hit?.page?.access ? hit.page : undefined
+}
 
 async function readBody(req) {
   let raw = ''
@@ -576,7 +580,18 @@ const server = http.createServer(async (req, res) => {
     return send(res, 404, 'no entry page — run `morgana build` first')
   }
   const bare = pathname.replace(/^\/+|\/+$/g, '')
-  const hit = bare === '' ? undefined : pageRoutes.get(bare.toLowerCase())
+  let hit = bare === '' ? undefined : pageRoutes.get(bare.toLowerCase())
+  if (!hit && bare !== '') {
+    // A param page: `/products/42/` → page `products/:id`, served from its
+    // `pages/<name>.html` (a param address has no file of its own).
+    const found = findPageByPath((manifest.pages ?? []).filter((p) => isParamAddress(p.address)), bare)
+    if (found) {
+      if (!pathname.endsWith('/')) return redirect(`${pathname}/`)
+      const refused = await pageGate(appAuth, found.page.access ? found.page : undefined, req)
+      if (refused) return refuse(refused)
+      if (serveFile(path.join('pages', `${found.page.name}.html`))) return
+    }
+  }
   if (hit && hit.address !== '/') {
     if (!pathname.endsWith('/')) return redirect(`/${hit.address}/`)
     const refused = await pageGate(appAuth, gatedPageAt(hit.address), req)

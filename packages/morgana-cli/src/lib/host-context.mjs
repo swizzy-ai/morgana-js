@@ -63,10 +63,14 @@ class Files {
     return safeJoin(this.root, key)
   }
 
+  /** Text content types come back as a string, anything else as bytes — the worker's rule. */
   read(key) {
     const full = this.#full(key)
     if (!fs.existsSync(full)) return null
-    return fs.readFileSync(full)
+    const bytes = fs.readFileSync(full)
+    const type = this.stat(key)?.contentType ?? contentTypeFor(key)
+    const text = type.startsWith('text/') || /json|xml|javascript|yaml/.test(type)
+    return text ? bytes.toString('utf8') : new Uint8Array(bytes)
   }
 
   write(key, data, contentType) {

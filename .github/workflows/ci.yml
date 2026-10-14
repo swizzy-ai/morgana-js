@@ -61,6 +61,12 @@ jobs:
       - name: Test
         run: pnpm -r run test
 
+      # The full-stack scenarios (auth, gated pages, secrets, email, files,
+      # collections, respond, param routes) against `morgana dev`. The same
+      # script runs against a worker with --worker; see tools/e2e.mjs.
+      - name: Full-stack scenarios (morgana dev)
+        run: node tools/e2e.mjs
+
       - name: The demo compiles
         working-directory: examples/sdk-compile-demo
         run: node build.mjs

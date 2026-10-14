@@ -25,3 +25,4 @@ export type { AppAuthStorage, AppSessionRecord, AppUserRecord, IssuedSession, Pa
 export { verifyGoogleIdToken, GoogleTokenError, clearGoogleKeyCache } from './google'
 export type { GoogleIdentity } from './google'
 export { assertDeclaredFields, undeclaredFields } from './collections'
+export { findPageByPath, isParamAddress, matchAddress, PARAM_SEGMENT_RE } from './routes'

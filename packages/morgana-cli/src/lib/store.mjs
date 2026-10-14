@@ -69,7 +69,9 @@ function coerce(value, type) {
       if (value === 'false') return 0
       return value ? 1 : 0
     case 'json':
-      return typeof value === 'string' ? value : JSON.stringify(value)
+      // The record is stored as JSON already, so a json column keeps its
+      // structure; encoding it again returned `"[\"a\"]"` instead of ['a'].
+      return value
     case 'date': {
       if (typeof value === 'number') return new Date(value).toISOString()
       const d = new Date(String(value))

@@ -1,0 +1,17 @@
+{
+  "name": "fullstack-e2e",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Full-stack fixture run by tools/e2e.mjs against morgana dev and a real worker — the host parity suite.",
+  "scripts": {
+    "build": "morgana build",
+    "e2e": "node ../../tools/e2e.mjs"
+  },
+  "dependencies": {
+    "@morgana/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@morgana/cli": "workspace:^"
+  }
+}
