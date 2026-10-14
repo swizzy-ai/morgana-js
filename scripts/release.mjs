@@ -4,6 +4,8 @@
  *
  *   pnpm release             gate, then publish, then tag + push
  *   pnpm release --dry-run   gate, then `pnpm publish --dry-run`; nothing leaves the machine
+ *   pnpm release:fast        build only — no typecheck/test. For re-running after a
+ *                            gate that already passed (e.g. a 2FA timeout mid-publish)
  *
  * The Morgana packages release in lockstep: they must all carry the same
  * version, and `morgana init` scaffolds against the CLI's own version.
@@ -22,6 +24,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dryRun = process.argv.includes('--dry-run')
+const skipChecks = process.argv.includes('--skip-checks')
 
 /** Dependency order: each package publishes after everything it depends on. */
 const PACKAGES = ['sdk', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
@@ -68,10 +71,14 @@ const filters = pkgs.flatMap((p) => ['--filter', p.name])
 
 step('build')
 run('pnpm', [...filters, 'run', 'build'])
-step('typecheck')
-run('pnpm', [...filters, 'run', 'typecheck'])
-step('test')
-run('pnpm', [...filters, 'run', 'test'])
+if (skipChecks) {
+  step('typecheck + test skipped (--skip-checks)')
+} else {
+  step('typecheck')
+  run('pnpm', [...filters, 'run', 'typecheck'])
+  step('test')
+  run('pnpm', [...filters, 'run', 'test'])
+}
 
 // ── Publish ──────────────────────────────────────────────────────────────────
 const published = []

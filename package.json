@@ -10,7 +10,8 @@
     "typecheck": "pnpm -r run typecheck",
     "clean": "rm -rf dist",
     "release": "node scripts/release.mjs",
-    "release:dry": "node scripts/release.mjs --dry-run"
+    "release:dry": "node scripts/release.mjs --dry-run",
+    "release:fast": "node scripts/release.mjs --skip-checks"
   },
   "packageManager": "pnpm@11.13.0",
   "devDependencies": {
