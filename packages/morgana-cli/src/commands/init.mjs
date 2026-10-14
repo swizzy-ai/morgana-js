@@ -113,6 +113,8 @@ const packageJson = (name) => `${JSON.stringify(
     scripts: {
       build: 'morgana build',
       dev: 'morgana dev',
+      types: 'morgana types',
+      typecheck: 'morgana types && tsc --noEmit',
       deploy: 'morgana deploy',
     },
     // The Morgana packages release in lockstep, so the CLI's own version is the
@@ -125,7 +127,28 @@ const packageJson = (name) => `${JSON.stringify(
     devDependencies: {
       '@morgana/cli': `^${VERSION}`,
       '@morgana/sdk-compile': `^${VERSION}`,
+      typescript: '~5.8.2',
     },
+  },
+  null,
+  2,
+)}\n`
+
+// `.morgana/**` is the point: it holds the generated types (`morgana types`)
+// that make ctx.actions, ctx.objects and custom ctx.ui creators typed.
+const tsconfig = `${JSON.stringify(
+  {
+    compilerOptions: {
+      target: 'ES2022',
+      module: 'ESNext',
+      moduleResolution: 'Bundler',
+      lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+      isolatedModules: true,
+    },
+    include: ['src', 'morgana.config.ts', '.morgana/**/*.d.ts'],
   },
   null,
   2,
@@ -136,6 +159,7 @@ const readme = (name) => `# ${name}
 \`\`\`bash
 morgana dev      # compile and serve on http://localhost:4317
 morgana build    # compile to dist/
+morgana types    # regenerate .morgana/ types (build and dev do this too)
 morgana deploy   # build, publish, and verify in a real browser
 \`\`\`
 
@@ -161,6 +185,7 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
   writeFile(path.join(dir, 'src', 'objects', '.gitkeep'), '')
   writeFile(path.join(dir, 'assets', 'favicon.svg'), favicon(pkg))
   writeFile(path.join(dir, 'package.json'), packageJson(pkg))
+  writeFile(path.join(dir, 'tsconfig.json'), tsconfig)
   writeFile(path.join(dir, '.gitignore'), gitignore)
   writeFile(path.join(dir, 'README.md'), readme(pkg))
 
@@ -171,6 +196,7 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
     'src/actions/compile/hello.ts',
     'assets/favicon.svg',
     'package.json',
+    'tsconfig.json',
     '.gitignore',
     'README.md',
   ]) {

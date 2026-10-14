@@ -403,6 +403,34 @@ export type Creatable<
   create(props?: P & CreateOptions): H
 }
 
+/**
+ * The creator for a custom object, from its definition's type. `morgana types`
+ * emits one per file in `src/objects/` onto `UiApi`, so `ctx.ui.videoPlayer(…)`
+ * is typed: props from `defaultProps`.
+ *
+ * Props stay open beyond the declared ones — a custom object receives every prop
+ * it is given, and `render` can make it a kind whose props are not a box's.
+ *
+ * Creation is compile-lane, and `methods` are attached in the browser, so the
+ * handle returned here does not carry them. See `CustomObjectMethods`.
+ */
+export type CustomCreatable<D> = Creatable<
+  (D extends { defaultProps?: infer P } ? NonNullable<P> : {}) & BoxProps & { [prop: string]: unknown },
+  BoxHandle
+>
+
+/**
+ * A definition's `methods`, as they are called on the handle in the browser
+ * (the leading `handle` argument dropped):
+ *
+ *   import type player from '../../objects/video-player'
+ *   const p = ctx.ui.get('p') as BoxHandle & CustomObjectMethods<typeof player>
+ *   p.seek(10)
+ */
+export type CustomObjectMethods<D> = D extends { methods?: infer M }
+  ? { [K in keyof NonNullable<M>]: NonNullable<M>[K] extends (h: any, ...a: infer A) => infer R ? (...a: A) => R : never }
+  : {}
+
 
 /**
  * The client action context — the shared base plus the complete UI surface

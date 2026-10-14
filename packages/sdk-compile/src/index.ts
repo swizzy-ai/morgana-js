@@ -18,7 +18,8 @@ import {
   bundleCustomObjects,
 } from './custom-objects'
 import { discoverServerObjects } from './server-objects'
-import { browserObjectMeta, compileServerObjects, objectTypesDts } from './objects-compile'
+import { browserObjectMeta, compileServerObjects } from './objects-compile'
+import { refreshProjectTypes } from './types'
 import { createEmptyIR, type ProjectIR } from './ir'
 import {
   buildBrowserCompileCtx,
@@ -353,10 +354,8 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // carries the browser's view of them).
   const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
   ir.serverObjects = browserObjectMeta(serverObjects)
-  if (serverObjects.length) {
-    fs.mkdirSync(path.join(dir, '.morgana'), { recursive: true })
-    fs.writeFileSync(path.join(dir, '.morgana', 'objects.d.ts'), objectTypesDts(dir, serverObjects))
-  }
+  // Every build refreshes the project types, so the editor never lags the code.
+  refreshProjectTypes({ dir, actionsDirs: opts.actionsDirs }, serverObjects, warnings)
 
   const bindingErrors: string[] = []
   const objectErrors: string[] = []
@@ -525,6 +524,8 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
 }
 
 export { scanProject } from './extract'
+export { generateTypes } from './types'
+export type { GenerateTypesOptions, GeneratedTypes } from './types'
 export type { SdkActionMeta } from './extract'
 export type { ProjectIR } from './ir'
 export type { ObjNode, PageNode } from './ir'

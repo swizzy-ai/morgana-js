@@ -292,9 +292,11 @@ export function markCustomObjectSource(definition: unknown, module: string): voi
  */
 export function createCustomObject<
   P extends Record<string, any> = Record<string, any>,
-  Events extends string = string
->(definition: CustomObjectDefinition<P, Events>): CustomObjectDefinition<P, Events> {
-  return registerCustomObject(definition) as CustomObjectDefinition<P, Events>
+  Events extends string = string,
+  // Inferred from `methods`, so `morgana types` can put them on the handle.
+  M extends Record<string, (handle: any, ...args: any[]) => any> = {}
+>(definition: CustomObjectDefinition<P, Events> & { methods?: M }): CustomObjectDefinition<P, Events> & { methods?: M } {
+  return registerCustomObject(definition) as CustomObjectDefinition<P, Events> & { methods?: M }
 }
 
 // ── legacy names ───────────────────────────────────────────────────────────

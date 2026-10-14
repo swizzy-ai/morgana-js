@@ -422,6 +422,8 @@ export type {
   ClientEventsApi,
   CreateOptions,
   Creatable,
+  CustomCreatable,
+  CustomObjectMethods,
   ClientContext,
   ClientAuthHandle,
   ActionTriggerEvent,

@@ -71,6 +71,19 @@ export const COMMANDS = {
     },
   },
 
+  types: {
+    describe: 'generate .morgana/ types for actions and server objects',
+    usage: 'morgana types [--dir <path>] [--watch]',
+    flags: {
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      watch: { type: 'boolean', short: 'w', describe: 'regenerate on change' },
+    },
+    async run(args, { str, bool }) {
+      const { types } = await import('./commands/types.mjs')
+      await types({ dir: str(args, 'dir') || process.cwd(), watch: bool(args, 'watch') })
+    },
+  },
+
   dev: {
     describe: 'compile, serve dist/ locally, and recompile on change',
     usage: 'morgana dev [port] [--port <n>] [--no-watch]',
@@ -98,7 +111,8 @@ export const COMMANDS = {
         if (!filename) return
         const rel = String(filename).split(/[\\/]/).join('/')
         // Never watch our own output, or every build triggers the next one.
-        if (rel.startsWith('dist/') || rel.startsWith('node_modules/') || rel.startsWith('.data/')) return
+        // `.morgana/` too: every compile refreshes the generated types there.
+        if (/^(dist|node_modules|\.data|\.morgana|\.git)\//.test(rel)) return
         if (timer) clearTimeout(timer)
         timer = setTimeout(async () => {
           timer = null
