@@ -233,6 +233,7 @@ async function runAction(name, params, reqCtx = {}) {
     session: reqCtx.session,
     onSession: reqCtx.onSession,
     request: reqCtx.request,
+    response: reqCtx.response,
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',
@@ -269,6 +270,7 @@ async function requestContext(req, url, body, params = {}) {
   const cookies = []
   return {
     cookies,
+    response: {},
     session: { token, user },
     onSession: (s) =>
       cookies.push(
@@ -288,6 +290,25 @@ async function requestContext(req, url, body, params = {}) {
       ip: req.socket?.remoteAddress,
     },
   }
+}
+
+/**
+ * Answer with what the action set through ctx.server.respond — the worker's
+ * rules: status/headers/content type as given; a string body is sent as-is,
+ * anything else as JSON (the default envelope when no body was set).
+ */
+function sendCaptured(res, captured, result) {
+  const status = captured.status ?? 200
+  const headers = { 'cache-control': 'no-store', ...(captured.headers ?? {}) }
+  const body = captured.body !== undefined ? captured.body : { success: true, data: { result } }
+  if (typeof body === 'string') {
+    headers['content-type'] = captured.contentType ?? headers['content-type'] ?? 'text/plain; charset=utf-8'
+    res.writeHead(status, headers)
+    return res.end(body)
+  }
+  headers['content-type'] = captured.contentType ?? headers['content-type'] ?? MIME['.json']
+  res.writeHead(status, headers)
+  return res.end(JSON.stringify(body))
 }
 
 /** An auth refusal thrown by an action (ctx.auth.require) keeps its status. */
@@ -370,6 +391,7 @@ const server = http.createServer(async (req, res) => {
         const rc = await requestContext(req, url, body, params)
         const result = await runAction(route.action, { ...body, ...params }, rc)
         if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
+        if (rc.response.set) return sendCaptured(res, rc.response, result)
         // An action returning a rendered page answers with the page itself —
         // this is the action-as-router path. Everything else keeps the JSON
         // envelope.
@@ -391,6 +413,7 @@ const server = http.createServer(async (req, res) => {
       const rc = await requestContext(req, url, params ?? {})
       const result = await runAction(name, params ?? {}, rc)
       if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
+      if (rc.response.set) return sendCaptured(res, rc.response, result)
       return sendJson(res, 200, { success: true, data: { result } })
     } catch (err) {
       const missing = err?.code === 'ACTION_MISSING' || String(err?.message).includes('Cannot find module')

@@ -199,6 +199,16 @@ export async function makeHostContext(opts) {
   })
   const logs = []
 
+  // ctx.server.respond lands here; the host applies it to the HTTP response.
+  const response = opts.response ?? {}
+  const capture = (status, headers, contentType, body) => {
+    response.set = true
+    if (status !== undefined && status !== null) response.status = Number(status)
+    if (headers) response.headers = { ...(response.headers ?? {}), ...Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v)])) }
+    if (contentType) response.contentType = contentType
+    if (body !== undefined) response.body = body
+  }
+
   const log = (...parts) => {
     logs.push(parts.map(String).join(' '))
   }
@@ -404,12 +414,17 @@ export async function makeHostContext(opts) {
         headers: {},
         body: args,
       },
-      respond: () => {},
+      // Same semantics as the worker: the action shapes its own HTTP response.
+      // These were no-ops here while the worker honoured them, so a webhook
+      // answering 400 worked deployed and silently answered 200 locally.
+      respond: (body, o = {}) => capture(o.status, o.headers, o.contentType, body),
       response: {
-        status: () => {},
-        setHeader: () => {},
-        respond: () => {},
-        stream: () => {},
+        status: (code) => capture(code),
+        setHeader: (name, value) => capture(undefined, { [name]: value }),
+        respond: (input = {}) => capture(input.status, input.headers, input.contentType, input.body),
+        stream: () => {
+          throw new Error('ctx.server.response.stream is not supported yet — respond with the whole body')
+        },
       },
       collections,
       // Async for the same reason as `collections`: the SDK says promises, so
