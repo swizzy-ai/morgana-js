@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /** set/get by id, then a write naming an undeclared column. */
 export const notesRoundTrip = defineServerAction({

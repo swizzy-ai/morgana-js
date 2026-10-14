@@ -19,7 +19,7 @@
 
 import type { AgentContext, ChatMemory, Message } from '@hbbio/nanoagent'
 import { AssistantMessage, HaltKind, SystemMessage, UserMessage, loopAgent, toText } from '@hbbio/nanoagent'
-import { AGENT_EVENTS } from '@morgana/sdk'
+import { AGENT_EVENTS } from '@studiomorgana/sdk'
 import { createModel, type ChatTransport } from './model'
 import { invokeTool, specOf, summarize, type ToolRunner } from './tools'
 import type { AgentRunOptions, AgentRunResult, AgentStep, ToolDeclaration, ToolResult } from './types'
@@ -30,7 +30,7 @@ export const MAX_TURNS = 12
 /**
  * Events an agent emits, bindable with `on:` like any other backend event.
  *
- * The names live in `@morgana/sdk` rather than here, and are re-exported so a
+ * The names live in `@studiomorgana/sdk` rather than here, and are re-exported so a
  * host importing from either package gets the same object. An author's config
  * names these strings and this loop emits them, so two copies would be two
  * chances for the binding and the emitter to disagree.

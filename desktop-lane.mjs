@@ -32,10 +32,10 @@
  *
  * AFTER RUNNING (in this order)
  *   pnpm install                          # new workspace package
- *   pnpm --filter @morgana/sdk build && pnpm --filter @morgana/sdk typecheck
- *   pnpm --filter @morgana/sdk-compile build && pnpm --filter @morgana/sdk-compile typecheck
- *   pnpm --filter @morgana/cli build && pnpm --filter @morgana/cli typecheck
- *   pnpm --filter @morgana/desktop-electron build && pnpm --filter @morgana/desktop-electron typecheck
+ *   pnpm --filter @studiomorgana/sdk build && pnpm --filter @studiomorgana/sdk typecheck
+ *   pnpm --filter @studiomorgana/sdk-compile build && pnpm --filter @studiomorgana/sdk-compile typecheck
+ *   pnpm --filter @studiomorgana/cli build && pnpm --filter @studiomorgana/cli typecheck
+ *   pnpm --filter @studiomorgana/desktop-electron build && pnpm --filter @studiomorgana/desktop-electron typecheck
  *   pnpm -r test                           # 506 tests + the new ones
  *   node examples/sdk-compile-demo/build.mjs   # demo gains a desktop action
  */
@@ -289,7 +289,7 @@ import { compileProject } from '../index'
 import { scanProject } from '../extract'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'desk-demo',",
   "  entry: 'home',",
@@ -301,7 +301,7 @@ const CONFIG = [
 ].join('\\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -312,7 +312,7 @@ const SEED = [
 ].join('\\n')
 
 const PING = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const ping = defineDesktopAction({',
   "  config: { on: 'http.get /ping', auth: 'public' },",
   '  handler: (ctx) => ({ ok: true, platform: ctx.desktop.os.platform }),',
@@ -320,7 +320,7 @@ const PING = [
 ].join('\\n')
 
 const PONG = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const pong = defineDesktopAction({',
   "  config: { on: 'cron(* * * * *)' },",
   '  handler: () => ({ ok: true }),',
@@ -334,7 +334,7 @@ const PLAIN = [
 ].join('\\n')
 
 const GREET = [
-  "import { defineServerAction } from '@morgana/sdk'",
+  "import { defineServerAction } from '@studiomorgana/sdk'",
   'export const greet = defineServerAction({',
   '  handler: () => ({ greeting: "hi" }),',
   '})',
@@ -347,7 +347,7 @@ const FMT = [
 ].join('\\n')
 
 const COUNTER = [
-  "import { customServerObject } from '@morgana/sdk'",
+  "import { customServerObject } from '@studiomorgana/sdk'",
   "import { fmt } from './fmt'",
   '',
   'async function total(ctx: any, p: any): Promise<any> {',
@@ -369,7 +369,7 @@ const COUNTER = [
 ].join('\\n')
 
 const CONFIG_NODESK = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'desk-demo',",
   "  entry: 'home',",
@@ -442,7 +442,7 @@ describe('desktop dist partition', () => {
       expect(manifest.actions).not.toContain('ping')
       // The desktop declaration carries backend, capabilities and identity.
       const appJson = JSON.parse(fs.readFileSync(path.join(dir, 'dist', 'desktop', 'app.json'), 'utf8'))
-      expect(appJson.backend).toBe('@morgana/desktop-electron')
+      expect(appJson.backend).toBe('@studiomorgana/desktop-electron')
       expect(appJson.os).toEqual(['clipboard'])
       expect(appJson.apps.map((a: { bundleId: string }) => a.bundleId)).toContain('com.morgana.shop')
       expect(appJson.apps.find((a: { bundleId: string }) => a.bundleId === 'com.morgana.shop').window).toMatchObject({ width: 1128, frameless: true })
@@ -502,7 +502,7 @@ describe('object op source', () => {
   {
     id: 'F4',
     path: 'packages/morgana-cli/src/host.mjs',
-    why: 'Library entry for backend packages (tsup builds it to dist/host.js, exported as @morgana/cli/host). The desktop backend boots the app through dev(), fires declarative cron through CronScheduler, and builds nothing itself — one host, not two that happen to agree.',
+    why: 'Library entry for backend packages (tsup builds it to dist/host.js, exported as @studiomorgana/cli/host). The desktop backend boots the app through dev(), fires declarative cron through CronScheduler, and builds nothing itself — one host, not two that happen to agree.',
     note: '',
     content: `/**
  * Host library entry — the reference host as an importable module.
@@ -535,7 +535,7 @@ export { ChannelHub } from './lib/channels.mjs'
  * \`morgana package\` — this command always runs.
  */
 import path from 'node:path'
-import { scanProject } from '@morgana/sdk-compile'
+import { scanProject } from '@studiomorgana/sdk-compile'
 import { build } from './build.mjs'
 import { loadBackend, DEFAULT_BACKEND } from './desktop-backend.mjs'
 import { say } from '../ui.mjs'
@@ -571,11 +571,11 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { compileProject } from '@morgana/sdk-compile'
+import { compileProject } from '@studiomorgana/sdk-compile'
 import { dev } from '../commands/dev.mjs'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'host-desk',",
   "  entry: 'home',",
@@ -584,7 +584,7 @@ const CONFIG = [
 ].join('\\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -595,7 +595,7 @@ const SEED = [
 ].join('\\n')
 
 const PING = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const ping = defineDesktopAction({',
   "  config: { on: 'http.get /ping', auth: 'public' },",
   '  handler: async (ctx) => ({ ok: true, platform: ctx.desktop.os.platform, app: ctx.desktop.app.name }),',
@@ -687,7 +687,7 @@ describe('desktop lane on the reference host', () => {
     why: 'New public workspace package (approved call #2). Runtime deps are only cli (host library) and sdk (types); electron is a devDep — needed to run, never imported by unit tests. electron-builder stays OUT of devDeps (heavy toolchain, only needed for pack mode package); pack.ts names the install when it is missing. pnpm-workspace.yaml gains the entry in E52.',
     note: 'ELECTRON VERSION — bump these two pins to current before release.',
     content: `{
-  "name": "@morgana/desktop-electron",
+  "name": "@studiomorgana/desktop-electron",
   "version": "0.1.0",
   "type": "module",
   "description": "Desktop backend for Morgana — boots dist/desktop/ in Electron: window, os capabilities, local object runtime, installer project.",
@@ -733,8 +733,8 @@ describe('desktop lane on the reference host', () => {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@morgana/cli": "workspace:^",
-    "@morgana/sdk": "workspace:^"
+    "@studiomorgana/cli": "workspace:^",
+    "@studiomorgana/sdk": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
@@ -763,8 +763,8 @@ describe('desktop lane on the reference host', () => {
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": false,
     "paths": {
-      "@morgana/sdk": ["../sdk/src/index.ts"],
-      "@morgana/sdk/*": ["../sdk/src/*"]
+      "@studiomorgana/sdk": ["../sdk/src/index.ts"],
+      "@studiomorgana/sdk/*": ["../sdk/src/*"]
     }
   },
   "include": ["src"]
@@ -791,7 +791,7 @@ export default defineConfig({
   dts: true,
   treeshake: true,
   minify: false,
-  external: ['electron', 'electron-builder', '@morgana/cli', '@morgana/sdk'],
+  external: ['electron', 'electron-builder', '@studiomorgana/cli', '@studiomorgana/sdk'],
 })
 `,
   },
@@ -812,7 +812,7 @@ export default defineConfig({
     path: 'packages/desktop-electron/README.md',
     why: 'Repo convention: every package documents purpose + commands.',
     note: '',
-    content: `# @morgana/desktop-electron
+    content: `# @studiomorgana/desktop-electron
 
 The desktop backend for Morgana. Boots a compiled project's \`dist/desktop/\`
 inside Electron: the app window on the loopback host, \`ctx.desktop.os\`
@@ -852,7 +852,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
-import type { DesktopApi, DesktopAppInfo } from '@morgana/sdk'
+import type { DesktopApi, DesktopAppInfo } from '@studiomorgana/sdk'
 import { buildOs } from './os'
 import { electronBackend, type ElectronModule } from './electron-os'
 import { createObjectsRuntime, type ObjectTypeDef } from './objects'
@@ -921,12 +921,12 @@ export async function run({ dir = process.cwd(), port = 4317 }: DesktopRunOption
   const manifest = readJson<{ entry?: string }>(path.join(dist, 'manifest.json'), {})
   const objectDefs = readJson<ObjectTypeDef[]>(path.join(dist, 'objects.json'), [])
 
-  const host = (await import(resolveInstalled('@morgana/cli/host'))) as unknown as HostModule
+  const host = (await import(resolveInstalled('@studiomorgana/cli/host'))) as unknown as HostModule
   const electron = (await import(resolveInstalled('electron'))) as unknown as ElectronModule
   if (!electron.app?.whenReady || typeof electron.BrowserWindow !== 'function') {
     throw new Error(
       'Electron did not load a runnable app module — its postinstall binary is missing. ' +
-      'Install it on demand with \`pnpm --filter @morgana/desktop-electron rebuild electron\`, then retry.',
+      'Install it on demand with \`pnpm --filter @studiomorgana/desktop-electron rebuild electron\`, then retry.',
     )
   }
   await electron.app.whenReady()
@@ -1012,7 +1012,7 @@ export async function run({ dir = process.cwd(), port = 4317 }: DesktopRunOption
  * missing capability at runtime.
  */
 
-import type { DesktopOsGroup, DesktopOsHandle } from '@morgana/sdk'
+import type { DesktopOsGroup, DesktopOsHandle } from '@studiomorgana/sdk'
 
 /** What a backend provides per group, before capability gating. */
 export interface OsBackend {
@@ -1245,7 +1245,7 @@ import type {
   DesktopObjectsHandle,
   DesktopObjectTypeDef,
   DesktopOsHandle,
-} from '@morgana/sdk'
+} from '@studiomorgana/sdk'
 
 /** One entry of dist/objects.json as the desktop host reads it. */
 export interface ObjectTypeDef {
@@ -1536,8 +1536,8 @@ export async function scaffold({ dir = process.cwd(), outDir }: PackOptions = {}
     main: 'main.mjs',
     type: 'module',
     dependencies: {
-      '@morgana/desktop-electron': '^' + ownVersion(),
-      '@morgana/cli': '^' + installedVersion('@morgana/cli', 'host'),
+      '@studiomorgana/desktop-electron': '^' + ownVersion(),
+      '@studiomorgana/cli': '^' + installedVersion('@studiomorgana/cli', 'host'),
       electron: '^33.0.0',
     },
     build: {
@@ -1551,7 +1551,7 @@ export async function scaffold({ dir = process.cwd(), outDir }: PackOptions = {}
   const main = [
     "import path from 'node:path'",
     "import { fileURLToPath } from 'node:url'",
-    "import { run } from '@morgana/desktop-electron'",
+    "import { run } from '@studiomorgana/desktop-electron'",
     '',
     'const dir = path.dirname(fileURLToPath(import.meta.url))',
     '',
@@ -1580,7 +1580,7 @@ export async function pack({ dir = process.cwd(), outDir, mode = 'scaffold' }: P
   try {
     builder = req('electron-builder') as { build: (opts: unknown) => Promise<unknown> }
   } catch {
-    throw new Error('electron-builder is not installed — pnpm add -D electron-builder in @morgana/desktop-electron to build installers')
+    throw new Error('electron-builder is not installed — pnpm add -D electron-builder in @studiomorgana/desktop-electron to build installers')
   }
   await builder.build({ projectDir: info.outDir, win: ['nsis'] })
   return info
@@ -1772,7 +1772,7 @@ function project(): string {
   fs.mkdirSync(path.join(dir, 'dist', 'desktop'), { recursive: true })
   fs.writeFileSync(
     path.join(dir, 'dist', 'desktop', 'app.json'),
-    JSON.stringify({ backend: '@morgana/desktop-electron', os: [], apps: [{ name: 'shop', bundleId: 'com.morgana.shop' }] }),
+    JSON.stringify({ backend: '@studiomorgana/desktop-electron', os: [], apps: [{ name: 'shop', bundleId: 'com.morgana.shop' }] }),
     'utf8',
   )
   fs.writeFileSync(path.join(dir, 'dist', 'manifest.json'), JSON.stringify({ entry: 'home' }), 'utf8')
@@ -1790,9 +1790,9 @@ describe('scaffold', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(out, 'package.json'), 'utf8'))
     expect(pkg.build.appId).toBe('com.morgana.shop')
     expect(pkg.build.win.target).toEqual(['nsis'])
-    expect(pkg.dependencies['@morgana/desktop-electron']).toMatch(/^\\^/)
+    expect(pkg.dependencies['@studiomorgana/desktop-electron']).toMatch(/^\\^/)
     const main = fs.readFileSync(path.join(out, 'main.mjs'), 'utf8')
-    expect(main).toContain("import { run } from '@morgana/desktop-electron'")
+    expect(main).toContain("import { run } from '@studiomorgana/desktop-electron'")
     expect(main).toContain('await run({ dir, port: 0 })')
     expect(fs.existsSync(path.join(out, 'dist', 'desktop', 'app.json'))).toBe(true)
   })
@@ -1809,7 +1809,7 @@ describe('scaffold', () => {
     path: 'examples/sdk-compile-demo/src/actions/desktop/notes.ts',
     why: 'Demo proof the lane compiles in a real project: a desktop action behind a declared capability (clipboard), served on its own http route. `node examples/sdk-compile-demo/build.mjs` shows the new desktop row (E55).',
     note: '',
-    content: `import { defineDesktopAction } from '@morgana/sdk'
+    content: `import { defineDesktopAction } from '@studiomorgana/sdk'
 
 /**
  * Desktop demo: reads the clipboard through the declared capability and
@@ -1846,7 +1846,7 @@ export const notes = defineDesktopAction({
  * command never runs anything it built.
  */
 import path from 'node:path'
-import { scanProject } from '@morgana/sdk-compile'
+import { scanProject } from '@studiomorgana/sdk-compile'
 import { build } from './build.mjs'
 import { loadBackend, DEFAULT_BACKEND } from './desktop-backend.mjs'
 import { say } from '../ui.mjs'
@@ -1893,7 +1893,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 
-export const DEFAULT_BACKEND = '@morgana/desktop-electron'
+export const DEFAULT_BACKEND = '@studiomorgana/desktop-electron'
 
 export async function loadBackend(dir, name) {
   let resolved
@@ -2079,7 +2079,7 @@ export function defineDesktopAction<Ctx extends DesktopContext = DesktopContext>
  * a group outside this list gets a named error, not undefined — the same rule
  * the OS-permission model will enforce at pack time. \`backend\` names the
  * package that implements dist/desktop/ (default
- * @morgana/desktop-electron); \`morgana desktop\` resolves it from the
+ * @studiomorgana/desktop-electron); \`morgana desktop\` resolves it from the
  * project, never from the CLI's own dependencies, so a future backend swaps
  * in with one config line.
  */
@@ -2436,7 +2436,7 @@ function buildDesktopDecl(
     warnings.push('desktop actions exist but config.apps declares no type: "desktop" app — using a default install identity')
   }
   return {
-    backend: config.desktop?.backend ?? '@morgana/desktop-electron',
+    backend: config.desktop?.backend ?? '@studiomorgana/desktop-electron',
     os: [...(config.desktop?.os ?? [])],
     apps,
   }
@@ -2579,7 +2579,7 @@ import type { DiscoveredServerObject } from './server-objects'`,
     }
     write('desktop/apis.json', \`$\{JSON.stringify(inputs.desktopApis ?? [], null, 2)}\\n\`)
     write('desktop/triggers.json', \`$\{JSON.stringify(inputs.desktopTriggers ?? [], null, 2)}\\n\`)
-    const decl = inputs.desktop ?? { backend: '@morgana/desktop-electron', os: [], apps: [] }
+    const decl = inputs.desktop ?? { backend: '@studiomorgana/desktop-electron', os: [], apps: [] }
     write('desktop/app.json', \`$\{JSON.stringify(decl, null, 2)}\\n\`)
   }
   // The object catalog both lanes read. The desktop host boots its local
@@ -2967,7 +2967,7 @@ const apis = [...serverApis, ...desktopApis]`,
     code: ` * Bundle the CLI — the binary plus the host library.
  *
  * \`bin/morgana.mjs\` is the binary entry; \`src/host.mjs\` is the library entry
- * backend packages import (\`@morgana/cli/host\`). The commands under \`src/\` become internal`,
+ * backend packages import (\`@studiomorgana/cli/host\`). The commands under \`src/\` become internal`,
   },
   {
     id: 'E48',
@@ -3295,7 +3295,7 @@ export interface DesktopWindow {
   if (!electron.app?.whenReady || typeof electron.BrowserWindow !== 'function') {
     throw new Error(
       'Electron did not load a runnable app module — its postinstall binary is missing. ' +
-      'Install it on demand with \`pnpm --filter @morgana/desktop-electron rebuild electron\`, then retry.',
+      'Install it on demand with \`pnpm --filter @studiomorgana/desktop-electron rebuild electron\`, then retry.',
     )
   }`,
   },

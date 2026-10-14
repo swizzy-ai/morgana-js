@@ -12,7 +12,7 @@ function makeFixtureProject(): string {
   writeFileSync(
     path.join(dir, 'actions', 'server', 'commitTurn.ts'),
     [
-      "import type { ServerContext } from '@morgana/sdk'",
+      "import type { ServerContext } from '@studiomorgana/sdk'",
       '',
       'export interface Contract {',
       '  input: { sessionId: string; userContent: string; assistantContent: string }',
@@ -30,7 +30,7 @@ function makeFixtureProject(): string {
   writeFileSync(
     path.join(dir, 'src', 'actions', 'browser', 'chatUI.ts'),
     [
-      "import type { ClientContext } from '@morgana/sdk'",
+      "import type { ClientContext } from '@studiomorgana/sdk'",
       '',
       'export type Contract = {',
       '  input: { question?: string }',
@@ -82,7 +82,7 @@ describe('registry generator', () => {
       )
       expect(dts).toContain('chatUI: ActionContract<{ question?: string | undefined; }, { ok: boolean; }>')
       expect(dts).not.toContain('legacy')
-      expect(dts).toContain("import type { ActionContract } from '@morgana/sdk'")
+      expect(dts).toContain("import type { ActionContract } from '@studiomorgana/sdk'")
       expect(dts).toContain('interface AppEvents {}')
 
       // Second run — same output, same file.

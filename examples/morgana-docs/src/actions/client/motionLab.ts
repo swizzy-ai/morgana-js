@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /** Motion lab runner — reads the knobs, runs the preset, logs the settle. */
 

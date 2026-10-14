@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /**
  * Chat wiring — one subscription feeds both panes plus the inspector.

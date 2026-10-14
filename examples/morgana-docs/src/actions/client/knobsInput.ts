@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /**
  * Knob + log wiring for the inputs page. Same shape as knobsBasic: literal

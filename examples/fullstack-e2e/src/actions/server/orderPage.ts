@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 export const orderPage = defineServerAction({
   config: { on: 'http.get /orders/:id' },
   handler: async (ctx) => {

@@ -12,7 +12,7 @@
  * module registry live, and the mutations replay into the manifest style
  * JSON so the browser hydrates the same registry at boot.
  */
-import type { GradientSpec } from '@morgana/sdk'
+import type { GradientSpec } from '@studiomorgana/sdk'
 
 const registry = new Map<string, string>()
 

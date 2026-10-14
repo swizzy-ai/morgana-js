@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 export const declareStores = defineServerAction({
   config: { on: 'compile' },

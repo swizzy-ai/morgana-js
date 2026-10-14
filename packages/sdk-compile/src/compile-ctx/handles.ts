@@ -1,8 +1,8 @@
 /**
  * Recording object handles: nodes, placement, props.
  */
-import type { CustomObjectDefinition, MorganaConfig } from '@morgana/sdk';
-import { ANIMATE_PRESETS } from '@morgana/sdk';
+import type { CustomObjectDefinition, MorganaConfig } from '@studiomorgana/sdk';
+import { ANIMATE_PRESETS } from '@studiomorgana/sdk';
 import type { BindingRecord, ObjNode, ProjectIR } from '../ir';
 import { resolveMakeToken } from './tokens';
 

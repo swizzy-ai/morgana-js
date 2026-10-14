@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /** Backend page wiring — notes CRUD through server actions. */
 

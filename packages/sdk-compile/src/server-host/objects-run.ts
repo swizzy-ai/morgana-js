@@ -3,7 +3,7 @@
  * as one transaction, creates and destroys instances, and serializes calls
  * per instance. Shared by both hosts; see objects.ts for the storage model.
  */
-import type { AuthUser } from '@morgana/sdk'
+import type { AuthUser } from '@studiomorgana/sdk'
 import {
   ensureSchema,
   Journal,

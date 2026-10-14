@@ -57,13 +57,13 @@ const EXPECTED: Record<string, string[]> = {
 }
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'hs', entry: 'home' })",
 ].join('\n')
 
 /** One compile action declaring one object of every kind under test. */
 const seedLines: string[] = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -104,7 +104,7 @@ async function checkSurface(): Promise<Record<string, string>> {
   write(
     'src/actions/browser/probe.ts',
     [
-      "import { defineClientAction } from '@morgana/sdk'",
+      "import { defineClientAction } from '@studiomorgana/sdk'",
       'export const probe = defineClientAction({',
       '  handler: (ctx) => {',
       '    window.__t = {}',
@@ -181,7 +181,7 @@ describe('typed handle surface', () => {
     write(
       'src/actions/browser/probe.ts',
       [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         'export const probe = defineClientAction({',
         '  handler: (ctx) => {',
         '    const base = ["get","set","setProps","make","bind","move","remove","when","track",',

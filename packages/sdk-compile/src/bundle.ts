@@ -11,7 +11,7 @@
  *                                        (runs in Node — no builtin warning)
  *   browser  platform:browser format:iife one pass over every browser action
  *
- * `@morgana/sdk` is never resolved from the project — author projects don't
+ * `@studiomorgana/sdk` is never resolved from the project — author projects don't
  * depend on it at runtime (the factories are identity helpers and the rest is
  * types). The plugin below redirects it to the SDK's real source so action
  * code that imports a runtime value (`defineClientAction`, a token list, a
@@ -94,18 +94,18 @@ export function resolveClientRuntimeEntry(): string {
  * it, because the guess only ever worked inside this monorepo. It looked for
  * `../../sdk/src/index.ts`, which holds when the compiler sits in
  * `packages/sdk-compile` beside `packages/sdk`, and holds nowhere else: installed
- * from npm the path is `node_modules/@morgana/sdk-compile/dist`, three levels
- * above nothing. It then fell back to `require.resolve('@morgana/sdk')`, which
+ * from npm the path is `node_modules/@studiomorgana/sdk-compile/dist`, three levels
+ * above nothing. It then fell back to `require.resolve('@studiomorgana/sdk')`, which
  * answers the *bundled* `dist/index.js` — and that bundle has no
  * `export { … } from './…'` lines left in it, because tsup collapses them into
  * one `export { … }` at the end. So the module map came back empty and every
- * action that imported a value from `@morgana/sdk` failed to bundle with
+ * action that imported a value from `@studiomorgana/sdk` failed to bundle with
  * `No matching export`, from a cause three steps removed.
  *
  * Asking for the package's own `package.json` gives the root in both layouts —
  * in the workspace it resolves through the symlink to `packages/sdk`, installed
- * it resolves to `node_modules/@morgana/sdk` — and from there `src/index.ts` is
- * one fixed step. The `@morgana/sdk` package ships that `src/` deliberately, and
+ * it resolves to `node_modules/@studiomorgana/sdk` — and from there `src/index.ts` is
+ * one fixed step. The `@studiomorgana/sdk` package ships that `src/` deliberately, and
  * exports `./package.json` so this lookup is legal rather than accidental.
  *
  * There is no fallback to the bundled entry. If the source is not there, the
@@ -120,7 +120,7 @@ export function resolveSdkEntry(): string {
 
   const roots: string[] = []
   try {
-    roots.push(path.dirname(req.resolve('@morgana/sdk/package.json')))
+    roots.push(path.dirname(req.resolve('@studiomorgana/sdk/package.json')))
   } catch {
     // Not resolvable from here; the path candidates below still apply in a
     // workspace that has not been installed.
@@ -137,10 +137,10 @@ export function resolveSdkEntry(): string {
   }
 
   throw new Error(
-    'cannot locate the @morgana/sdk source entry (looked for src/index.ts under ' +
+    'cannot locate the @studiomorgana/sdk source entry (looked for src/index.ts under ' +
       `${roots.join(', ')}). The compiler rewrites SDK imports to the module that ` +
       'declares each export, which needs the SDK\'s TypeScript source. Reinstall ' +
-      '@morgana/sdk, or check that it was published with its src/ directory.',
+      '@studiomorgana/sdk, or check that it was published with its src/ directory.',
   )
 }
 
@@ -178,11 +178,11 @@ interface SdkImport {
   local: string
   /** The name the SDK exports. */
   imported: string
-  /** True for `import * as sdk from '@morgana/sdk'`. */
+  /** True for `import * as sdk from '@studiomorgana/sdk'`. */
   namespace?: boolean
 }
 
-/** Read the value bindings a file takes from `@morgana/sdk`. */
+/** Read the value bindings a file takes from `@studiomorgana/sdk`. */
 function sdkImportsIn(file: string): SdkImport[] {
   let text: string
   try {
@@ -195,7 +195,7 @@ function sdkImportsIn(file: string): SdkImport[] {
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st)) continue
     if (!ts.isStringLiteral(st.moduleSpecifier)) continue
-    if (st.moduleSpecifier.text !== '@morgana/sdk') continue
+    if (st.moduleSpecifier.text !== '@studiomorgana/sdk') continue
     // `import type { … }` never reaches the bundler.
     if (st.importClause?.isTypeOnly) continue
     const clause = st.importClause
@@ -216,8 +216,8 @@ function sdkImportsIn(file: string): SdkImport[] {
 const sdkPlugin: Plugin = {
   name: 'morgana-sdk',
   setup(build) {
-    build.onResolve({ filter: /^@morgana\/sdk(\/.*)?$/ }, (args) => {
-      const subpath = args.path.slice('@morgana/sdk'.length).replace(/^\//, '')
+    build.onResolve({ filter: /^@studiomorgana\/sdk(\/.*)?$/ }, (args) => {
+      const subpath = args.path.slice('@studiomorgana/sdk'.length).replace(/^\//, '')
       if (subpath) {
         const root = path.dirname(resolveSdkEntry())
         const target = path.join(root, `${subpath}.ts`)
@@ -714,7 +714,7 @@ export function resolveSdkSource(relative: string): string {
     if (fs.existsSync(candidate)) return candidate
   }
   throw new Error(
-    `cannot locate @morgana/sdk source "${relative}" (looked in ${candidates.join(' and ')}) — ` +
+    `cannot locate @studiomorgana/sdk source "${relative}" (looked in ${candidates.join(' and ')}) — ` +
       'the sdk package must ship its src/ directory',
   )
 }

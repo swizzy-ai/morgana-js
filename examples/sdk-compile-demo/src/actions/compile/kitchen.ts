@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /**
  * Kitchen sink — exercises the full object catalog on one page so every

@@ -22,7 +22,7 @@ function makeProject(files: Record<string, string>): string {
   write(
     path.join(dir, 'morgana.config.ts'),
     [
-      "import { defineConfig } from '@morgana/sdk'",
+      "import { defineConfig } from '@studiomorgana/sdk'",
       '',
       "export default defineConfig({ name: 'bundle-test', entry: 'home' })",
       '',
@@ -35,7 +35,7 @@ function makeProject(files: Record<string, string>): string {
 }
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   '',
   "export default defineConfig({ name: 'bundle-test', entry: 'home' })",
   '',
@@ -43,7 +43,7 @@ const CONFIG = [
 
 /** A compile action that builds a one-box page. */
 const COMPILE_PAGE = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   "import { suffix } from '../_shared/words'",
   "import { frame } from '../_shared/layout'",
   '',
@@ -103,7 +103,7 @@ describe('multi-file actions', () => {
       'morgana.config.ts': CONFIG,
       'src/actions/_shared/words.ts': SHARED_WORDS,
       'src/actions/server/greet.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         "import { shout } from '../_shared/words'",
         '',
         'export const greet = defineServerAction({',
@@ -131,14 +131,14 @@ describe('multi-file actions', () => {
       'morgana.config.ts': CONFIG,
       'src/actions/_shared/words.ts': SHARED_WORDS,
       'src/actions/browser/a.ts': [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         "import { suffix } from '../_shared/words'",
         '',
         'export const a = defineClientAction({ handler: () => ({ v: suffix }) })',
         '',
       ].join('\n'),
       'src/actions/browser/b.ts': [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         "import { suffix } from '../_shared/words'",
         '',
         'export const b = defineClientAction({ handler: () => ({ v: suffix }) })',
@@ -158,12 +158,12 @@ describe('multi-file actions', () => {
     }
   }, 60_000)
 
-  it('resolves @morgana/sdk to the real source without the project depending on it', async () => {
+  it('resolves @studiomorgana/sdk to the real source without the project depending on it', async () => {
     const dir = makeProject({
       'morgana.config.ts': CONFIG,
       'src/actions/_shared/words.ts': SHARED_WORDS,
       'src/actions/server/greet.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         "import { shout } from '../_shared/words'",
         '',
         'export const greet = defineServerAction({',
@@ -192,7 +192,7 @@ describe('multi-file actions', () => {
     const dir = makeProject({
       'morgana.config.ts': CONFIG,
       'src/actions/server/broken.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         "import { nope } from './does-not-exist'",
         '',
         'export const broken = defineServerAction({ handler: () => nope() })',
@@ -234,7 +234,7 @@ describe('multi-file actions', () => {
     const dir = makeProject({
       'morgana.config.ts': CONFIG,
       'src/actions/server/stamp.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         "import { createHash } from 'node:crypto'",
         '',
         'export const stamp = defineServerAction({',
@@ -271,7 +271,7 @@ describe('multi-file actions', () => {
     const dir = makeProject({
       'morgana.config.ts': CONFIG,
       'src/actions/server/plain.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         '',
         'export const plain = defineServerAction({ handler: () => ({ ok: true }) })',
         '',
@@ -301,7 +301,7 @@ describe('compile lane execution', () => {
       'morgana.config.ts': CONFIG,
       'src/actions/_shared/words.ts': SHARED_WORDS,
       'src/actions/compile/probe.ts': [
-        "import { defineServerAction } from '@morgana/sdk'",
+        "import { defineServerAction } from '@studiomorgana/sdk'",
         "import { shout } from '../_shared/words'",
         '',
         'export const probe = defineServerAction({',
@@ -357,7 +357,7 @@ describe('compile lane execution', () => {
 
 describe('minify', () => {
   const BROWSER_ACTION = [
-    "import { defineClientAction } from '@morgana/sdk'",
+    "import { defineClientAction } from '@studiomorgana/sdk'",
     '',
     'export const ping = defineClientAction({',
     '  handler: () => ({ ok: true, note: "a long string literal that must survive minification" }),',
@@ -366,7 +366,7 @@ describe('minify', () => {
   ].join('\n')
 
   const SERVER_ACTION = [
-    "import { defineServerAction } from '@morgana/sdk'",
+    "import { defineServerAction } from '@studiomorgana/sdk'",
     '',
     'export const greet = defineServerAction({',
     '  handler: (ctx) => ({ greeting: "hello " + (ctx.args?.name ?? "world") }),',
@@ -483,12 +483,12 @@ describe('minify', () => {
       expect(min.length).toBeLessThan(big.length)
       // The generated sheet leads with a comment and readable spacing; neither
       // belongs in a shipped stylesheet.
-      expect(min).not.toContain('generated by @morgana/sdk-compile')
+      expect(min).not.toContain('generated by @studiomorgana/sdk-compile')
       // What must survive: the design-token custom properties and every at-rule
       // block. A minifier that mangles either ships a visibly broken page.
       expect(min).toContain('--background:')
-      // `@morgana` here is the header comment's own text, which is meant to go.
-      const atRules = [...new Set([...big.matchAll(/@[-a-z]+/g)].map((m) => m[0]))].filter((a) => a !== '@morgana')
+      // `@studiomorgana` here is the header comment's own text, which is meant to go.
+      const atRules = [...new Set([...big.matchAll(/@[-a-z]+/g)].map((m) => m[0]))].filter((a) => a !== '@studiomorgana')
       for (const at of atRules) expect(min, `${at} must survive minification`).toContain(at)
       // No rule may be dropped. (Counting braces stopped working once theme
       // rules share bodies: esbuild legitimately merges `a{x}b{x}` into
@@ -513,7 +513,7 @@ describe('minify', () => {
  * `../../sdk/src/index.ts` — that only holds inside the monorepo, and its
  * fallback pointed at the *bundled* `dist/index.js`. A bundle has no
  * `export { … } from './…'` lines left in it, so the per-module map came back
- * empty and every action importing a value from `@morgana/sdk` failed to bundle.
+ * empty and every action importing a value from `@studiomorgana/sdk` failed to bundle.
  * Tests in this repository run against the workspace layout, so nothing here
  * would ever have caught it; these assertions are about the *installed* shape,
  * which is the shape a consumer gets.
@@ -527,12 +527,12 @@ describe('the SDK source entry', () => {
   })
 
   it('resolves the same way a consumer would, through the package exports', () => {
-    // The lookup is `require.resolve('@morgana/sdk/package.json')`, which the
+    // The lookup is `require.resolve('@studiomorgana/sdk/package.json')`, which the
     // package's `exports` map has to permit. Without a `./package.json` entry
     // this throws ERR_PACKAGE_PATH_NOT_EXPORTED and the compiler can never find
     // the SDK at all once installed.
     const req = createRequire(path.join(process.cwd(), 'noop.js'))
-    const manifest = req.resolve('@morgana/sdk/package.json')
+    const manifest = req.resolve('@studiomorgana/sdk/package.json')
     expect(fs.existsSync(manifest)).toBe(true)
     expect(fs.existsSync(path.join(path.dirname(manifest), 'src', 'index.ts'))).toBe(true)
   })

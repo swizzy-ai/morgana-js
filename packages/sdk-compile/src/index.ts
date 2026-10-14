@@ -10,7 +10,7 @@
 import { PARAM_SEGMENT_RE } from './server-host/routes'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { AppDefinition, CustomObjectDefinition, MorganaConfig } from '@morgana/sdk'
+import type { AppDefinition, CustomObjectDefinition, MorganaConfig } from '@studiomorgana/sdk'
 import { hookRunsFor, scanProject, type SdkActionMeta } from './extract'
 import {
   discoverCustomObjects,
@@ -182,7 +182,7 @@ function buildDesktopDecl(
     warnings.push('desktop actions exist but config.apps declares no type: "desktop" app — using a default install identity')
   }
   return {
-    backend: config.desktop?.backend ?? '@morgana/desktop-electron',
+    backend: config.desktop?.backend ?? '@studiomorgana/desktop-electron',
     os: [...(config.desktop?.os ?? [])],
     apps,
   }

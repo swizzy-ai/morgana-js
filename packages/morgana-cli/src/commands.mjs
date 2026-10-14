@@ -140,7 +140,7 @@ export const COMMANDS = {
       pages: { type: 'string', describe: 'comma-separated page names (default all)' },
       port: { type: 'string', describe: 'Express port (default 3001)' },
       apiPrefix: { type: 'string', describe: 'API prefix (default /api)' },
-      yes: { type: 'boolean', describe: 'install @morgana/eject automatically' },
+      yes: { type: 'boolean', describe: 'install @studiomorgana/eject automatically' },
     },
     async run(args, { str, bool }) {
       const { eject } = await import('./commands/eject.mjs')

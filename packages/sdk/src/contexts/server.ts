@@ -3,7 +3,7 @@
  *
  * Collections/stores, files, queues and the HTTP surface are SERVER objects
  * accessed via `ctx.server`. State is browser-only and never appears
- * here (engine law). SSR is always served from a prebuilt @morgana/engine
+ * here (engine law). SSR is always served from a prebuilt @studiomorgana/engine
  * build — the server never renders pages at request time.
  *
  * ✗ There is NO `ctx.server.events`, NO `ctx.server.emit` and NO

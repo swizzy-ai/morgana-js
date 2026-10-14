@@ -94,11 +94,11 @@ describe('the built bundle', () => {
   })
 
   it('keeps the three Morgana packages external', () => {
-    // `@morgana/sdk-compile` locates the SDK's TypeScript source on disk at
+    // `@studiomorgana/sdk-compile` locates the SDK's TypeScript source on disk at
     // runtime, via `import.meta.url` and `fs.existsSync`. Inlining it rewrites
     // `import.meta.url` and those probes find nothing.
     const source = fs.readFileSync(bundle, 'utf8')
-    for (const dep of ['@morgana/sdk', '@morgana/sdk-compile', '@morgana/agents']) {
+    for (const dep of ['@studiomorgana/sdk', '@studiomorgana/sdk-compile', '@studiomorgana/agents']) {
       expect(source, `${dep} was inlined`).toMatch(new RegExp(`from\\s*["']${dep}["']`))
     }
   })

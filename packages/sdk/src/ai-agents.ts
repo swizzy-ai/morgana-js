@@ -3,7 +3,7 @@
  *
  * ## Declared here, implemented in the package
  *
- * `@morgana/agents` owns the loop and the storage. These are the *promises* the
+ * `@studiomorgana/agents` owns the loop and the storage. These are the *promises* the
  * context makes, and they live in the SDK for the same reason `ctx.collections`
  * lives in the SDK: an author writes against the contract, not against whichever
  * runtime happens to be answering. So a project that installs only the SDK still

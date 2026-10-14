@@ -15,13 +15,13 @@ import { compileProject } from '../index'
 import { discoverCustomObjects } from '../custom-objects'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'co', entry: 'home' })",
 ].join('\n')
 
 /** A pure-`define` component: composition only, ships no client code. */
 const PLAYER = `
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 export default createCustomObject({
   name: 'video-player',
   defaultProps: { src: '', radius: 'lg' },
@@ -38,7 +38,7 @@ export default createCustomObject({
 
 /** A component that needs the browser: a lifecycle, methods and state. */
 const WIDGET = `
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 export default createCustomObject({
   name: 'test-widget',
   state: { open: false, count: 0 },
@@ -58,7 +58,7 @@ export default createCustomObject({
 
 /** The `render` escape hatch: the object genuinely IS a table. */
 const DERIVED = `
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 export default createCustomObject({
   name: 'striped-table',
   render: 'table',
@@ -68,7 +68,7 @@ export default createCustomObject({
 `
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -87,7 +87,7 @@ const SEED = [
 
 /** Seeds that use only one component, for the bundle-size assertions. */
 const PLAYER_SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -99,7 +99,7 @@ const PLAYER_SEED = [
 ].join('\n')
 
 const WIDGET_SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -172,7 +172,7 @@ describe('custom object discovery', () => {
     fs.mkdirSync(path.join(dir, 'src', 'objects'), { recursive: true })
     fs.writeFileSync(
       path.join(dir, 'src', 'objects', 'x.ts'),
-      "import { createCustomObject } from '@morgana/sdk'\nexport default createCustomObject({})\n",
+      "import { createCustomObject } from '@studiomorgana/sdk'\nexport default createCustomObject({})\n",
       'utf8',
     )
     const warnings: string[] = []

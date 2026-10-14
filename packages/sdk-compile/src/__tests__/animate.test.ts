@@ -266,7 +266,7 @@ describe('animate driver', () => {
 })
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'anim', entry: 'home' })",
 ].join('\n')
 
@@ -281,7 +281,7 @@ describe('compiled animate surface', () => {
     write(
       'src/actions/compile/seed.ts',
       [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         'export const seed = defineClientAction({',
         '  config: { on: "compile" },',
         '  handler: (ctx) => {',
@@ -295,7 +295,7 @@ describe('compiled animate surface', () => {
     write(
       'src/actions/browser/probe.ts',
       [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         'export const probe = defineClientAction({',
         '  handler: async (ctx) => {',
         '    const a = ctx.ui.get("k_box").animate',

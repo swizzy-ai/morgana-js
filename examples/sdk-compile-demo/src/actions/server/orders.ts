@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /**
  * Orders — the backend's real surface, and what the live list on the home

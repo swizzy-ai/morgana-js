@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /** Dye tuner wiring — bg and radius via set(), the effect word via make(). */
 

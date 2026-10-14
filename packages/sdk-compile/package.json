@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/sdk-compile",
+  "name": "@studiomorgana/sdk-compile",
   "version": "0.5.0",
   "type": "module",
   "description": "SDK-first compiler: compile-lane actions build an IR, the rest ship to their lane. No morgana-core runtime dependency.",
@@ -59,7 +59,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@morgana/sdk": "workspace:^",
+    "@studiomorgana/sdk": "workspace:^",
     "esbuild": "^0.28.2",
     "typescript": "~5.8.2"
   },

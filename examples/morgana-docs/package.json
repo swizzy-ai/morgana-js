@@ -10,9 +10,9 @@
     "deploy": "morgana deploy"
   },
   "dependencies": {
-    "@morgana/sdk": "workspace:^"
+    "@studiomorgana/sdk": "workspace:^"
   },
   "devDependencies": {
-    "@morgana/cli": "workspace:^"
+    "@studiomorgana/cli": "workspace:^"
   }
 }

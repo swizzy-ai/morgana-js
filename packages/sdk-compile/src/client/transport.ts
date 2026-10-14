@@ -48,7 +48,7 @@
  * already calling `ctx.ui.events.on('channel:lobby', …)` starts receiving
  * channel traffic without being rewritten.
  */
-import type { EventFrame } from '@morgana/sdk'
+import type { EventFrame } from '@studiomorgana/sdk'
 
 /** Backoff schedule for a dropped stream, in ms. Capped: a chat should heal fast. */
 const RECONNECT_MS = [500, 1000, 2000, 5000, 10000]

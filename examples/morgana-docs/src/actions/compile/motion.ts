@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 import { placeShell, placeView } from '../../nav'
 
 /** The 16 runtime presets — the same list the AnimateApi declares. */

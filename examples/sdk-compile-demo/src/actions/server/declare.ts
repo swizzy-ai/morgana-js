@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /**
  * Declare the orders collection. This runs in the compile lane, so the shape

@@ -25,8 +25,8 @@ import { localPrivateVars } from '../lib/secrets.mjs'
 import { createLocalAppAuth, pageGate, tokenOf } from '../lib/app-auth.mjs'
 import { createObjectsHost } from '../lib/objects-host.mjs'
 import { acceptWebSocket } from '../lib/ws.mjs'
-import { handleSessionRoute, serializeSessionCookie, clearSessionCookie, findPageByPath, isParamAddress } from '@morgana/sdk-compile/server-host'
-import { isPageResult } from '@morgana/sdk-compile'
+import { handleSessionRoute, serializeSessionCookie, clearSessionCookie, findPageByPath, isParamAddress } from '@studiomorgana/sdk-compile/server-host'
+import { isPageResult } from '@studiomorgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
 
 /**

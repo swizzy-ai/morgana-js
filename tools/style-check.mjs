@@ -66,7 +66,7 @@ fs.mkdirSync(path.join(dir, 'src/actions/compile'), { recursive: true })
 fs.mkdirSync(path.join(dir, 'src/actions/client'), { recursive: true })
 fs.writeFileSync(
   path.join(dir, 'src/actions/client/go.ts'),
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 export const go = defineClientAction({
   config: { on: 'rt-go.clicked' },
   handler: (ctx) => {
@@ -78,10 +78,10 @@ export const go = defineClientAction({
 `,
 )
 fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"style-check","private":true,"type":"module"}')
-fs.writeFileSync(path.join(dir, 'morgana.config.ts'), `import { defineConfig } from '@morgana/sdk'\nexport default defineConfig({ name: 'style-check', entry: 'home' })\n`)
+fs.writeFileSync(path.join(dir, 'morgana.config.ts'), `import { defineConfig } from '@studiomorgana/sdk'\nexport default defineConfig({ name: 'style-check', entry: 'home' })\n`)
 fs.writeFileSync(
   path.join(dir, 'src/actions/compile/page.ts'),
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 const KINDS = ${JSON.stringify(kinds)}
 const NEEDS: Record<string, Record<string, unknown>> = ${JSON.stringify(NEEDS)}
 const STYLE = ${JSON.stringify(STYLE)}

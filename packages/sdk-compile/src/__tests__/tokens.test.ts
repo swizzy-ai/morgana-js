@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { resolveMakeToken, resolveMakeTokenDetailed, animationKeyframes, animationClasses } from '../compile-ctx/tokens';
-import { MakeToken } from '@morgana/sdk';
+import { MakeToken } from '@studiomorgana/sdk';
 
 /** Every bare word in the SDK's MakeToken union (sdk/src/handles.ts:198-216). */
 const DECLARED_WORDS = [

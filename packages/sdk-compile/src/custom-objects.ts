@@ -15,7 +15,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { bundleCustomObjectModules, loadCustomObjectDefinition } from './bundle'
 import type { CustomObjectDecl } from './ir'
-import type { CustomObjectDefinition } from '@morgana/sdk'
+import type { CustomObjectDefinition } from '@studiomorgana/sdk'
 
 /** Directories scanned for components, in priority order. */
 export function customObjectDirs(dir: string): string[] {

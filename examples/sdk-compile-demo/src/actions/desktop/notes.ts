@@ -1,4 +1,4 @@
-import { defineDesktopAction } from '@morgana/sdk'
+import { defineDesktopAction } from '@studiomorgana/sdk'
 
 /**
  * Desktop demo: reads the clipboard through the declared capability and

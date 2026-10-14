@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/sdk",
+  "name": "@studiomorgana/sdk",
   "version": "0.5.0",
   "type": "module",
   "description": "The Morgana framework developer interface — types-first: contexts, object handles, contracts, and configs.",

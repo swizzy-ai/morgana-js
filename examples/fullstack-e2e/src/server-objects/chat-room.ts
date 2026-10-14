@@ -1,4 +1,4 @@
-import { defineServerObject } from '@morgana/sdk'
+import { defineServerObject } from '@studiomorgana/sdk'
 
 /**
  * A chat room: durable state, its own message table, a streaming method,

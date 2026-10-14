@@ -3,7 +3,7 @@
  * codebase with no framework trace.
  *
  * This module is deliberately thin (<100 lines, zero heavy imports): it
- * parses flags, ensures `@morgana/eject` is installed for the PROJECT (never
+ * parses flags, ensures `@studiomorgana/eject` is installed for the PROJECT (never
  * bundled — resolved from the project dir like desktop backends), loads it,
  * and prints the report. All eject knowledge lives in that package.
  */
@@ -14,7 +14,7 @@ import { say, warn } from '../ui.mjs'
 function resolveEject(dir) {
   try {
     const require = createRequire(path.join(path.resolve(dir), 'package.json'))
-    return require.resolve('@morgana/eject')
+    return require.resolve('@studiomorgana/eject')
   } catch {
     return null
   }
@@ -26,17 +26,17 @@ export async function eject({ dir = process.cwd(), outDir, pages, port, apiPrefi
   let entry = resolveEject(projectDir)
   if (!entry) {
     if (!yes) {
-      say('eject needs @morgana/eject — install it in this project:')
-      say('  npm install -D @morgana/eject   (or: pnpm add -D @morgana/eject)')
+      say('eject needs @studiomorgana/eject — install it in this project:')
+      say('  npm install -D @studiomorgana/eject   (or: pnpm add -D @studiomorgana/eject)')
       say('then run `morgana eject` again, or pass --yes to install automatically.')
       return
     }
-    say('installing @morgana/eject…')
+    say('installing @studiomorgana/eject…')
     const { execSync } = await import('node:child_process')
     const pm = await import('node:fs').then((fs) =>
       fs.existsSync(path.join(projectDir, 'pnpm-lock.yaml')) ? 'pnpm' : 'npm',
     )
-    execSync(`${pm} ${pm === 'pnpm' ? 'add' : 'install'} -D @morgana/eject`, { stdio: 'inherit', cwd: projectDir })
+    execSync(`${pm} ${pm === 'pnpm' ? 'add' : 'install'} -D @studiomorgana/eject`, { stdio: 'inherit', cwd: projectDir })
     entry = resolveEject(projectDir)
     if (!entry) {
       warn('installed but unresolvable — check your package manager state')

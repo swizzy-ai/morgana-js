@@ -190,14 +190,14 @@ async function runAction(built: Built, entities: El[]): Promise<Harness> {
 // ── project fixture ───────────────────────────────────────────────────────
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   '',
   "export default defineConfig({ name: 'rt', entry: 'home', vars: { public: { site: 'Acme' } } })",
   '',
 ].join('\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   '',
   'export const seed = defineClientAction({',
   "  config: { on: 'compile' },",
@@ -247,7 +247,7 @@ async function withProbe(
   body: (h: Harness) => Promise<void> | void,
 ): Promise<void> {
   const action = [
-    "import { defineClientAction } from '@morgana/sdk'",
+    "import { defineClientAction } from '@studiomorgana/sdk'",
     'export const probe = defineClientAction({',
     '  handler: (ctx) => {',
     handler,
@@ -504,7 +504,7 @@ describe('live object handles', () => {
 
 describe('generic set() routes handle-semantic props', () => {
   const SEMANTIC_SEED = [
-    "import { defineClientAction } from '@morgana/sdk'",
+    "import { defineClientAction } from '@studiomorgana/sdk'",
     '',
     'export const seed = defineClientAction({',
     "  config: { on: 'compile' },",
@@ -544,7 +544,7 @@ describe('generic set() routes handle-semantic props', () => {
     write(
       'src/actions/browser/probe.ts',
       [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         'export const probe = defineClientAction({',
         '  handler: (ctx) => {',
         handler,

@@ -1,5 +1,5 @@
 // Regenerates packages/morgana-server/src/workflow-runtime.ts from the built
-// @morgana/wizard bundle.
+// @studiomorgana/wizard bundle.
 //
 // The action sandbox (QuickJS) cannot import modules, so the whole wizard
 // runtime ships with every compiled action as one inlined string. This script
@@ -17,7 +17,7 @@
 //      destructure them into the inner IIFE's scope.
 //
 // Usage: node scripts/gen-workflow-runtime.mjs
-//        (build the package first: pnpm --filter @morgana/wizard build)
+//        (build the package first: pnpm --filter @studiomorgana/wizard build)
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -31,7 +31,7 @@ const src = readFileSync(distPath, "utf8");
 
 const exportMatch = /export\s*\{([^}]*)\}\s*;?\s*$/.exec(src);
 if (!exportMatch) {
-  throw new Error(`No trailing export block in ${distPath} — build @morgana/wizard first`);
+  throw new Error(`No trailing export block in ${distPath} — build @studiomorgana/wizard first`);
 }
 
 const entries = exportMatch[1]

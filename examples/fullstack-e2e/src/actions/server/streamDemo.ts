@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /** Three chunks, 400ms apart — the client must see the first long before the last. */
 export const streamDemo = defineServerAction({

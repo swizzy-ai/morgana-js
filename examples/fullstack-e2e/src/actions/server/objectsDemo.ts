@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /** Server code reaching an object: trusted (no access checks), fully typed. */
 export const objectsDemo = defineServerAction({

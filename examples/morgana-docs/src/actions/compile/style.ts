@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 import { placeShell, placeView } from '../../nav'
 
 const FONTS = [

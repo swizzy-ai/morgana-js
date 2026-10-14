@@ -10,8 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": false,
     "paths": {
-      "@morgana/sdk": ["../../packages/sdk/src/index.ts"],
-      "@morgana/sdk/*": ["../../packages/sdk/src/*"]
+      "@studiomorgana/sdk": ["../../packages/sdk/src/index.ts"],
+      "@studiomorgana/sdk/*": ["../../packages/sdk/src/*"]
     }
   },
   "include": ["src", "morgana.config.ts"]

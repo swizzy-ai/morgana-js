@@ -1,4 +1,4 @@
-# @morgana/sdk
+# @studiomorgana/sdk
 
 The Morgana developer interface — types first.
 
@@ -8,7 +8,7 @@ return what you gave them, plus the token and role catalogues, so action code ca
 dependency into every project.
 
 ```bash
-npm i @morgana/sdk
+npm i @studiomorgana/sdk
 ```
 
 ## What you import
@@ -18,7 +18,7 @@ import {
   defineConfig,
   defineClientAction,
   defineServerAction,
-} from '@morgana/sdk'
+} from '@studiomorgana/sdk'
 ```
 
 ### `defineConfig`
@@ -26,7 +26,7 @@ import {
 The project config, read from `morgana.config.ts`:
 
 ```ts
-import { defineConfig } from '@morgana/sdk'
+import { defineConfig } from '@studiomorgana/sdk'
 
 export default defineConfig({
   name: 'my-app',
@@ -51,7 +51,7 @@ it runs. `config.on` picks the lane:
 | `'click'`, `'load'`, … | in the browser |
 
 ```ts
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 export const hello = defineClientAction({
   config: { on: 'compile' },
@@ -69,7 +69,7 @@ A compile action is not a build script — it receives the same `ctx` a server
 action does and mutates the same page representation, which is why there is no
 separate routing or templating layer to learn.
 
-## `@morgana/sdk/generator`
+## `@studiomorgana/sdk/generator`
 
 Build-time helpers for generating a type registry from your action files:
 
@@ -78,17 +78,17 @@ import {
   resolveActionsDirs,
   generateRegistry,
   watchRegistry,
-} from '@morgana/sdk/generator'
+} from '@studiomorgana/sdk/generator'
 ```
 
 Used by the compiler; rarely imported directly.
 
 ## Why the package ships its `src/`
 
-`@morgana/sdk-compile` resolves the SDK's **TypeScript source**, not the built
+`@studiomorgana/sdk-compile` resolves the SDK's **TypeScript source**, not the built
 bundle, so that an action importing a real value gets the genuine implementation
 rather than a stand-in. That is why `src/` is in `files`. A tarball without it
-fails with *"cannot locate the @morgana/sdk source entry"* while the package is
+fails with *"cannot locate the @studiomorgana/sdk source entry"* while the package is
 plainly installed.
 
 ## Animating objects

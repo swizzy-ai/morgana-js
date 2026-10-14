@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import http from 'node:http'
 
 import { buildAi, extractJson, fileStore } from '../ai.mjs'
-import { createWizard } from '@morgana/wizard'
+import { createWizard } from '@studiomorgana/wizard'
 
 /**
  * The local `ctx.ai`, against a stand-in for the cloud LLM route.

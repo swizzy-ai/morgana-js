@@ -3,7 +3,7 @@
  *
  * ## Declared here, implemented in the package
  *
- * `@morgana/wizard` owns the engine and the durable run registry. These are the
+ * `@studiomorgana/wizard` owns the engine and the durable run registry. These are the
  * *promises* the context makes, and they live in the SDK for the same reason
  * `ctx.ai.agents` does: an author writes against the contract, not against
  * whichever runtime happens to be answering.
@@ -11,7 +11,7 @@
  * ## A definition is code; a run is data
  *
  * A wizard's steps are functions, so a wizard is defined in the action that
- * uses it (via `createWizard` from `@morgana/wizard`) and cannot be stored. A
+ * uses it (via `createWizard` from `@studiomorgana/wizard`) and cannot be stored. A
  * *run* is data — where it parked and the state it carried — and that is what
  * `ctx.ai.wizard` keeps durable, keyed by a caller-supplied run id.
  *
@@ -25,7 +25,7 @@
 /**
  * The shape the engine runs.
  *
- * Kept structural rather than importing `@morgana/wizard` so the SDK stays
+ * Kept structural rather than importing `@studiomorgana/wizard` so the SDK stays
  * self-contained: a `Wizard` from the package and a plain `WizardConfig` object
  * both satisfy it, and a project that installs only the SDK can still typecheck
  * an action that uses one.
@@ -38,7 +38,7 @@ export interface WizardConfigLike {
   [key: string]: unknown
 }
 
-/** The fluent `Wizard` builder from `@morgana/wizard`. */
+/** The fluent `Wizard` builder from `@studiomorgana/wizard`. */
 export interface WizardLike {
   toConfig(): WizardConfigLike
 }
@@ -55,7 +55,7 @@ export interface SignalLike {
 /**
  * The fluent builder `ctx.ai.createWorkflow()` returns.
  *
- * Structural, so the SDK needs no dependency on `@morgana/wizard`: it names the
+ * Structural, so the SDK needs no dependency on `@studiomorgana/wizard`: it names the
  * step methods an author calls and what `run` yields. `createWorkflow` is the
  * runtime's thin alias over the package's `Wizard`, and the built object is what
  * `ctx.ai.wizard.run`/`resume` accept as a `WizardDefinition`.

@@ -18,5 +18,5 @@ export default defineConfig({
   splitting: false,
   sourcemap: false,
   dts: true,
-  external: ['typescript', '@morgana/sdk'],
+  external: ['typescript', '@studiomorgana/sdk'],
 })

@@ -7,7 +7,7 @@
  *   alarms on timers, jobs after commit, events to WebSocket subscribers
  *
  * Every rule about what a call means lives in the shared kernel
- * (@morgana/sdk-compile/server-host); this file supplies storage, timers and
+ * (@studiomorgana/sdk-compile/server-host); this file supplies storage, timers and
  * wiring.
  */
 import fs from 'node:fs'
@@ -39,7 +39,7 @@ import {
   SELF_BUILDER_SRC,
   SerialQueue,
   takeDue,
-} from '@morgana/sdk-compile/server-host'
+} from '@studiomorgana/sdk-compile/server-host'
 
 // Not `import … from 'node:sqlite'`: the bundler strips the scheme and the CLI
 // dies on `from 'sqlite'`. See the note in store.mjs.

@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/desktop-electron",
+  "name": "@studiomorgana/desktop-electron",
   "version": "0.1.0",
   "type": "module",
   "description": "Desktop backend for Morgana — boots dist/desktop/ in Electron: window, os capabilities, local object runtime, installer project.",
@@ -45,8 +45,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@morgana/cli": "workspace:^",
-    "@morgana/sdk": "workspace:^"
+    "@studiomorgana/cli": "workspace:^",
+    "@studiomorgana/sdk": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

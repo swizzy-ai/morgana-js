@@ -19,7 +19,7 @@
  * *does* with the scene goes through the handle, so a browser action can drive it
  * by name like any other object.
  */
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 
 /** The library is loaded once per page, no matter how many scenes exist. */
 const THREE_CDN = 'https://unpkg.com/three@0.160.0/build/three.module.js'

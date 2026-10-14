@@ -4,13 +4,13 @@ import { defineConfig } from 'tsup'
  * Bundle the CLI — the binary plus the host library.
  *
  * `bin/morgana.mjs` is the binary entry; `src/host.mjs` is the library entry
- * backend packages import (`@morgana/cli/host`). The commands under `src/` become internal
+ * backend packages import (`@studiomorgana/cli/host`). The commands under `src/` become internal
  * chunks of that one file rather than the 20-odd separate modules that used to
  * ship.
  *
  * Two things must not be inlined, and both are load-bearing:
  *
- *   `@morgana/sdk-compile` — it finds `@morgana/sdk/src` and its own
+ *   `@studiomorgana/sdk-compile` — it finds `@studiomorgana/sdk/src` and its own
  *   `client/runtime.ts` on disk at *runtime*, via `import.meta.url`,
  *   `createRequire` and `fs.existsSync` path candidates. Bundling rewrites
  *   `import.meta.url` and those probes resolve to nothing, so the compiler dies
@@ -19,7 +19,7 @@ import { defineConfig } from 'tsup'
  *   naming them here makes that a decision rather than a default that a future
  *   dependency bump could quietly remove.
  *
- *   `@morgana/agents` — `src/lib/ai.mjs` imports it at module scope, so it is on
+ *   `@studiomorgana/agents` — `src/lib/ai.mjs` imports it at module scope, so it is on
  *   the startup path of every command that reaches a host context, `dev` among
  *   them. Keeping it a real dependency means Node resolves its own `dist` rather
  *   than an inlined copy, which also keeps a broken agents build a visible
@@ -48,7 +48,7 @@ export default defineConfig({
   dts: false,
   treeshake: true,
   minify: false,
-  external: ['@morgana/sdk', '@morgana/sdk-compile', '@morgana/agents'],
+  external: ['@studiomorgana/sdk', '@studiomorgana/sdk-compile', '@studiomorgana/agents'],
   // No banner for the shebang: esbuild hoists the entry's own `#!/usr/bin/env
   // node` to the top of the output by itself. Adding one as a banner as well
   // emits it twice, and the file then fails to parse.

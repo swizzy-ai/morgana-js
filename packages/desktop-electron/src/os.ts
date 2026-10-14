@@ -9,7 +9,7 @@
  * missing capability at runtime.
  */
 
-import type { DesktopOsGroup, DesktopOsHandle } from '@morgana/sdk'
+import type { DesktopOsGroup, DesktopOsHandle } from '@studiomorgana/sdk'
 
 /** What a backend provides per group, before capability gating. */
 export interface OsBackend {

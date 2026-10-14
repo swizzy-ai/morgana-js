@@ -1,9 +1,9 @@
-# @morgana/cli
+# @studiomorgana/cli
 
 The `morgana` command — build and deploy a Morgana project.
 
 ```bash
-npm i -g @morgana/cli
+npm i -g @studiomorgana/cli
 morgana init my-app
 cd my-app && npm install
 npx morgana dev

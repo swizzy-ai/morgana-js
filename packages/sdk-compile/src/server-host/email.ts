@@ -18,7 +18,7 @@
  * the failure a sign-up flow cannot afford.
  */
 
-import type { EmailHandle, EmailMessage, EmailResult } from '@morgana/sdk'
+import type { EmailHandle, EmailMessage, EmailResult } from '@studiomorgana/sdk'
 
 export type { EmailHandle, EmailMessage, EmailResult }
 

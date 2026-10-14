@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * `pnpm release` — publish every @morgana package in one go.
+ * `pnpm release` — publish every @studiomorgana package in one go.
  *
  *   pnpm release             gate, then publish, then tag + push
  *   pnpm release --dry-run   gate, then `pnpm publish --dry-run`; nothing leaves the machine
  *   pnpm release:fast        build only — no typecheck/test. For re-running after a
  *                            gate that already passed (e.g. a 2FA timeout mid-publish)
+ *   --otp=123456             one-time code, for an npm account with 2FA on writes
+ *                            (or set NPM_OTP; or use a granular token that bypasses 2FA)
  *
  * The Morgana packages release in lockstep: they must all carry the same
  * version, and `morgana init` scaffolds against the CLI's own version.
@@ -25,6 +27,10 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dryRun = process.argv.includes('--dry-run')
 const skipChecks = process.argv.includes('--skip-checks')
+// An account with 2FA on writes needs a one-time code per publish; without one
+// the registry answers a scoped PUT with a misleading 404. A code lasts ~30s,
+// which is why the publishes below skip the per-package rebuild.
+const otp = process.argv.find((a) => a.startsWith('--otp='))?.slice(6) || process.env.NPM_OTP || ''
 
 /** Dependency order: each package publishes after everything it depends on. */
 const PACKAGES = ['sdk', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
@@ -96,7 +102,17 @@ for (const p of pkgs) {
   step(`${dryRun ? 'dry-run ' : ''}publish ${p.name}@${p.version}`)
   // --no-git-checks: the clean-tree / branch checks above already ran, and pnpm's
   // own check refuses a dry run on a dirty tree.
-  run('pnpm', ['publish', '--access', 'public', '--no-git-checks', ...(dryRun ? ['--dry-run'] : [])], p.cwd)
+  // --ignore-scripts: everything was built above; re-running prepublishOnly per
+  // package would push the later publishes past a one-time code's lifetime.
+  run(
+    'pnpm',
+    [
+      'publish', '--access', 'public', '--no-git-checks', '--ignore-scripts',
+      ...(otp ? [`--otp=${otp}`] : []),
+      ...(dryRun ? ['--dry-run'] : []),
+    ],
+    p.cwd,
+  )
   published.push(p.name)
 }
 
@@ -114,4 +130,4 @@ if (!sh(`git tag --list ${tag}`)) {
 }
 
 step(`released ${version}: ${published.join(', ') || 'nothing new'}`)
-console.log('\n  try it:  npx @morgana/cli@latest init my-app')
+console.log('\n  try it:  npx @studiomorgana/cli@latest init my-app')

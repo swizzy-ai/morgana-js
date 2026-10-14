@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import { discoverServerObjects } from '../server-objects'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'so-demo',",
   "  entry: 'home',",
@@ -20,7 +20,7 @@ const CONFIG = [
 ].join('\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -31,7 +31,7 @@ const SEED = [
 ].join('\n')
 
 const COUNTER = [
-  "import { customServerObject } from '@morgana/sdk'",
+  "import { customServerObject } from '@studiomorgana/sdk'",
   'export default customServerObject({',
   "  name: 'counter',",
   '  shape: { columns: [{ name: "count", type: "number" }] },',
@@ -43,7 +43,7 @@ const COUNTER = [
 ].join('\n')
 
 const NAMED = [
-  "import { customServerObject } from '@morgana/sdk'",
+  "import { customServerObject } from '@studiomorgana/sdk'",
   'export const ledger = customServerObject({',
   "  name: 'ledger',",
   '  ops: {',

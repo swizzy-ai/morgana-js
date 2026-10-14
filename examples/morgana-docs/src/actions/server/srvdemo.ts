@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /**
  * Action-as-router for /srvdemo/. Fetches the notes, loads the compile-time

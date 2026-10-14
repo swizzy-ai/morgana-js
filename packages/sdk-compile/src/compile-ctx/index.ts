@@ -4,7 +4,7 @@
  * `ctx.ui.<kind>(props)` creates an object and `ctx.ui.get(id)` looks one up —
  * one way to do each, on both lanes. There is no `ctx.objects`.
  */
-import type { MorganaConfig } from '@morgana/sdk';
+import type { MorganaConfig } from '@studiomorgana/sdk';
 import { createEmptyIR } from '../ir';
 import type { ChannelDecl } from '../ir';
 

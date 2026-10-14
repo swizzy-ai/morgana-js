@@ -10,7 +10,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
-import type { Hook, MorganaConfig } from '@morgana/sdk'
+import type { Hook, MorganaConfig } from '@studiomorgana/sdk'
 
 export type ActionLane = 'server' | 'client' | 'compile' | 'desktop'
 export type FactoryKind = 'server' | 'client' | 'desktop' | 'plain-handle' | 'plain-run'

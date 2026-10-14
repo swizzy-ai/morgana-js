@@ -10,5 +10,5 @@ export default defineConfig({
   splitting: false,
   sourcemap: false,
   dts: true,
-  external: ['@morgana/sdk'],
+  external: ['@studiomorgana/sdk'],
 })

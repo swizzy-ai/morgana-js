@@ -29,10 +29,10 @@ const w = (rel, text) => {
   fs.writeFileSync(path.join(dir, rel), text)
 }
 w('package.json', '{"name":"components-check","private":true,"type":"module"}')
-w('morgana.config.ts', `import { defineConfig } from '@morgana/sdk'\nexport default defineConfig({ name: 'components-check', entry: 'home' })\n`)
+w('morgana.config.ts', `import { defineConfig } from '@studiomorgana/sdk'\nexport default defineConfig({ name: 'components-check', entry: 'home' })\n`)
 w(
   'src/actions/compile/page.ts',
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 export const page = defineClientAction({
   config: { on: 'compile' },
   handler: (ctx) => {
@@ -69,7 +69,7 @@ const EVENTS = [
 for (const [id, ev] of EVENTS) {
   w(
     `src/actions/client/log_${id}_${ev}.ts`,
-    `import { defineClientAction } from '@morgana/sdk'
+    `import { defineClientAction } from '@studiomorgana/sdk'
 export const log_${id}_${ev} = defineClientAction({
   config: { on: '${id}.${ev}' },
   handler: (ctx) => {
@@ -84,7 +84,7 @@ export const log_${id}_${ev} = defineClientAction({
 }
 w(
   'src/actions/client/methods.ts',
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 export const methods = defineClientAction({
   config: { on: 'methods.clicked' },
   handler: (ctx) => {

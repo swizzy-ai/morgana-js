@@ -9,7 +9,7 @@ function project(): string {
   fs.mkdirSync(path.join(dir, 'dist', 'desktop'), { recursive: true })
   fs.writeFileSync(
     path.join(dir, 'dist', 'desktop', 'app.json'),
-    JSON.stringify({ backend: '@morgana/desktop-electron', os: [], apps: [{ name: 'shop', bundleId: 'com.morgana.shop' }] }),
+    JSON.stringify({ backend: '@studiomorgana/desktop-electron', os: [], apps: [{ name: 'shop', bundleId: 'com.morgana.shop' }] }),
     'utf8',
   )
   fs.writeFileSync(path.join(dir, 'dist', 'manifest.json'), JSON.stringify({ entry: 'home' }), 'utf8')
@@ -27,9 +27,9 @@ describe('scaffold', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(out, 'package.json'), 'utf8'))
     expect(pkg.build.appId).toBe('com.morgana.shop')
     expect(pkg.build.win.target).toEqual(['nsis'])
-    expect(pkg.dependencies['@morgana/desktop-electron']).toMatch(/^\^/)
+    expect(pkg.dependencies['@studiomorgana/desktop-electron']).toMatch(/^\^/)
     const main = fs.readFileSync(path.join(out, 'main.mjs'), 'utf8')
-    expect(main).toContain("import { run } from '@morgana/desktop-electron'")
+    expect(main).toContain("import { run } from '@studiomorgana/desktop-electron'")
     expect(main).toContain('await run({ dir, port: 0 })')
     expect(fs.existsSync(path.join(out, 'dist', 'desktop', 'app.json'))).toBe(true)
   })

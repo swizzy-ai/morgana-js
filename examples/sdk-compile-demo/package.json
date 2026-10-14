@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Runnable demo: SDK project compiled by @morgana/sdk-compile into dist/, served by server.mjs.",
+  "description": "Runnable demo: SDK project compiled by @studiomorgana/sdk-compile into dist/, served by server.mjs.",
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.mjs",
@@ -18,6 +18,6 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@morgana/agents": "workspace:*"
+    "@studiomorgana/agents": "workspace:*"
   }
 }

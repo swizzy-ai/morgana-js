@@ -28,7 +28,7 @@ import type {
   DesktopObjectsHandle,
   DesktopObjectTypeDef,
   DesktopOsHandle,
-} from '@morgana/sdk'
+} from '@studiomorgana/sdk'
 
 /** One entry of dist/objects.json as the desktop host reads it. */
 export interface ObjectTypeDef {

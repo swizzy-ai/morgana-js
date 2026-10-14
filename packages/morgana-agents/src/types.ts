@@ -1,9 +1,9 @@
 /**
- * Public types for `@morgana/agents`.
+ * Public types for `@studiomorgana/agents`.
  *
  * ## Why this file only re-exports
  *
- * The agent and tool surface is declared once, in `@morgana/sdk`
+ * The agent and tool surface is declared once, in `@studiomorgana/sdk`
  * (`src/ai-agents.ts`), and re-exported here. A duplicated interface is not a
  * convenience; it is a second claim about the same thing that nothing keeps
  * honest.
@@ -41,4 +41,4 @@ export type {
   ToolParams,
   ToolResult,
   ToolsHandle,
-} from '@morgana/sdk'
+} from '@studiomorgana/sdk'

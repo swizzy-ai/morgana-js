@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/cli",
+  "name": "@studiomorgana/cli",
   "version": "0.5.0",
   "type": "module",
   "description": "The Morgana CLI — build and deploy a Morgana project.",
@@ -43,10 +43,10 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@morgana/agents": "workspace:^",
-    "@morgana/sdk": "workspace:^",
-    "@morgana/sdk-compile": "workspace:^",
-    "@morgana/wizard": "workspace:^"
+    "@studiomorgana/agents": "workspace:^",
+    "@studiomorgana/sdk": "workspace:^",
+    "@studiomorgana/sdk-compile": "workspace:^",
+    "@studiomorgana/wizard": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

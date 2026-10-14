@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /** Password reset end to end, inside one action. */
 export const resetDemo = defineServerAction({

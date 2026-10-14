@@ -161,7 +161,7 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
     }
     write('desktop/apis.json', `${JSON.stringify(inputs.desktopApis ?? [], null, 2)}\n`)
     write('desktop/triggers.json', `${JSON.stringify(inputs.desktopTriggers ?? [], null, 2)}\n`)
-    const decl = inputs.desktop ?? { backend: '@morgana/desktop-electron', os: [], apps: [] }
+    const decl = inputs.desktop ?? { backend: '@studiomorgana/desktop-electron', os: [], apps: [] }
     write('desktop/app.json', `${JSON.stringify(decl, null, 2)}\n`)
   }
   // The object catalog both lanes read. The desktop host boots its local

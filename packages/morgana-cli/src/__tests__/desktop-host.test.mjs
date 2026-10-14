@@ -10,11 +10,11 @@ import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { compileProject } from '@morgana/sdk-compile'
+import { compileProject } from '@studiomorgana/sdk-compile'
 import { dev } from '../commands/dev.mjs'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'host-desk',",
   "  entry: 'home',",
@@ -23,7 +23,7 @@ const CONFIG = [
 ].join('\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -34,7 +34,7 @@ const SEED = [
 ].join('\n')
 
 const PING = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const ping = defineDesktopAction({',
   "  config: { on: 'http.get /ping', auth: 'public' },",
   '  handler: async (ctx) => ({ ok: true, platform: ctx.desktop.os.platform, app: ctx.desktop.app.name }),',

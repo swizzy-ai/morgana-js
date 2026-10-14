@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 export const doSignup = defineClientAction({
   config: { on: 'signup-btn.clicked' },
   handler: async (ctx) => {

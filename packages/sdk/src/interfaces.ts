@@ -11,7 +11,7 @@
  * Custom objects live in `src/objects/*.ts`, one per file, each default-exporting
  * a definition:
  *
- *   import { createCustomObject } from '@morgana/sdk'
+ *   import { createCustomObject } from '@studiomorgana/sdk'
  *
  *   export default createCustomObject({
  *     name: 'video-player',

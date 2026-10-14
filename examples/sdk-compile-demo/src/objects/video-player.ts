@@ -9,7 +9,7 @@
  * Because it declares no `on*` hook and no `methods`, this component ships
  **zero bytes** to the browser. It is a build-time composition.
  */
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 
 export default createCustomObject({
   name: 'video-player',

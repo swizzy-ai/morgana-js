@@ -15,7 +15,7 @@ import { compileProject } from '../index'
 import { scanProject } from '../extract'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'desk-demo',",
   "  entry: 'home',",
@@ -27,7 +27,7 @@ const CONFIG = [
 ].join('\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -38,7 +38,7 @@ const SEED = [
 ].join('\n')
 
 const PING = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const ping = defineDesktopAction({',
   "  config: { on: 'http.get /ping', auth: 'public' },",
   '  handler: (ctx) => ({ ok: true, platform: ctx.desktop.os.platform }),',
@@ -46,7 +46,7 @@ const PING = [
 ].join('\n')
 
 const PONG = [
-  "import { defineDesktopAction } from '@morgana/sdk'",
+  "import { defineDesktopAction } from '@studiomorgana/sdk'",
   'export const pong = defineDesktopAction({',
   "  config: { on: 'cron(* * * * *)' },",
   '  handler: () => ({ ok: true }),',
@@ -60,7 +60,7 @@ const PLAIN = [
 ].join('\n')
 
 const GREET = [
-  "import { defineServerAction } from '@morgana/sdk'",
+  "import { defineServerAction } from '@studiomorgana/sdk'",
   'export const greet = defineServerAction({',
   '  handler: () => ({ greeting: "hi" }),',
   '})',
@@ -73,7 +73,7 @@ const FMT = [
 ].join('\n')
 
 const COUNTER = [
-  "import { customServerObject } from '@morgana/sdk'",
+  "import { customServerObject } from '@studiomorgana/sdk'",
   "import { fmt } from './fmt'",
   '',
   'async function total(ctx: any, p: any): Promise<any> {',
@@ -95,7 +95,7 @@ const COUNTER = [
 ].join('\n')
 
 const CONFIG_NODESK = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   'export default defineConfig({',
   "  name: 'desk-demo',",
   "  entry: 'home',",
@@ -168,7 +168,7 @@ describe('desktop dist partition', () => {
       expect(manifest.actions).not.toContain('ping')
       // The desktop declaration carries backend, capabilities and identity.
       const appJson = JSON.parse(fs.readFileSync(path.join(dir, 'dist', 'desktop', 'app.json'), 'utf8'))
-      expect(appJson.backend).toBe('@morgana/desktop-electron')
+      expect(appJson.backend).toBe('@studiomorgana/desktop-electron')
       expect(appJson.os).toEqual(['clipboard'])
       expect(appJson.apps.map((a: { bundleId: string }) => a.bundleId)).toContain('com.morgana.shop')
       expect(appJson.apps.find((a: { bundleId: string }) => a.bundleId === 'com.morgana.shop').window).toMatchObject({ width: 1128, frameless: true })

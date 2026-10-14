@@ -17,7 +17,7 @@
  * Storage is plain SQLite through a tiny synchronous adapter, so the same SQL
  * runs on Durable Object storage and on node:sqlite.
  */
-import type { AuthUser } from '@morgana/sdk'
+import type { AuthUser } from '@studiomorgana/sdk'
 import { assertDeclaredFields } from './collections'
 
 // ── definitions (the compiled, serializable part) ───────────────────────────

@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/hotsheet",
+  "name": "@studiomorgana/hotsheet",
   "version": "0.1.0",
   "type": "module",
   "description": "Hotsheet engine: spreadsheet-metaphor reactive tables (columns with when/for/do, cross-sheet reads, objective stream). Zero framework dependencies — usable anywhere.",

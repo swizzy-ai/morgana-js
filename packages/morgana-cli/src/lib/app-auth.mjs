@@ -6,7 +6,7 @@
  * `/api/session` surface are the exact code the worker runs, so a sign-up flow
  * that works here works deployed.
  */
-import { AppAuth, pageAccessRefusal, readSessionToken } from '@morgana/sdk-compile/server-host'
+import { AppAuth, pageAccessRefusal, readSessionToken } from '@studiomorgana/sdk-compile/server-host'
 
 const USERS = '__auth_users'
 const EMAILS = '__auth_emails'
@@ -30,7 +30,7 @@ export function createLocalAppAuth(store) {
     }
   }
   const write = (table, id, value) => store.set(table, id, { json: JSON.stringify(value) })
-  /** @type {import('@morgana/sdk-compile/server-host').AppAuthStorage} */
+  /** @type {import('@studiomorgana/sdk-compile/server-host').AppAuthStorage} */
   const storage = {
     getUser: async (id) => read(USERS, id),
     getUserIdByEmail: async (email) => read(EMAILS, email)?.userId ?? null,

@@ -83,7 +83,7 @@ let cachedElements: Map<string, HTMLElement> | null = null
 function loadManifest(): PageManifest {
   const el = document.getElementById(MANIFEST_EL_ID)
   if (!el || !el.textContent) {
-    throw new Error('[Morgana] object manifest missing — the page was not built by @morgana/sdk-compile')
+    throw new Error('[Morgana] object manifest missing — the page was not built by @studiomorgana/sdk-compile')
   }
   const parsed = JSON.parse(el.textContent) as PageManifest
   cachedManifest = parsed

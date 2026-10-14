@@ -49,7 +49,7 @@ jobs:
 
       - name: Build
         # Explicit, and before typecheck and test, because both consume other
-        # packages' dist/ — `@morgana/agents` resolves to `dist/index.js`, which
+        # packages' dist/ — `@studiomorgana/agents` resolves to `dist/index.js`, which
         # is gitignored and absent from a clean checkout. `pnpm -r` also runs
         # packages concurrently, so a pre-hook that rebuilt a shared dependency
         # would delete it out from under another package's tests.

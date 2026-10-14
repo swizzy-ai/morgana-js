@@ -1,14 +1,14 @@
 import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { providerFromEnv, resolveTransport } from '@morgana/agents'
+import { providerFromEnv, resolveTransport } from '@studiomorgana/agents'
 
 /**
  * AI — the local `ctx.ai` surface: models, generation, agents, tools.
  *
  * ## Why this is an HTTP client and not a local model
  *
- * The loop lives in `@morgana/agents` and needs a completion. Local dev gets one
+ * The loop lives in `@studiomorgana/agents` and needs a completion. Local dev gets one
  * from the same Morgana route the cloud uses, at the base URL `MORGANA_URL`
  * already names. So there is one inference path in the product rather than two,
  * and local behaviour is the deployed behaviour with a different base URL —
@@ -93,9 +93,9 @@ function localProvider() {
 }
 
 /**
- * `@morgana/agents`, loaded on demand.
+ * `@studiomorgana/agents`, loaded on demand.
  *
- * It ships as `dist`, like `@morgana/sdk`, so it can legitimately not be built
+ * It ships as `dist`, like `@studiomorgana/sdk`, so it can legitimately not be built
  * on a fresh checkout. Importing it statically made `morgana dev` fail at
  * startup with a module-not-found — which says nothing about the developer's
  * project and stops the whole command over a feature they may not use. So it is
@@ -106,7 +106,7 @@ let agentsError = null
 async function loadAgents() {
   if (agentsModule || agentsError) return agentsModule
   try {
-    agentsModule = await import('@morgana/agents')
+    agentsModule = await import('@studiomorgana/agents')
   } catch (err) {
     agentsError = err
   }
@@ -114,10 +114,10 @@ async function loadAgents() {
 }
 
 const NOT_BUILT =
-  '@morgana/agents is not built. Run: pnpm --filter @morgana/agents run build'
+  '@studiomorgana/agents is not built. Run: pnpm --filter @studiomorgana/agents run build'
 
 /**
- * `@morgana/wizard`, loaded on demand for the same reason `@morgana/agents` is:
+ * `@studiomorgana/wizard`, loaded on demand for the same reason `@studiomorgana/agents` is:
  * it ships as `dist`, so a fresh checkout may not have built it, and that must
  * refuse `ctx.ai.wizard` by name rather than stop `morgana dev` at startup.
  */
@@ -126,7 +126,7 @@ let wizardError = null
 async function loadWizard() {
   if (wizardModule || wizardError) return wizardModule
   try {
-    wizardModule = await import('@morgana/wizard')
+    wizardModule = await import('@studiomorgana/wizard')
   } catch (err) {
     wizardError = err
   }
@@ -134,7 +134,7 @@ async function loadWizard() {
 }
 
 const WIZARD_NOT_BUILT =
-  '@morgana/wizard is not built. Run: pnpm --filter @morgana/wizard run build'
+  '@studiomorgana/wizard is not built. Run: pnpm --filter @studiomorgana/wizard run build'
 
 /**
  * POST a chat request to the Morgana route and read the text back.

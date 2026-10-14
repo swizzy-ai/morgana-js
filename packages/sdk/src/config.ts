@@ -206,7 +206,7 @@ export interface AppDefinition {
  * a group outside this list gets a named error, not undefined — the same rule
  * the OS-permission model will enforce at pack time. `backend` names the
  * package that implements dist/desktop/ (default
- * @morgana/desktop-electron); `morgana desktop` resolves it from the
+ * @studiomorgana/desktop-electron); `morgana desktop` resolves it from the
  * project, never from the CLI's own dependencies, so a future backend swaps
  * in with one config line.
  */

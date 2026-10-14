@@ -9,7 +9,7 @@ pnpm build           # compile src/ to dist/
 pnpm dev             # serve on http://localhost:4322
 ```
 
-The `morgana` binary is the workspace `@morgana/cli`, so the build always
+The `morgana` binary is the workspace `@studiomorgana/cli`, so the build always
 uses this checkout's compiler — no global link to go stale.
 
 - `src/nav.ts` — shared shell (rail, titles); object ids must be

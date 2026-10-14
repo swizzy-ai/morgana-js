@@ -1,4 +1,4 @@
-import { defineConfig } from '@morgana/sdk'
+import { defineConfig } from '@studiomorgana/sdk'
 
 export default defineConfig({
   name: 'demo-shop',

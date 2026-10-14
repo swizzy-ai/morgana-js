@@ -65,11 +65,11 @@ const w = (rel, text) => {
   fs.writeFileSync(path.join(dir, rel), text)
 }
 w('package.json', '{"name":"api-check","private":true,"type":"module"}')
-w('morgana.config.ts', `import { defineConfig } from '@morgana/sdk'\nexport default defineConfig({ name: 'api-check', entry: 'home' })\n`)
+w('morgana.config.ts', `import { defineConfig } from '@studiomorgana/sdk'\nexport default defineConfig({ name: 'api-check', entry: 'home' })\n`)
 const plan = kindHandles.map(([kind, handle]) => ({ kind, handle, methods: methodsOf(handle) }))
 w(
   'src/actions/compile/page.ts',
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 const KINDS: string[] = ${JSON.stringify(plan.map((p) => p.kind))}
 const NEEDS: Record<string, Record<string, unknown>> = ${JSON.stringify(NEEDS)}
 export const page = defineClientAction({
@@ -90,7 +90,7 @@ export const page = defineClientAction({
 )
 w(
   'src/actions/client/probe.ts',
-  `import { defineClientAction } from '@morgana/sdk'
+  `import { defineClientAction } from '@studiomorgana/sdk'
 const PLAN: Array<{ kind: string; methods: string[] }> = ${JSON.stringify(plan.map(({ kind, methods }) => ({ kind, methods })))}
 export const probe = defineClientAction({
   config: { on: 'probe.clicked' },

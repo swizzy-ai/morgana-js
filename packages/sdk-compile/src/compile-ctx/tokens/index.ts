@@ -5,7 +5,7 @@
  * (stylesheet emission for the animation words).
  */
 import { hasTheme, isDefinedTheme } from '../../style/themes'
-import { ALIGN_TOKENS, JUSTIFY_TOKENS, LAYOUT_TOKENS, RADIUS_TOKENS, SURFACE_TOKENS } from '@morgana/sdk';
+import { ALIGN_TOKENS, JUSTIFY_TOKENS, LAYOUT_TOKENS, RADIUS_TOKENS, SURFACE_TOKENS } from '@studiomorgana/sdk';
 import {
   ANIMATION_WORDS,
   BEHAVIOR_WORDS,

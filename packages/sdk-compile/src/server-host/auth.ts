@@ -11,7 +11,7 @@
  * Sessions are opaque random tokens carried in an HttpOnly cookie. Storage
  * keeps only the token's SHA-256, so a leaked store holds no live sessions.
  */
-import type { AuthUser } from '@morgana/sdk'
+import type { AuthUser } from '@studiomorgana/sdk'
 import { GoogleTokenError, verifyGoogleIdToken } from './google'
 
 // ── Password hashing ────────────────────────────────────────────────────────

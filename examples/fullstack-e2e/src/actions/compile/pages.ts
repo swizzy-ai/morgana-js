@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 export const pages = defineClientAction({
   config: { on: 'compile' },
   handler: (ctx) => {

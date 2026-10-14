@@ -13,5 +13,5 @@ export default defineConfig({
   dts: true,
   treeshake: true,
   minify: false,
-  external: ['electron', 'electron-builder', '@morgana/cli', '@morgana/sdk'],
+  external: ['electron', 'electron-builder', '@studiomorgana/cli', '@studiomorgana/sdk'],
 })

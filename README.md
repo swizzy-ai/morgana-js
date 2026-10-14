@@ -47,7 +47,7 @@ runs. There are three lanes, and the distinction is the core idea:
 
 ```ts
 // src/actions/compile/hello.ts
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 export const hello = defineClientAction({
   config: { on: 'compile' },
@@ -113,7 +113,7 @@ dist/
 Imports are real. An action may import siblings, shared helpers and third-party
 packages from `node_modules`; esbuild resolves and inlines the whole graph.
 
-`@morgana/sdk` is never resolved from your project — your actions import it for
+`@studiomorgana/sdk` is never resolved from your project — your actions import it for
 its factories, which are identity helpers, and for types. The compiler redirects
 those specifiers to the SDK's own source so a value import gets the real
 implementation rather than a stand-in. This is why the SDK ships its `src/`.
@@ -200,7 +200,7 @@ ship (`"morgana": { "objects": [...] }` in their `package.json`).
 
 ```ts
 // src/server-objects/counter.ts
-import { defineServerObject } from '@morgana/sdk'
+import { defineServerObject } from '@studiomorgana/sdk'
 
 export default defineServerObject({
   name: 'counter',
@@ -307,11 +307,11 @@ checked-in email and password would just be a shared credential with extra steps
 
 | Package | Published | What it is |
 |---|---|---|
-| `@morgana/sdk` | yes | the developer interface — contexts, object handles, contracts, configs |
-| `@morgana/sdk-compile` | yes | the compiler; esbuild, the IR, page/style/asset emission |
-| `@morgana/agents` | yes | the agent loop — providers, action tools, `ctx.agents` |
-| `@morgana/cli` | yes | the `morgana` command |
-| `@morgana/eject` | yes | `morgana eject`, installed into a project on demand |
+| `@studiomorgana/sdk` | yes | the developer interface — contexts, object handles, contracts, configs |
+| `@studiomorgana/sdk-compile` | yes | the compiler; esbuild, the IR, page/style/asset emission |
+| `@studiomorgana/agents` | yes | the agent loop — providers, action tools, `ctx.agents` |
+| `@studiomorgana/cli` | yes | the `morgana` command |
+| `@studiomorgana/eject` | yes | `morgana eject`, installed into a project on demand |
 | `morgana-server` | **no** | the cloud worker. Private, never published |
 
 ## Deploying to your own infrastructure

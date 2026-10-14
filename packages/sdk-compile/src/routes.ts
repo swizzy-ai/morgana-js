@@ -1,7 +1,7 @@
 /**
  * Wiring: http routes, unified triggers, frontend bindings.
  */
-import { INTERACTION_EVENTS } from '@morgana/sdk';
+import { INTERACTION_EVENTS } from '@studiomorgana/sdk';
 import type { SdkActionMeta } from './extract';
 import { objectEventProblem, parseObjectSelector, type ObjectMeta } from './server-host/objects';
 import {

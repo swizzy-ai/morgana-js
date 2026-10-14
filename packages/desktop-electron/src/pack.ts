@@ -96,8 +96,8 @@ export async function scaffold({ dir = process.cwd(), outDir }: PackOptions = {}
     main: 'main.mjs',
     type: 'module',
     dependencies: {
-      '@morgana/desktop-electron': '^' + ownVersion(),
-      '@morgana/cli': '^' + installedVersion('@morgana/cli', 'host'),
+      '@studiomorgana/desktop-electron': '^' + ownVersion(),
+      '@studiomorgana/cli': '^' + installedVersion('@studiomorgana/cli', 'host'),
       electron: '^33.0.0',
     },
     build: {
@@ -111,7 +111,7 @@ export async function scaffold({ dir = process.cwd(), outDir }: PackOptions = {}
   const main = [
     "import path from 'node:path'",
     "import { fileURLToPath } from 'node:url'",
-    "import { run } from '@morgana/desktop-electron'",
+    "import { run } from '@studiomorgana/desktop-electron'",
     '',
     'const dir = path.dirname(fileURLToPath(import.meta.url))',
     '',
@@ -140,7 +140,7 @@ export async function pack({ dir = process.cwd(), outDir, mode = 'scaffold' }: P
   try {
     builder = req('electron-builder') as { build: (opts: unknown) => Promise<unknown> }
   } catch {
-    throw new Error('electron-builder is not installed — pnpm add -D electron-builder in @morgana/desktop-electron to build installers')
+    throw new Error('electron-builder is not installed — pnpm add -D electron-builder in @studiomorgana/desktop-electron to build installers')
   }
   await builder.build({ projectDir: info.outDir, win: ['nsis'] })
   return info

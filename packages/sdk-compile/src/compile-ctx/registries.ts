@@ -2,10 +2,10 @@
  * Compile-time registries: transformers, breakpoints, icons, measure,
  * state, vars, apps, pages, ui assembly, object creation.
  */
-import type { MorganaConfig } from '@morgana/sdk';
+import type { MorganaConfig } from '@studiomorgana/sdk';
 import type { ProjectIR } from '../ir';
 import { createKindFn, ensureNode, makeHandle, nextAutoId, type CompileState } from './handles';
-import { creatorNameFor } from '@morgana/sdk';
+import { creatorNameFor } from '@studiomorgana/sdk';
 import { defineGradient } from './tokens/gradients';
 import { defineTheme, type ThemeSpec } from '../style/themes';
 

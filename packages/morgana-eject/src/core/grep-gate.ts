@@ -12,8 +12,8 @@ import path from 'node:path';
 
 const FORBIDDEN = [
   /__morgana/i,
-  /@morgana\//i,
-  /from\s+['"]@morgana['"]/i,
+  /@studiomorgana\//i,
+  /from\s+['"]@studiomorgana['"]/i,
   /morgana-[a-z]/i,
   /\bMorgana\.[A-Za-z]/,
   /data-spa-route/i,

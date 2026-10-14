@@ -13,12 +13,12 @@ import { tmpdir } from 'node:os'
 import { compileProject } from '../index'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'b', entry: 'home' })",
 ].join('\n')
 
 const SEED = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   '  config: { on: "compile" },',
   '  handler: (ctx) => {',
@@ -76,7 +76,7 @@ async function build(actions: Record<string, string>, seed = SEED): Promise<{
 
 const action = (name: string, on: string) =>
   [
-    "import { defineClientAction } from '@morgana/sdk'",
+    "import { defineClientAction } from '@studiomorgana/sdk'",
     `export const ${name} = defineClientAction({`,
     `  config: { on: ${JSON.stringify(on)} },`,
     '  handler: (ctx) => { ctx.log("ran") ; return { ok: true } },',

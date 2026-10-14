@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 export const roomLoad = defineClientAction({
   config: { on: 'loaded' },

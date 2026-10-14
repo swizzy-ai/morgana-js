@@ -13,7 +13,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { generateTypes } from '@morgana/sdk-compile'
+import { generateTypes } from '@studiomorgana/sdk-compile'
 
 import { say, row, dim, yellow, green } from '../ui.mjs'
 

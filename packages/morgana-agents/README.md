@@ -1,15 +1,15 @@
-# @morgana/agents
+# @studiomorgana/agents
 
 The agent loop for Morgana — providers, action tools, and `ctx.agents`.
 
 ```bash
-npm i @morgana/agents
+npm i @studiomorgana/agents
 ```
 
 ## An agent is a name and an instruction
 
 ```ts
-import { providerFromEnv, resolveTransport, buildAgentSurface } from '@morgana/agents'
+import { providerFromEnv, resolveTransport, buildAgentSurface } from '@studiomorgana/agents'
 ```
 
 Three pieces:

@@ -15,12 +15,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ProjectIR, ObjNode } from '@morgana/sdk-compile';
-import { renderNode } from '@morgana/sdk-compile';
+import type { ProjectIR, ObjNode } from '@studiomorgana/sdk-compile';
+import { renderNode } from '@studiomorgana/sdk-compile';
 import type { EjectFallback, EjectSelection } from '../core/types';
 import { parseActionSources, handlerBodyText, extractTableSource } from '../core/codemod';
 import { opName, pageComponentName, pageFileName } from '../core/names';
-import { resolveMakeToken } from '@morgana/sdk-compile';
+import { resolveMakeToken } from '@studiomorgana/sdk-compile';
 import { htmlToJsx } from './htmlToJsx';
 import { CONTROL_SPECS, DYNAMIC_PROPS } from './kinds';
 import { translateMethod, pageHelpers } from './methods';

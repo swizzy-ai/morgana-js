@@ -1,5 +1,5 @@
 {
-  "name": "@morgana/eject",
+  "name": "@studiomorgana/eject",
   "version": "0.5.0",
   "type": "module",
   "description": "Eject a Morgana app to a plain React + Express codebase with no framework trace.",
@@ -29,7 +29,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@morgana/sdk-compile": "workspace:^",
+    "@studiomorgana/sdk-compile": "workspace:^",
     "typescript": "~5.8.2"
   },
   "devDependencies": {

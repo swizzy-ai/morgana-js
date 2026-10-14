@@ -15,12 +15,12 @@ import path from 'node:path'
 import { compileProject } from '../index'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'alias', entry: 'home' })",
 ].join('\n')
 
 const DECLARE = [
-  "import { defineClientAction } from '@morgana/sdk'",
+  "import { defineClientAction } from '@studiomorgana/sdk'",
   'export const seed = defineClientAction({',
   "  config: { on: 'compile' },",
   '  handler: (ctx) => {',

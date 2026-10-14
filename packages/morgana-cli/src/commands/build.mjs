@@ -17,7 +17,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { compileProject } from '@morgana/sdk-compile'
+import { compileProject } from '@studiomorgana/sdk-compile'
 import { say, row, dim, yellow } from '../ui.mjs'
 
 /** One line per artefact a visitor actually downloads. */

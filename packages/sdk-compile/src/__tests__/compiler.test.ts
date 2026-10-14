@@ -17,7 +17,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'morgana.config.ts'),
     [
-      "import { defineConfig } from '@morgana/sdk'",
+      "import { defineConfig } from '@studiomorgana/sdk'",
       '',
       'export default defineConfig({',
       "  name: 'demo',",
@@ -35,7 +35,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'compile', 'seed.ts'),
     [
-      "import { defineClientAction } from '@morgana/sdk'",
+      "import { defineClientAction } from '@studiomorgana/sdk'",
       '',
       'export const seed = defineClientAction({',
       "  config: { on: 'compile' },",
@@ -60,7 +60,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'server', 'declare.ts'),
     [
-      "import { defineServerAction } from '@morgana/sdk'",
+      "import { defineServerAction } from '@studiomorgana/sdk'",
       '',
       'export const declare = defineServerAction({',
       "  config: { on: 'compile' },",
@@ -75,7 +75,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'server', 'hello.ts'),
     [
-      "import { defineServerAction } from '@morgana/sdk'",
+      "import { defineServerAction } from '@studiomorgana/sdk'",
       '',
       'export interface Contract {',
       '  input: { name?: string }',
@@ -103,7 +103,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'server', 'onOrder.ts'),
     [
-      "import { defineServerAction } from '@morgana/sdk'",
+      "import { defineServerAction } from '@studiomorgana/sdk'",
       '',
       'export const onOrder = defineServerAction({',
       '  handler: (ctx) => ({ ok: true }),',
@@ -114,7 +114,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'browser', 'checkout.ts'),
     [
-      "import { defineClientAction } from '@morgana/sdk'",
+      "import { defineClientAction } from '@studiomorgana/sdk'",
       '',
       'export const checkout = defineClientAction({',
       "  config: { on: 'clicked' },",
@@ -129,7 +129,7 @@ function makeProject(): string {
   write(
     path.join(dir, 'src', 'actions', 'browser', 'watcher.ts'),
     [
-      "import { defineClientAction } from '@morgana/sdk'",
+      "import { defineClientAction } from '@studiomorgana/sdk'",
       '',
       'export const watcher = defineClientAction({',
       "  config: { on: 'state:cart.open' },",

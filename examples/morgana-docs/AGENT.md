@@ -17,7 +17,7 @@ plus sandboxed server actions. No routing or templating layer to learn.
 
 Project shape: `morgana.config.ts`, `src/actions/{compile,server,client}/`,
 `src/objects/`, `assets/`. Scaffold with `morgana init <name>` (global
-`morgana` must be the linked `@morgana/cli` — `morgana --version` is the tell).
+`morgana` must be the linked `@studiomorgana/cli` — `morgana --version` is the tell).
 
 ## 2. Object catalog (91 kinds, all under `ctx.ui.*`)
 

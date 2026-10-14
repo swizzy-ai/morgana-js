@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 
 /** Every new message in any chat room: the instance is ctx.object. */
 export const onRoomMessage = defineServerAction({

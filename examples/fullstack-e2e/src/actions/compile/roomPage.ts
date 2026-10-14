@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 /** A page driven by a server object: bound state, a streamed method, live events. */
 export const roomPage = defineClientAction({

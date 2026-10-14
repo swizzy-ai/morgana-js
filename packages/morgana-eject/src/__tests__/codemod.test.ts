@@ -10,7 +10,7 @@ import { translateClientBody, dropTableBranch } from '../react/translate';
 import { translateMethod } from '../react/methods';
 import { opName } from '../core/names';
 
-const SERVER = `import { defineServerAction } from '@morgana/sdk'
+const SERVER = `import { defineServerAction } from '@studiomorgana/sdk'
 export const notesAdd = defineServerAction({
   config: { on: 'notesAdd' },
   handler: async (ctx) => {

@@ -14,27 +14,27 @@ importers:
 
   examples/fullstack-e2e:
     dependencies:
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../../packages/sdk
     devDependencies:
-      '@morgana/cli':
+      '@studiomorgana/cli':
         specifier: workspace:^
         version: link:../../packages/morgana-cli
 
   examples/morgana-docs:
     dependencies:
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../../packages/sdk
     devDependencies:
-      '@morgana/cli':
+      '@studiomorgana/cli':
         specifier: workspace:^
         version: link:../../packages/morgana-cli
 
   examples/sdk-compile-demo:
     dependencies:
-      '@morgana/agents':
+      '@studiomorgana/agents':
         specifier: workspace:*
         version: link:../../packages/morgana-agents
     devDependencies:
@@ -47,10 +47,10 @@ importers:
 
   packages/desktop-electron:
     dependencies:
-      '@morgana/cli':
+      '@studiomorgana/cli':
         specifier: workspace:^
         version: link:../morgana-cli
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
     devDependencies:
@@ -91,7 +91,7 @@ importers:
         specifier: ^0.1.3
         version: 0.1.3(typescript@5.8.3)
     devDependencies:
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
       '@types/node':
@@ -109,16 +109,16 @@ importers:
 
   packages/morgana-cli:
     dependencies:
-      '@morgana/agents':
+      '@studiomorgana/agents':
         specifier: workspace:^
         version: link:../morgana-agents
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
-      '@morgana/sdk-compile':
+      '@studiomorgana/sdk-compile':
         specifier: workspace:^
         version: link:../sdk-compile
-      '@morgana/wizard':
+      '@studiomorgana/wizard':
         specifier: workspace:^
         version: link:../wizard
     devDependencies:
@@ -137,7 +137,7 @@ importers:
 
   packages/morgana-eject:
     dependencies:
-      '@morgana/sdk-compile':
+      '@studiomorgana/sdk-compile':
         specifier: workspace:^
         version: link:../sdk-compile
       typescript:
@@ -172,7 +172,7 @@ importers:
 
   packages/sdk-compile:
     dependencies:
-      '@morgana/sdk':
+      '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
       esbuild:

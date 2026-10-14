@@ -19,12 +19,12 @@ import { compileProject } from '../index'
 import { makeHandle, type CompileState } from '../compile-ctx/handles'
 
 const CONFIG = [
-  "import { defineConfig } from '@morgana/sdk'",
+  "import { defineConfig } from '@studiomorgana/sdk'",
   "export default defineConfig({ name: 'clone', entry: 'home' })",
 ].join('\n')
 
 const PLAYER = `
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 export default createCustomObject({
   name: 'video-player',
   defaultProps: { src: '' },
@@ -294,7 +294,7 @@ describe('a cloned component is still a component, on the real page', () => {
     write('morgana.config.ts', CONFIG)
     write('src/objects/video-player.ts', PLAYER)
     write('src/actions/compile/seed.ts', [
-      "import { defineClientAction } from '@morgana/sdk'",
+      "import { defineClientAction } from '@studiomorgana/sdk'",
       'export const seed = defineClientAction({',
       '  config: { on: "compile" },',
       '  handler: (ctx) => {',

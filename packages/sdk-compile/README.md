@@ -1,4 +1,4 @@
-# @morgana/sdk-compile
+# @studiomorgana/sdk-compile
 
 The Morgana compiler.
 
@@ -6,17 +6,17 @@ Takes a directory of TypeScript actions and emits `dist/`: pages, styles, one
 client runtime, and one self-contained server module per action.
 
 ```bash
-npm i @morgana/sdk-compile
+npm i @studiomorgana/sdk-compile
 ```
 
-Most people never call this directly — [`@morgana/cli`](../morgana-cli) wraps it
+Most people never call this directly — [`@studiomorgana/cli`](../morgana-cli) wraps it
 as `morgana build`. It is a separate package so the compiler can be used
 programmatically, and so a build can run without the CLI.
 
 ## Usage
 
 ```ts
-import { compileProject } from '@morgana/sdk-compile'
+import { compileProject } from '@studiomorgana/sdk-compile'
 
 const result = await compileProject({
   dir: '/path/to/project',

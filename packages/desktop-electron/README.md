@@ -1,4 +1,4 @@
-# @morgana/desktop-electron
+# @studiomorgana/desktop-electron
 
 The desktop backend for Morgana. Boots a compiled project's `dist/desktop/`
 inside Electron: the app window on the loopback host, `ctx.desktop.os`

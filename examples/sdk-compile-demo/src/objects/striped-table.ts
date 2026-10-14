@@ -16,7 +16,7 @@
  * contains something table-shaped". Every other component avoids it entirely by
  * being a `box` and composing.
  */
-import { createCustomObject } from '@morgana/sdk'
+import { createCustomObject } from '@studiomorgana/sdk'
 
 export default createCustomObject({
   name: 'striped-table',

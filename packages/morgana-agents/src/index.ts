@@ -1,5 +1,5 @@
 /**
- * `@morgana/agents` — an agent is a name and an instruction.
+ * `@studiomorgana/agents` — an agent is a name and an instruction.
  *
  * ## The three pieces
  *

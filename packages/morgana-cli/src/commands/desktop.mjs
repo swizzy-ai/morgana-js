@@ -7,7 +7,7 @@
  * `morgana package` — this command always runs.
  */
 import path from 'node:path'
-import { scanProject } from '@morgana/sdk-compile'
+import { scanProject } from '@studiomorgana/sdk-compile'
 import { build } from './build.mjs'
 import { loadBackend, DEFAULT_BACKEND } from './desktop-backend.mjs'
 import { say } from '../ui.mjs'

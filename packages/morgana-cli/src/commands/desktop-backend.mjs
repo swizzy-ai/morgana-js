@@ -12,7 +12,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 
-export const DEFAULT_BACKEND = '@morgana/desktop-electron'
+export const DEFAULT_BACKEND = '@studiomorgana/desktop-electron'
 
 export async function loadBackend(dir, name) {
   let resolved

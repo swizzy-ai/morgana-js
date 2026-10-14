@@ -1,5 +1,5 @@
 /**
- * @morgana/sdk — the Morgana framework developer interface.
+ * @studiomorgana/sdk — the Morgana framework developer interface.
  *
  * Types-first: actions never import this at runtime. Handlers stay plain
  * `export async function handle(ctx)`; typing is additive via optional
@@ -466,7 +466,7 @@ export type {
 } from './data'
 
 // Agents and tools — the surface on `ctx.ai.agents` / `ctx.ai.tools`.
-// Implemented by @morgana/agents, declared here so an author writes against the
+// Implemented by @studiomorgana/agents, declared here so an author writes against the
 // contract rather than against whichever runtime is answering.
 export {
   AGENT_EVENTS,
@@ -486,7 +486,7 @@ export {
   type ToolsHandle,
 } from './ai-agents'
 
-// Wizard runs — the surface on `ctx.ai.wizard`. Implemented by @morgana/wizard;
+// Wizard runs — the surface on `ctx.ai.wizard`. Implemented by @studiomorgana/wizard;
 // declared here so an author writes against the contract.
 export {
   WIZARD_EVENTS,

@@ -23,7 +23,7 @@ function writeFile(file, contents) {
   fs.writeFileSync(file, contents)
 }
 
-const config = (name) => `import { defineConfig } from '@morgana/sdk'
+const config = (name) => `import { defineConfig } from '@studiomorgana/sdk'
 
 export default defineConfig({
   name: ${JSON.stringify(name)},
@@ -42,7 +42,7 @@ export default defineConfig({
 })
 `
 
-const helloAction = (name) => `import { defineClientAction } from '@morgana/sdk'
+const helloAction = (name) => `import { defineClientAction } from '@studiomorgana/sdk'
 
 /**
  * The compile lane runs in Node, before anything is served. This is where a
@@ -120,13 +120,13 @@ const packageJson = (name) => `${JSON.stringify(
     // The Morgana packages release in lockstep, so the CLI's own version is the
     // right range for all three.
     dependencies: {
-      '@morgana/sdk': `^${VERSION}`,
+      '@studiomorgana/sdk': `^${VERSION}`,
     },
     // The CLI is a project dependency so `npm run dev` works without a
     // global install — and always matches this project's compiler.
     devDependencies: {
-      '@morgana/cli': `^${VERSION}`,
-      '@morgana/sdk-compile': `^${VERSION}`,
+      '@studiomorgana/cli': `^${VERSION}`,
+      '@studiomorgana/sdk-compile': `^${VERSION}`,
       typescript: '~5.8.2',
     },
   },

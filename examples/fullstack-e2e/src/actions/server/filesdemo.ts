@@ -1,4 +1,4 @@
-import { defineServerAction } from '@morgana/sdk'
+import { defineServerAction } from '@studiomorgana/sdk'
 export const filesdemo = defineServerAction({
   handler: async (ctx) => {
     await ctx.server.files.write('reports/a.txt', 'hello r2', 'text/plain')

@@ -11,8 +11,8 @@
     "moduleDetection": "force",
     "allowJs": true,
     "paths": {
-      "@morgana/sdk": ["./packages/sdk/src/index.ts"],
-      "@morgana/sdk/*": ["./packages/sdk/src/*"]
+      "@studiomorgana/sdk": ["./packages/sdk/src/index.ts"],
+      "@studiomorgana/sdk/*": ["./packages/sdk/src/*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true

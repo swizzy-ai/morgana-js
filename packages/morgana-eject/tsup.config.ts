@@ -10,8 +10,8 @@ export default defineConfig({
   splitting: false,
   sourcemap: false,
   dts: true,
-  // @morgana/sdk-compile stays external (like the CLI does): the eject tool
+  // @studiomorgana/sdk-compile stays external (like the CLI does): the eject tool
   // runs on a dev machine where the workspace is installed, and bundling the
   // whole compiler into this dist would freeze its version at build time.
-  external: ['typescript', '@morgana/sdk', '@morgana/sdk-compile'],
+  external: ['typescript', '@studiomorgana/sdk', '@studiomorgana/sdk-compile'],
 })

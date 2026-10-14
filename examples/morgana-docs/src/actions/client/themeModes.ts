@@ -1,4 +1,4 @@
-import { defineClientAction } from '@morgana/sdk'
+import { defineClientAction } from '@studiomorgana/sdk'
 
 export const modeLight = defineClientAction({ config: { on: 't-mode-light.clicked' }, handler: (ctx) => void ctx.ui.setTheme('light') })
 export const modeDark = defineClientAction({ config: { on: 't-mode-dark.clicked' }, handler: (ctx) => void ctx.ui.setTheme('dark') })

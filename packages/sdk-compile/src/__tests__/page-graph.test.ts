@@ -98,11 +98,11 @@ describe('page graph round-trip', () => {
     };
     write(
       'morgana.config.ts',
-      ["import { defineConfig } from '@morgana/sdk'", "export default defineConfig({ name: 'pg', entry: 'home' })"].join('\n'),
+      ["import { defineConfig } from '@studiomorgana/sdk'", "export default defineConfig({ name: 'pg', entry: 'home' })"].join('\n'),
     );
     const action = (name: string, body: string): string =>
       [
-        "import { defineClientAction } from '@morgana/sdk'",
+        "import { defineClientAction } from '@studiomorgana/sdk'",
         `export const ${name} = defineClientAction({`,
         '  config: { on: "compile" },',
         '  handler: (ctx) => {',

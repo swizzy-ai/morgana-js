@@ -12,7 +12,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
-import type { DesktopApi, DesktopAppInfo } from '@morgana/sdk'
+import type { DesktopApi, DesktopAppInfo } from '@studiomorgana/sdk'
 import { buildOs } from './os'
 import { electronBackend, type ElectronModule } from './electron-os'
 import { createObjectsRuntime, type ObjectTypeDef } from './objects'
@@ -81,12 +81,12 @@ export async function run({ dir = process.cwd(), port = 4317 }: DesktopRunOption
   const manifest = readJson<{ entry?: string }>(path.join(dist, 'manifest.json'), {})
   const objectDefs = readJson<ObjectTypeDef[]>(path.join(dist, 'objects.json'), [])
 
-  const host = (await import(resolveInstalled('@morgana/cli/host'))) as unknown as HostModule
+  const host = (await import(resolveInstalled('@studiomorgana/cli/host'))) as unknown as HostModule
   const electron = (await import(resolveInstalled('electron'))) as unknown as ElectronModule
   if (!electron.app?.whenReady || typeof electron.BrowserWindow !== 'function') {
     throw new Error(
       'Electron did not load a runnable app module — its postinstall binary is missing. ' +
-      'Install it on demand with `pnpm --filter @morgana/desktop-electron rebuild electron`, then retry.',
+      'Install it on demand with `pnpm --filter @studiomorgana/desktop-electron rebuild electron`, then retry.',
     )
   }
   await electron.app.whenReady()

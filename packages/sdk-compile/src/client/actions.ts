@@ -52,7 +52,7 @@ export function actionsPart(): string[] {
     '  if(__uiCache) return __uiCache;',
     '  var rt=window.__morgana_runtime;',
     '  if(!rt||typeof rt.makeUi!=="function"){',
-    '    throw new Error("[Morgana] page runtime missing — client.js was not built by @morgana/sdk-compile");',
+    '    throw new Error("[Morgana] page runtime missing — client.js was not built by @studiomorgana/sdk-compile");',
     '  }',
     '  __uiCache=rt.makeUi(makeRuntimeDeps());',
     '  return __uiCache;',
