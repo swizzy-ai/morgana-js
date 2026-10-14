@@ -37,6 +37,31 @@ export interface DatePickerHandle extends ObjectHandle<DatePickerProps> {
   track(event: string, opts?: TrackOptions): EventSource
 }
 
+// ── dateRange ───────────────────────────────────────────────────────────────
+
+export interface DateRangeProps extends SharedProps {
+  /** `YYYY-MM-DD`. */
+  start?: string
+  /** `YYYY-MM-DD`; swapped with start if earlier. */
+  end?: string
+  min?: string
+  max?: string
+  placeholder?: string
+  disabled?: boolean
+  weekStart?: 'sunday' | 'monday'
+}
+
+/** First click sets the start, second the end. Events: `changed` `{ start, end, value: 'start..end' }`, `opened`, `closed`. */
+export interface DateRangeHandle extends ObjectHandle<DateRangeProps> {
+  getValue(): { start: string; end: string }
+  setValue(start: string, end: string): { start: string; end: string }
+  clear(): void
+  open(): void
+  close(): void
+  isOpen(): boolean
+  track(event: string, opts?: TrackOptions): EventSource
+}
+
 // ── radioGroup ──────────────────────────────────────────────────────────────
 
 export interface RadioOption {

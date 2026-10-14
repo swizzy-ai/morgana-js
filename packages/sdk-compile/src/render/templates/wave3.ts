@@ -52,6 +52,37 @@ export function renderDatePicker(ir: ProjectIR, node: RenderNode): string {
   return html
 }
 
+/**
+ * dateRange — the date picker's calendar picking two dates. The first click
+ * sets the start, the second the end (swapped if earlier); days between are
+ * marked in range.
+ */
+export function renderDateRange(ir: ProjectIR, node: RenderNode): string {
+  void ir
+  const p = node.props
+  const attrs = baseAttrs(node)
+  let start = normalizeDate(p['start'])
+  let end = normalizeDate(p['end'])
+  if (start && end && end < start) [start, end] = [end, start]
+  if (!start) end = ''
+  const min = normalizeDate(p['min'])
+  const max = normalizeDate(p['max'])
+  const disabled = p['disabled'] === true
+  attrs.push('data-range="true"', `data-start="${start}"`, `data-end="${end}"`, 'data-open="false"')
+  if (min) attrs.push(`data-min="${min}"`)
+  if (max) attrs.push(`data-max="${max}"`)
+  if (disabled) attrs.push('data-disabled="true"')
+  if (p['weekStart'] === 'monday') attrs.push('data-week-start="1"')
+  attrs.push(...carryProps(p, skipOf('start', 'end', 'min', 'max', 'disabled', 'placeholder', 'weekStart')))
+  const shown = start ? `${start} → ${end || '…'}` : ''
+  let html = `<div ${attrs.join(' ')}>`
+  html += `<div data-part="control"><input type="text" data-part="field" readonly value="${escAttr(shown)}" placeholder="${escAttr(str(p['placeholder'], 'Pick dates'))}"${disabled ? ' disabled' : ''} aria-haspopup="dialog" />`
+  html += `<button type="button" data-part="trigger" aria-label="Open calendar"${disabled ? ' disabled' : ''}>📅</button></div>`
+  html += '<div data-part="calendar" role="dialog" aria-label="Choose dates" hidden></div>'
+  html += '</div>'
+  return html
+}
+
 // ── radioGroup ──────────────────────────────────────────────────────────────
 
 export function renderRadioGroup(ir: ProjectIR, node: RenderNode): string {

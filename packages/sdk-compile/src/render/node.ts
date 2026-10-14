@@ -27,7 +27,7 @@ import {
 import { renderAudio, renderVideo } from './templates/media-surface';
 import { renderCode, renderCodeBlock } from './templates/code';
 import { renderMarkdown } from './markdown';
-import { renderCarousel, renderCollapsible, renderColorPicker, renderCommandPalette, renderContextMenu, renderDatePicker, renderPagination, renderRadioGroup } from './templates/wave3';
+import { renderCarousel, renderCollapsible, renderColorPicker, renderCommandPalette, renderContextMenu, renderDatePicker, renderDateRange, renderPagination, renderRadioGroup } from './templates/wave3';
 import type { ProjectIR } from '../ir';
 
 export const TAG_FOR_KIND: Record<string, string> = {
@@ -105,6 +105,7 @@ export const TAG_FOR_KIND: Record<string, string> = {
   progressCircle: 'div',
   codeBlock: 'div',
   datePicker: 'div',
+  dateRange: 'div',
   radioGroup: 'div',
   pagination: 'nav',
   collapsible: 'div',
@@ -146,7 +147,7 @@ export const TEMPLATED_KINDS = new Set([
   'avatar', 'separator', 'skeleton', 'slot',
   'video', 'audio',
   'markdown', 'code',
-  'datePicker', 'radioGroup', 'pagination', 'collapsible', 'carousel', 'colorPicker', 'contextMenu', 'commandPalette',
+  'datePicker', 'dateRange', 'radioGroup', 'pagination', 'collapsible', 'carousel', 'colorPicker', 'contextMenu', 'commandPalette',
 ])
 export function renderNode(ir: ProjectIR, id: string): string {  const node = ir.objects.get(id)
   if (!node) return ''
@@ -219,6 +220,8 @@ export function renderNode(ir: ProjectIR, id: string): string {  const node = ir
       return renderTreeView(ir, view)
     case 'datePicker':
       return renderDatePicker(ir, view)
+    case 'dateRange':
+      return renderDateRange(ir, view)
     case 'radioGroup':
       return renderRadioGroup(ir, view)
     case 'pagination':

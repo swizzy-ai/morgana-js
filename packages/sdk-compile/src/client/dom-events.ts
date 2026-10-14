@@ -18,7 +18,7 @@ export function formPart(): string[] {
     '  var el = e.target && e.target.closest ? e.target.closest("[data-entity]") : null;',
     '  // These kinds report their own committed value once (behaviors/wave3);',
     '  // a raw keystroke/drag event on top would be a second, noisier "changed".',
-    '  if(el && /^(colorPicker|commandPalette|datePicker|radioGroup)$/.test(el.getAttribute("data-kind")||"")) return;',
+    '  if(el && /^(colorPicker|commandPalette|datePicker|dateRange|radioGroup)$/.test(el.getAttribute("data-kind")||"")) return;',
     '  dispatchPageEvent("changed", el?el.getAttribute("data-entity"):"", el, e);',
     '});',
     'document.addEventListener("submit", function(e){',

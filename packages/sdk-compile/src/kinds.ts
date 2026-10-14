@@ -19,5 +19,5 @@ export const CREATABLE_KINDS = [
   'alert', 'progress', 'skeleton', 'separator',
   'image', 'video', 'audio',
   'link', 'menu', 'breadcrumbs',
-  'datePicker', 'radioGroup', 'pagination', 'collapsible', 'carousel', 'colorPicker', 'contextMenu', 'commandPalette',
+  'datePicker', 'dateRange', 'radioGroup', 'pagination', 'collapsible', 'carousel', 'colorPicker', 'contextMenu', 'commandPalette',
 ] as const

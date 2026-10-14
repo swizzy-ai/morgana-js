@@ -26,7 +26,7 @@ import type {
   BlockquoteHandle, KbdHandle, StatusHandle, SpinnerHandle, EmptyStateHandle, DataListHandle, AspectRatioHandle, CodeBlockHandle, AvatarGroupHandle, ProgressCircleHandle,
 } from '../handles'
 import type {
-  DatePickerProps, DatePickerHandle, RadioGroupProps, RadioGroupHandle, PaginationProps, PaginationHandle, CollapsibleProps, CollapsibleHandle,
+  DatePickerProps, DatePickerHandle, DateRangeProps, DateRangeHandle, RadioGroupProps, RadioGroupHandle, PaginationProps, PaginationHandle, CollapsibleProps, CollapsibleHandle,
   CarouselProps, CarouselHandle, ColorPickerProps, ColorPickerHandle, ContextMenuProps, ContextMenuHandle, CommandPaletteProps, CommandPaletteHandle,
 } from '../components'
 import type { MeasureApi } from '../layout'
@@ -130,6 +130,7 @@ export interface UiApi {
   form: Creatable<FormProps, FormHandle>
   progress: Creatable<ProgressProps, ProgressHandle>
   datePicker: Creatable<DatePickerProps, DatePickerHandle>
+  dateRange: Creatable<DateRangeProps, DateRangeHandle>
   radioGroup: Creatable<RadioGroupProps, RadioGroupHandle>
   pagination: Creatable<PaginationProps, PaginationHandle>
   collapsible: Creatable<CollapsibleProps, CollapsibleHandle>

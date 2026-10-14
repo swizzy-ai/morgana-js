@@ -34,6 +34,8 @@ const SOURCE = String.raw`
   function dpRender(el){
     var cal = part(el, "calendar"); if(!cal) return;
     var view = el.__mgView; var value = el.getAttribute("data-value") || "";
+    var range = el.getAttribute("data-range") === "true";
+    var rs = el.getAttribute("data-start") || "", re = el.getAttribute("data-end") || "";
     var min = el.getAttribute("data-min") || "", max = el.getAttribute("data-max") || "";
     var start = el.getAttribute("data-week-start") === "1" ? 1 : 0;
     var first = new Date(view.y, view.m, 1);
@@ -49,7 +51,8 @@ const SOURCE = String.raw`
       var off = (min && ds < min) || (max && ds > max);
       html += '<button type="button" data-part="day" data-date="' + ds + '"'
         + (dt.getMonth() !== view.m ? ' data-outside="true"' : '')
-        + (ds === value ? ' data-selected="true" aria-selected="true"' : '')
+        + ((range ? (ds === rs || ds === re) : ds === value) ? ' data-selected="true" aria-selected="true"' : '')
+        + (range && rs && re && ds > rs && ds < re ? ' data-in-range="true"' : '')
         + (ds === today ? ' data-today="true"' : '')
         + (off ? ' disabled' : '') + '>' + dt.getDate() + '</button>';
     }
@@ -57,7 +60,7 @@ const SOURCE = String.raw`
   }
   function dpOpen(el){
     if(el.getAttribute("data-disabled") === "true" || el.getAttribute("data-open") === "true") return;
-    var v = parseDate(el.getAttribute("data-value")) || parseDate(todayStr());
+    var v = parseDate(el.getAttribute(el.getAttribute("data-range") === "true" ? "data-start" : "data-value")) || parseDate(todayStr());
     el.__mgView = { y: v.y, m: v.m };
     dpRender(el);
     part(el, "calendar").removeAttribute("hidden");
@@ -69,6 +72,16 @@ const SOURCE = String.raw`
     part(el, "calendar").setAttribute("hidden", "");
     el.setAttribute("data-open", "false");
     emit(el, "closed");
+  }
+  // Range: start and end (YYYY-MM-DD each, end may be empty mid-pick).
+  function drSet(el, start, end, notify){
+    var s1 = parseDate(start) ? String(start) : "", e1 = s1 && parseDate(end) ? String(end) : "";
+    if(s1 && e1 && e1 < s1){ var tmp = s1; s1 = e1; e1 = tmp; }
+    el.setAttribute("data-start", s1); el.setAttribute("data-end", e1);
+    var f = part(el, "field"); if(f) f.value = s1 ? s1 + " → " + (e1 || "…") : "";
+    if(el.getAttribute("data-open") === "true") dpRender(el);
+    if(notify !== false && s1 && e1) emit(el, "changed", { start: s1, end: e1, value: s1 + ".." + e1 });
+    return { start: s1, end: e1 };
   }
   function dpSet(el, v, notify){
     var s = parseDate(v) ? String(v) : "";
@@ -253,7 +266,7 @@ const SOURCE = String.raw`
   }
 
   window.__mg3 = {
-    dpOpen: dpOpen, dpClose: dpClose, dpSet: dpSet,
+    dpOpen: dpOpen, dpClose: dpClose, dpSet: dpSet, drSet: drSet,
     rgSet: rgSet, rgOptions: rgOptions,
     pgPaint: pgPaint,
     clSet: clSet,
@@ -266,15 +279,24 @@ const SOURCE = String.raw`
   // ── delegation ──
   document.addEventListener("click", function(e){
     var t = e.target;
-    var dp = kindOf(t, "datePicker");
+    var dp = kindOf(t, "datePicker") || kindOf(t, "dateRange");
     if(dp){
       var day = t.closest('[data-part="day"]');
-      if(day && !day.disabled){ dpSet(dp, day.getAttribute("data-date")); dpClose(dp); return; }
+      if(day && !day.disabled){
+        var dd = day.getAttribute("data-date");
+        if(dp.getAttribute("data-range") === "true"){
+          var st = dp.getAttribute("data-start") || "", en = dp.getAttribute("data-end") || "";
+          // First click (or a fresh pick after a full range) starts over; the second completes it.
+          if(!st || en){ drSet(dp, dd, "", false); return; }
+          drSet(dp, st, dd); dpClose(dp); return;
+        }
+        dpSet(dp, dd); dpClose(dp); return;
+      }
       var nav = t.closest('[data-part="cal-nav"]');
       if(nav){ var dir = Number(nav.getAttribute("data-dir")); var nv = new Date(dp.__mgView.y, dp.__mgView.m + dir, 1); dp.__mgView = { y: nv.getFullYear(), m: nv.getMonth() }; dpRender(dp); return; }
       if(t.closest('[data-part="field"]') || t.closest('[data-part="trigger"]')){ if(dp.getAttribute("data-open") === "true") dpClose(dp); else dpOpen(dp); return; }
     }
-    var openDps = document.querySelectorAll('[data-kind="datePicker"][data-open="true"]');
+    var openDps = document.querySelectorAll('[data-kind="datePicker"][data-open="true"],[data-kind="dateRange"][data-open="true"]');
     for(var i = 0; i < openDps.length; i++) if(openDps[i] !== dp) dpClose(openDps[i]);
 
     var pg = kindOf(t, "pagination");
@@ -347,7 +369,7 @@ const SOURCE = String.raw`
       var openPal = document.querySelector('[data-kind="commandPalette"][data-open="true"]');
       if(openPal){ cpaClose(openPal); e.preventDefault(); return; }
       if(openCtx){ cmClose(openCtx); return; }
-      var dps = document.querySelectorAll('[data-kind="datePicker"][data-open="true"]');
+      var dps = document.querySelectorAll('[data-kind="datePicker"][data-open="true"],[data-kind="dateRange"][data-open="true"]');
       for(var i = 0; i < dps.length; i++) dpClose(dps[i]);
       return;
     }

@@ -43,6 +43,7 @@ export const page = defineClientAction({
     col.place(ctx.ui.text({ id: 'log', content: '' }))
     col.place(ctx.ui.button({ id: 'methods', label: 'methods' }))
     col.place(ctx.ui.datePicker({ id: 'dp', value: '2026-10-15', min: '2026-10-05' }))
+    col.place(ctx.ui.dateRange({ id: 'dr', start: '2026-10-02', end: '2026-10-04' }))
     col.place(ctx.ui.radioGroup({ id: 'rg', value: 'a', options: [{ label: 'A', value: 'a' }, { label: 'B', value: 'b' }, { label: 'C', value: 'c', description: 'third' }] }))
     col.place(ctx.ui.pagination({ id: 'pg', total: 200, pageSize: 10, page: 1 }))
     const cl = ctx.ui.collapsible({ id: 'cl', title: 'More' })
@@ -60,7 +61,7 @@ export const page = defineClientAction({
 )
 const EVENTS = [
   ['dp', 'changed'], ['dp', 'opened'], ['dp', 'closed'],
-  ['rg', 'changed'], ['pg', 'changed'], ['cl', 'opened'], ['cl', 'closed'], ['cr', 'changed'],
+  ['dr', 'changed'], ['rg', 'changed'], ['pg', 'changed'], ['cl', 'opened'], ['cl', 'closed'], ['cr', 'changed'],
   ['cpk', 'changed'], ['cm', 'opened'], ['cm', 'selected'], ['cm', 'closed'],
   ['cpa', 'opened'], ['cpa', 'selected'], ['cpa', 'closed'],
 ]
@@ -88,6 +89,7 @@ export const methods = defineClientAction({
   handler: (ctx) => {
     const u = ctx.ui as any
     u.get('dp').setValue('2026-12-25')
+    u.get('dr').setValue('2026-11-20', '2026-11-03')
     u.get('rg').setValue('c')
     u.get('pg').setPage(5)
     u.get('cr').goTo(2)
@@ -158,6 +160,20 @@ try {
     expect(((await page.textContent('[data-entity="dp"] [data-part="cal-label"]')) ?? '').includes('November 2026'), 'next month')
     await page.keyboard.press('Escape')
     expect(!(await page.isVisible('[data-entity="dp"] [data-part="calendar"]')), 'Esc did not close')
+  })
+  await check('dateRange: two clicks make a range, days between marked, changed once', async () => {
+    await clearLog()
+    await page.click('[data-entity="dr"] [data-part="field"]')
+    await page.click('[data-entity="dr"] [data-date="2026-10-14"]')
+    expect(await page.isVisible('[data-entity="dr"] [data-part="calendar"]'), 'closed after the first click')
+    await page.click('[data-entity="dr"] [data-date="2026-10-10"]')
+    expect((await attr('[data-entity="dr"]', 'data-start')) === '2026-10-10' && (await attr('[data-entity="dr"]', 'data-end')) === '2026-10-14', 'range not swapped/stored')
+    expect((await page.inputValue('[data-entity="dr"] [data-part="field"]')) === '2026-10-10 → 2026-10-14', 'field text')
+    await page.click('[data-entity="dr"] [data-part="trigger"]')
+    expect((await attr('[data-entity="dr"] [data-date="2026-10-12"]', 'data-in-range')) === 'true', 'in-range day not marked')
+    await page.keyboard.press('Escape')
+    const l = await log()
+    expect(count(l, 'dr.changed') === 1 && l.includes('dr.changed(value=2026-10-10..2026-10-14)'), l)
   })
   await check('radioGroup: pick fires changed once', async () => {
     await clearLog()
@@ -236,13 +252,14 @@ try {
     await page.click('[data-entity="methods"]')
     await page.waitForTimeout(150)
     expect((await page.inputValue('[data-entity="dp"] [data-part="field"]')) === '2026-12-25', 'dp.setValue')
+    expect((await attr('[data-entity="dr"]', 'data-start')) === '2026-11-03', 'dr.setValue swaps')
     expect((await page.isChecked('[data-entity="rg"] input[value="c"]')), 'rg.setValue')
     expect((await attr('[data-entity="pg"]', 'data-page')) === '5', 'pg.setPage')
     expect((await attr('[data-entity="cr"]', 'data-index')) === '2', 'cr.goTo')
     expect((await attr('[data-entity="cpk"]', 'data-value')) === '#123456', 'cpk.setValue')
     expect(await page.isVisible('[data-entity="cl-body"]'), 'cl.open')
     const l = await log()
-    for (const ev of ['dp.changed', 'rg.changed', 'pg.changed', 'cr.changed', 'cpk.changed', 'cl.opened']) {
+    for (const ev of ['dp.changed', 'dr.changed', 'rg.changed', 'pg.changed', 'cr.changed', 'cpk.changed', 'cl.opened']) {
       expect(count(l, ev) === 1, `${ev} fired ${count(l, ev)}× — ${l}`)
     }
   })

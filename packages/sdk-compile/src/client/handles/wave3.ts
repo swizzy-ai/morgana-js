@@ -30,6 +30,25 @@ const datePicker = (ctx: HandleCtx) => ({
   isOpen: () => ctx.el?.getAttribute('data-open') === 'true',
 })
 
+const dateRange = (ctx: HandleCtx) => ({
+  getValue: () => ({ start: ctx.el?.getAttribute('data-start') ?? '', end: ctx.el?.getAttribute('data-end') ?? '' }),
+  /** Set both ends (`YYYY-MM-DD`); swapped if reversed. Emits `changed` once. */
+  setValue: (start: string, end: string) => {
+    const out = call<{ start: string; end: string }>(ctx, 'drSet', start, end) ?? { start: '', end: '' }
+    ctx.meta.props['start'] = out.start
+    ctx.meta.props['end'] = out.end
+    return out
+  },
+  clear: () => {
+    call(ctx, 'drSet', '', '', false)
+    ctx.meta.props['start'] = ''
+    ctx.meta.props['end'] = ''
+  },
+  open: () => call(ctx, 'dpOpen'),
+  close: () => call(ctx, 'dpClose'),
+  isOpen: () => ctx.el?.getAttribute('data-open') === 'true',
+})
+
 const radioGroup = (ctx: HandleCtx) => ({
   getValue: () => ctx.el?.getAttribute('data-value') ?? String(ctx.getProp('value') ?? ''),
   setValue: (v: string) => {
@@ -127,6 +146,7 @@ const commandPalette = (ctx: HandleCtx) => ({
 
 const BY_KIND: Record<string, (ctx: HandleCtx) => Record<string, unknown>> = {
   datePicker,
+  dateRange,
   radioGroup,
   pagination,
   collapsible,
