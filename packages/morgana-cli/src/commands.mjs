@@ -176,24 +176,6 @@ export const COMMANDS = {
   },
 
   desktop: {
-    describe: 'open the desktop app — compiles, boots the host, opens the window',
-    usage: 'morgana desktop [--dir <path>] [--port <n>]',
-    flags: {
-      ...MINIFY_FLAGS,
-      port: { type: 'string', short: 'P', describe: 'port (default 4317, or $PORT)' },
-      dir: { type: 'string', short: 'd', describe: 'project directory' },
-    },
-    async run(args, { str }) {
-      const { desktop } = await import('./commands/desktop.mjs')
-      await desktop({
-        dir: str(args, 'dir') || process.cwd(),
-        port: Number(str(args, 'port') || process.env.PORT || 4317),
-        minify: minifyRequested(args),
-      })
-    },
-  },
-
-  desktop: {
     describe: 'run or package the installed desktop app',
     usage: 'morgana desktop [dev|package] [--dir <path>] [--port <n>]',
     flags: {
