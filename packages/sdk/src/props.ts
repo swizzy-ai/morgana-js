@@ -14,7 +14,7 @@
 import type { Dim, GridSpec, OverflowToken } from './layout'
 
 /** StyleResolver layout tokens (container direction). */
-export const LAYOUT_TOKENS = ['col', 'row', 'grid', 'stacked', 'none', 'horizontal', 'vertical', 'h', 'v'] as const
+export const LAYOUT_TOKENS = ['col', 'column', 'row', 'grid', 'stacked', 'none', 'horizontal', 'vertical', 'h', 'v'] as const
 export type LayoutToken = (typeof LAYOUT_TOKENS)[number]
 /** StyleResolver align tokens (cross-axis). */
 export const ALIGN_TOKENS = ['start', 'center', 'end', 'stretch', 'baseline', 'left', 'right'] as const

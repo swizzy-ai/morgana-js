@@ -93,6 +93,8 @@ export function metaFromDefinition(def: unknown, where: string): ObjectMeta {
   const methods = section('methods')
   const jobs = section('jobs')
   const computed = section('computed')
+  const on = section('on')
+  for (const [k, v] of Object.entries(on)) if (!isFn(v)) fail(`on['${k}'] must be a function (self, data) => …`)
   for (const [k, v] of Object.entries(methods)) if (!isFn(v)) fail(`methods.${k} must be a function (or async function* to stream)`)
   for (const [k, v] of Object.entries(jobs)) if (!isFn(v)) fail(`jobs.${k} must be a function`)
   for (const [k, v] of Object.entries(computed)) if (!isFn(v)) fail(`computed.${k} must be a function of state`)
@@ -121,6 +123,7 @@ export function metaFromDefinition(def: unknown, where: string): ObjectMeta {
     computed: Object.keys(computed),
     access: section('access') as Record<string, AccessRule>,
     hasOnCreate: isFn(d['onCreate']),
+    ...(Object.keys(on).length ? { on: Object.keys(on) } : {}),
   }
   const errors = validateObjectMeta(meta)
   if (errors.length) fail(errors.join('; '))

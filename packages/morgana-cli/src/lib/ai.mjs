@@ -117,6 +117,26 @@ const NOT_BUILT =
   '@morgana/agents is not built. Run: pnpm --filter @morgana/agents run build'
 
 /**
+ * `@morgana/wizard`, loaded on demand for the same reason `@morgana/agents` is:
+ * it ships as `dist`, so a fresh checkout may not have built it, and that must
+ * refuse `ctx.ai.wizard` by name rather than stop `morgana dev` at startup.
+ */
+let wizardModule = null
+let wizardError = null
+async function loadWizard() {
+  if (wizardModule || wizardError) return wizardModule
+  try {
+    wizardModule = await import('@morgana/wizard')
+  } catch (err) {
+    wizardError = err
+  }
+  return wizardModule
+}
+
+const WIZARD_NOT_BUILT =
+  '@morgana/wizard is not built. Run: pnpm --filter @morgana/wizard run build'
+
+/**
  * POST a chat request to the Morgana route and read the text back.
  *
  * The plain generation path goes to the route directly rather than through the
@@ -206,6 +226,7 @@ function refusing(what, reason) {
 
 const AGENT_METHODS = ['create', 'get', 'list', 'has', 'remove']
 const TOOL_METHODS = ['register', 'get', 'list', 'has', 'remove']
+const WIZARD_METHODS = ['run', 'resume', 'approve', 'deny', 'get', 'list', 'has', 'remove']
 
 /**
  * Build the local `ctx.ai`.
@@ -284,6 +305,31 @@ export async function buildAi({ enabledActions, runAction, dataDir, channels, lo
     })
   }
 
+  // `ctx.ai.wizard` and `ctx.ai.createWorkflow` — durable runs. The engine runs
+  // here, in-process, because a local action is not sandboxed; only the model
+  // call and the run registry are shared with the cloud, and both go through
+  // the same `generateText` and a file store shaped like the worker's KV.
+  //
+  // Built whether or not a provider is configured: a wizard whose steps are all
+  // compute/approval needs no model, and the cloud builds the service
+  // unconditionally too. A step that does call the model reaches `generateText`,
+  // which refuses by name when there is no provider — the failure lands on the
+  // step that needs it, not on the whole surface.
+  const wizardLib = await loadWizard()
+  const wizard = wizardLib
+    ? wizardLib.buildWizardService({
+        generateText,
+        generateObject,
+        store: fileStore(path.join(dataDir, 'wizards.json')),
+        prefix: 'wizards:local:default',
+      })
+    : refusing(WIZARD_METHODS, `ctx.ai.wizard is unavailable — ${WIZARD_NOT_BUILT}`)
+  const createWorkflow = wizardLib
+    ? (options) => wizardLib.createWorkflow({ generateText }, options)
+    : () => {
+        throw new Error(WIZARD_NOT_BUILT)
+      }
+
   return {
     models: { text: DEFAULT_TEXT_MODEL, vision: DEFAULT_VISION_MODEL },
     generateText,
@@ -291,5 +337,7 @@ export async function buildAi({ enabledActions, runAction, dataDir, channels, lo
     text: async (opts) => generateText({ ...opts, maxTokens: undefined }),
     agents: surface.agents,
     tools: surface.tools,
+    wizard,
+    createWorkflow,
   }
 }

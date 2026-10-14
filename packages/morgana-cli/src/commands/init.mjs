@@ -16,6 +16,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { say, row, bold, green, dim, warn } from '../ui.mjs'
+import { VERSION } from '../version.mjs'
 
 function writeFile(file, contents) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -114,14 +115,16 @@ const packageJson = (name) => `${JSON.stringify(
       dev: 'morgana dev',
       deploy: 'morgana deploy',
     },
+    // The Morgana packages release in lockstep, so the CLI's own version is the
+    // right range for all three.
     dependencies: {
-      '@morgana/sdk': '^0.3.0',
+      '@morgana/sdk': `^${VERSION}`,
     },
     // The CLI is a project dependency so `npm run dev` works without a
     // global install — and always matches this project's compiler.
     devDependencies: {
-      '@morgana/cli': '^0.1.0',
-      '@morgana/sdk-compile': '^0.1.0',
+      '@morgana/cli': `^${VERSION}`,
+      '@morgana/sdk-compile': `^${VERSION}`,
     },
   },
   null,

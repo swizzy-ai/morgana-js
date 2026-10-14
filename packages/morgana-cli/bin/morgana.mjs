@@ -17,8 +17,7 @@ import { parseArgs, str, bool, positional, UsageError } from '../src/args.mjs'
 import { say, warn, dim, bold, cyan, red } from '../src/ui.mjs'
 import { COMMANDS } from '../src/commands.mjs'
 import { WORKER_COMMANDS } from '../src/worker-commands.mjs'
-
-const VERSION = '0.1.0'
+import { VERSION } from '../src/version.mjs'
 
 /** One table, assembled from both halves, in a deliberate order for `--help`. */
 const ALL = { ...COMMANDS, ...WORKER_COMMANDS }

@@ -50,4 +50,26 @@ describe('server object types', () => {
     expect(typeof use).toBe('function')
     expect(room.name).toBe('chat-room')
   })
+
+  it('types on reactions from the collections and state', () => {
+    const room = defineServerObject({
+      name: 'flagged-room',
+      state: { hasUnread: false, count: 0 },
+      collections: { messages: { columns: [{ name: 'text', type: 'string' }] } },
+      on: {
+        'messages.added': (self, row) => {
+          const id: string = row.id
+          self.set({ hasUnread: true, count: self.state.count + 1 })
+          void id
+        },
+        'state.count': (_self, change) => {
+          const v: number = change.value
+          void v
+        },
+        typing: (_self, data) => void data,
+      },
+      methods: {},
+    })
+    expect(Object.keys(room.on ?? {})).toEqual(['messages.added', 'state.count', 'typing'])
+  })
 })

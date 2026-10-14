@@ -288,7 +288,15 @@ async function main({ base, projectId, envName, bearer, dist }) {
   }
   const apis = readJson(dist, 'server/apis.json', [])
   const stores = readJson(dist, 'server/stores.json', [])
-  const triggers = readJson(dist, 'server/triggers.json', []).map(adaptTrigger)
+  const allTriggers = readJson(dist, 'server/triggers.json', [])
+  // on: 'object:<type>[/<name>].<event>' — delivered by the instance itself, so
+  // they ship with the server objects rather than the generic trigger set.
+  const isObjectTrigger = (t) => typeof t.event === 'string' && t.event.startsWith('object:')
+  const serverObjectTriggers = allTriggers.filter((t) => isObjectTrigger(t) && t.enabled !== false).map((t) => {
+    const m = /^object:([a-z][a-z0-9-]*)(?:\/([^.\s]+))?\.(.+)$/.exec(t.event)
+    return m ? { type: m[1], name: m[2] ? decodeURIComponent(m[2]) : null, event: m[3], action: t.run } : null
+  }).filter(Boolean)
+  const triggers = allTriggers.filter((t) => !isObjectTrigger(t)).map(adaptTrigger)
   // Server objects (defineServerObject): definition + bundled code each.
   const serverObjects = readJson(dist, 'server/objects.json', []).map((meta) => ({
     meta,
@@ -367,6 +375,7 @@ async function main({ base, projectId, envName, bearer, dist }) {
     apis,
     manifest,
     serverObjects,
+    serverObjectTriggers,
     assets: collectAssets(dist),
   })
   say(`deploy   ${deployRes.success ? 'ok' : 'FAILED'}`)

@@ -311,6 +311,8 @@ export async function makeHostContext(opts) {
     // only when a caller builds a context with no auth store (unit tests).
     // Server objects for this invocation (built by the host, carried here).
     ...(opts.objects ? { objects: opts.objects } : {}),
+    // The instance whose event triggered this action (on: 'object:…').
+    ...(opts.object ? { object: opts.object } : {}),
     ...(opts.auth
       ? {
           auth: buildServerAuth({

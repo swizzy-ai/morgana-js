@@ -37,7 +37,48 @@ export interface ObjectMeta {
   computed: string[]
   access: Record<string, AccessRule>
   hasOnCreate: boolean
+  /**
+   * Keys of the definition's `on` section — reactions run inside the call
+   * that caused them: `<collection>.added|updated|removed`, `state.<key>`, or
+   * a custom event name.
+   */
+  on?: string[]
 }
+
+/** Events an instance announces about itself (triggers and subscribers). */
+export const LIFECYCLE_EVENTS = ['created', 'removed', 'state'] as const
+export const RECORD_VERBS = ['added', 'updated', 'removed'] as const
+
+/** A deployed `on: 'object:<type>[/<name>].<event>'` server trigger. */
+export interface ObjectTrigger {
+  type: string
+  /** One instance, or every instance of the type when absent. */
+  name?: string | null
+  event: string
+  action: string
+}
+
+/** Parse `object:<type>[/<name>].<event>`; null when it is not that shape. */
+export function parseObjectSelector(selector: string): { type: string; name: string | null; event: string } | null {
+  const m = /^object:([a-z][a-z0-9-]*)(?:\/([^.\s]+))?\.(.+)$/.exec(String(selector).trim())
+  if (!m) return null
+  return { type: m[1]!, name: m[2] ? decodeURIComponent(m[2]) : null, event: m[3]! }
+}
+
+/** What is wrong with an object selector's event, given the type, or null. */
+export function objectEventProblem(meta: ObjectMeta, event: string): string | null {
+  if ((LIFECYCLE_EVENTS as readonly string[]).includes(event)) return null
+  const dot = event.indexOf('.')
+  if (dot < 0) return null // a custom event from self.emit — not knowable statically
+  const c = event.slice(0, dot)
+  const verb = event.slice(dot + 1)
+  if (!meta.collections[c]) return `"${meta.name}" has no collection "${c}" (it has: ${Object.keys(meta.collections).join(', ') || 'none'})`
+  if (!(RECORD_VERBS as readonly string[]).includes(verb)) return `"${c}.${verb}" — a collection event is ${c}.added, ${c}.updated or ${c}.removed`
+  return null
+}
+
+/** The `__jobs` entry kind that delivers a trigger (beside real jobs). */
+export const TRIGGER_JOB_PREFIX = '__trigger:'
 
 export const OBJECT_NAME_RE = /^[a-z][a-z0-9-]{0,62}$/
 /** Instance names: what you create with. URL- and key-safe. */
@@ -116,6 +157,11 @@ export interface PendingEvent {
   event: string
   data: unknown
 }
+interface Reaction {
+  event: string
+  data: unknown
+  previous?: unknown
+}
 export interface PendingSchedule {
   at: number
   method: string
@@ -135,6 +181,12 @@ export class Journal {
   events: PendingEvent[] = []
   schedules: PendingSchedule[] = []
   jobs: PendingJob[] = []
+  /** For `on` reactions: queued until the member returns, then run in the same call. */
+  private reactions: Reaction[] = []
+  /** Set by the host for trigger delivery: who this instance is and what listens. */
+  outbox: { name: string; triggers: ObjectTrigger[]; created?: boolean } | null = null
+  /** How many trigger deliveries the last commit queued. */
+  triggersQueued = 0
 
   constructor(
     private sql: ObjectSql,
@@ -151,8 +203,30 @@ export class Journal {
     return name
   }
 
+  private reacts(event: string): boolean {
+    return Boolean(this.meta.on?.includes(event))
+  }
+
+  /** A record write: announced to subscribers and triggers, and to `on`. */
+  private recordEvent(event: string, data: unknown, previous?: unknown): void {
+    this.events.push({ event, data: structuredClone(data) })
+    if (this.reacts(event)) this.reactions.push({ event, data: structuredClone(data), previous: structuredClone(previous) })
+  }
+
+  /** The reactions queued so far (and clears them). */
+  takeReactions(): Reaction[] {
+    const out = this.reactions
+    this.reactions = []
+    return out
+  }
+
   setState(patch: Record<string, unknown>): Record<string, unknown> {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('self.set(patch) needs an object')
+    for (const [k, v] of Object.entries(patch)) {
+      if (this.reacts(`state.${k}`) && JSON.stringify(v) !== JSON.stringify(this.state[k])) {
+        this.reactions.push({ event: `state.${k}`, data: { value: structuredClone(v), previous: structuredClone(this.state[k]) } })
+      }
+    }
     this.state = { ...this.state, ...structuredClone(patch) }
     this.stateChanged = true
     return this.state
@@ -179,11 +253,15 @@ export class Journal {
   add(collection: string, record: Record<string, unknown>): Row {
     const c = this.coll(collection)
     assertDeclaredFields(collection, this.meta.collections[c], record)
-    const id = typeof record['id'] === 'string' && record['id'] ? String(record['id']) : newId()
+    const given = typeof record['id'] === 'string' && record['id'] ? String(record['id']) : null
+    const id = given ?? newId()
+    // Only a caller-chosen id can already exist.
+    const previous = given ? this.get(c, id) : null
     const now = Date.now()
-    const row: Row = { ...structuredClone(record), id, createdAt: (record['createdAt'] as number) ?? now, updatedAt: now }
+    const row: Row = { ...structuredClone(record), id, createdAt: (previous?.['createdAt'] as number) ?? (record['createdAt'] as number) ?? now, updatedAt: now }
     this.pending(c).set(id, row)
-    this.seqs.set(`${c}:${id}`, nextSeq())
+    if (!previous) this.seqs.set(`${c}:${id}`, nextSeq())
+    this.recordEvent(previous ? `${c}.updated` : `${c}.added`, row, previous ?? undefined)
     return structuredClone(row)
   }
 
@@ -198,14 +276,16 @@ export class Journal {
     if (!current) return null
     const row: Row = { ...current, ...structuredClone(patch), id: current.id, updatedAt: Date.now() }
     this.pending(c).set(current.id, row)
+    this.recordEvent(`${c}.updated`, row, current)
     return structuredClone(row)
   }
 
   remove(collection: string, id: string): boolean {
     const c = this.coll(collection)
-    const existed = this.get(c, String(id)) !== null
+    const previous = this.get(c, String(id))
     this.pending(c).set(String(id), null)
-    return existed
+    if (previous) this.recordEvent(`${c}.removed`, previous)
+    return previous !== null
   }
 
   query(collection: string, opts: QueryOptions = {}): { items: Row[]; total: number } {
@@ -258,8 +338,14 @@ export class Journal {
   }
 
   emit(event: string, data: unknown): void {
-    if (typeof event !== 'string' || !event || event.startsWith('__')) throw new Error('self.emit(event, data) needs a name not starting with "__"')
+    if (typeof event !== 'string' || !event || event.startsWith('__') || event.includes('.')) {
+      throw new Error('self.emit(event, data) needs a name without "." and not starting with "__" (dotted names are record events)')
+    }
+    if ((LIFECYCLE_EVENTS as readonly string[]).includes(event)) {
+      throw new Error(`self.emit: "${event}" is announced by the object itself — choose another name`)
+    }
     this.events.push({ event, data: structuredClone(data ?? null) })
+    if (this.reacts(event)) this.reactions.push({ event, data: structuredClone(data ?? null) })
   }
 
   schedule(when: number | string | Date, method: string, params: Record<string, unknown> = {}): void {
@@ -270,6 +356,21 @@ export class Journal {
   defer(job: string, params: Record<string, unknown> = {}): void {
     if (!this.meta.jobs.includes(job)) throw new Error(`self.defer: "${job}" is not a job of "${this.meta.name}"`)
     this.jobs.push({ id: newId(), job, params: structuredClone(params ?? {}) })
+  }
+
+  private pendingTriggers(): Array<{ action: string; payload: unknown }> {
+    if (!this.outbox?.triggers.length) return []
+    const { name, triggers } = this.outbox
+    const events: PendingEvent[] = [...this.events]
+    if (this.outbox.created) events.unshift({ event: 'created', data: structuredClone(this.state) })
+    if (this.stateChanged || this.outbox.created) events.push({ event: 'state', data: structuredClone(this.state) })
+    const out: Array<{ action: string; payload: unknown }> = []
+    for (const e of events) {
+      for (const t of matchTriggers(triggers, this.meta.name, name, e.event)) {
+        out.push({ action: t.action, payload: { event: triggerPayload(this.meta.name, name, e.event, e.data) } })
+      }
+    }
+    return out
   }
 
   /** Apply everything atomically (`computed` and the deferring caller ride along). */
@@ -296,7 +397,31 @@ export class Journal {
       for (const j of this.jobs) {
         this.sql.exec('INSERT INTO __jobs (id, at, job, params, caller) VALUES (?, ?, ?, ?, ?)', j.id, Date.now(), j.job, JSON.stringify(j.params), JSON.stringify(caller ?? null))
       }
+      // Triggers ride the same durable queue: written with the commit,
+      // delivered at least once — and never for a call that rolled back.
+      const queued = this.pendingTriggers()
+      this.triggersQueued = queued.length
+      for (const t of queued) {
+        this.sql.exec('INSERT INTO __jobs (id, at, job, params, caller) VALUES (?, ?, ?, ?, ?)', newId(), Date.now(), `${TRIGGER_JOB_PREFIX}${t.action}`, JSON.stringify(t.payload), JSON.stringify(caller ?? null))
+      }
     })
+  }
+}
+
+/** Which triggers match an event of this instance. */
+export function matchTriggers(triggers: ObjectTrigger[], type: string, name: string, event: string): ObjectTrigger[] {
+  return triggers.filter((t) => t.type === type && t.event === event && (t.name == null || t.name === name))
+}
+
+/** The descriptor a triggered action receives as `ctx.args.event`. */
+export function triggerPayload(type: string, name: string, event: string, data: unknown) {
+  return {
+    kind: `object:${type}.${event}`,
+    source: type,
+    event,
+    object: { type, instanceId: name, serverObject: true },
+    payload: data ?? null,
+    timestamp: new Date().toISOString(),
   }
 }
 
@@ -396,6 +521,19 @@ export function validateObjectMeta(meta: ObjectMeta): string[] {
   }
   for (const s of meta.streaming) {
     if (!meta.methods.includes(s)) errors.push(`object "${meta.name}": streaming "${s}" is not a method`)
+  }
+  for (const key of meta.on ?? []) {
+    if (key.startsWith('state.')) {
+      const k = key.slice('state.'.length)
+      if (!(k in (meta.state ?? {}))) errors.push(`object "${meta.name}": on "${key}" — "${k}" is not in its state`)
+      continue
+    }
+    if ((LIFECYCLE_EVENTS as readonly string[]).includes(key)) {
+      errors.push(`object "${meta.name}": on "${key}" — use onCreate, or an action with on: 'object:${meta.name}.${key}'`)
+      continue
+    }
+    const problem = objectEventProblem(meta, key)
+    if (problem) errors.push(`object "${meta.name}": on "${key}" — ${problem}`)
   }
   const reserved = new Set(['create', 'read', 'subscribe', 'list', 'remove'])
   for (const name of members) {

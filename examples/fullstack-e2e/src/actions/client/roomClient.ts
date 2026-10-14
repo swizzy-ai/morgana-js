@@ -30,3 +30,13 @@ export const roomAsk = defineClientAction({
     out.set('content', `${String(out.get('content'))}|done`)
   },
 })
+
+/** A client action on one instance's record event, over the page's live connection. */
+export const roomFeed = defineClientAction({
+  config: { on: 'object:chat-room/lobby.messages.added' },
+  handler: (ctx) => {
+    const row = (ctx.event.payload as { data: { text: string } }).data
+    const feed = ctx.ui.get('room-feed')!
+    feed.set('content', `${String(feed.get('content') ?? '')}(${row.text})`)
+  },
+})

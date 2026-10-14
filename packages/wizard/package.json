@@ -1,0 +1,64 @@
+{
+  "name": "@morgana/wizard",
+  "version": "0.5.0",
+  "type": "module",
+  "description": "Durable wizard/workflow engine for Morgana: fluent steps, signals, approvals, and checkpointed runs behind ctx.ai.wizard.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/wizard"
+  },
+  "homepage": "https://github.com/SwizzyAI/morgana-js/tree/main/packages/wizard#readme",
+  "bugs": {
+    "url": "https://github.com/SwizzyAI/morgana-js/issues"
+  },
+  "keywords": [
+    "morgana",
+    "wizard",
+    "workflow",
+    "llm",
+    "ai"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

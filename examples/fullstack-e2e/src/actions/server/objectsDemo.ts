@@ -9,6 +9,10 @@ export const objectsDemo = defineServerAction({
     if (op === 'remind') return room.remindSoon({ ms: Number(ctx.args.ms ?? 300) })
     if (op === 'summarize') return room.summarizeLater()
     if (op === 'state') return room.state()
+    if (op === 'close') {
+      await room.close()
+      return room.state()
+    }
     // Server code may call what the browser may not (remindSoon has no access rule).
     const msg = await room.post({ text: 'from an action' })
     const chunks: string[] = []

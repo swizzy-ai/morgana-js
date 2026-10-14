@@ -304,11 +304,65 @@ async function scenarios(c, label) {
     const s = await c.run('objectsDemo', { room: `job-${room}`, op: 'state' })
     expect(s.json?.data?.result?.summaries === 1, s.text)
   })
+  const until = async (fn, ms = 8000) => {
+    const t0 = Date.now()
+    let last
+    while (Date.now() - t0 < ms) {
+      last = await fn()
+      if (last.ok) return last
+      await new Promise((r) => setTimeout(r, 250))
+    }
+    return last
+  }
+  const reactRoom = `react-${room}`
+  let posted = null
+  await check('objects: on reactions commit with the call that caused them', async () => {
+    await c.request('POST', obj(), { body: { name: reactRoom, init: { title: 'R' } } })
+    const p = await c.request('POST', obj(`/${reactRoom}/call/post`), { body: { params: { text: 'flag me' } } })
+    expect(p.status === 200, p.text)
+    posted = p.json?.data?.result
+    const s = (await c.request('GET', obj(`/${reactRoom}`))).json?.data?.state
+    // 'messages.added' set the flag in the same commit as the message.
+    expect(s?.hasUnread === true && s?.unread === 1 && s?.count === 1, JSON.stringify(s))
+    const closed = await c.run('objectsDemo', { room: reactRoom, op: 'close' })
+    expect(closed.json?.data?.result?.closedNotices === 1, closed.text)
+  })
+  await check('objects: on: object:<type>.<record event> runs a server action with ctx.object', async () => {
+    const r = await until(async () => {
+      const s = (await c.request('GET', obj(`/${reactRoom}`))).json?.data?.state
+      return { ok: s?.triggered === 1 && s?.lastTriggered === posted?.id, s }
+    })
+    expect(r.ok, JSON.stringify(r.s))
+  })
+  await check('objects: on: object:<type>.created runs for a new instance', async () => {
+    const r = await until(async () => {
+      const s = (await c.request('GET', obj(`/${reactRoom}`))).json?.data?.state
+      return { ok: s?.welcomed === true, s }
+    })
+    expect(r.ok, JSON.stringify(r.s))
+  })
+
   await check('objects: list and remove', async () => {
     const l = await c.request('GET', obj())
     expect((l.json?.data?.items ?? []).some((i) => i.name === room), l.text)
     const missing = await c.request('GET', obj('/no-such-room'))
     expect(missing.status === 404, `missing ${missing.status}`)
+  })
+
+  // ── durable wizards ───────────────────────────────────────────────────────
+  // Two separate invocations, so a pass means the checkpoint reached storage
+  // and was read back, not merely that the engine ran in one process.
+  const wizId = `wiz-${Date.now()}`
+  await check('ctx.ai.wizard: a run parks at a gate and survives to be resumed', async () => {
+    const parked = await c.run('wizardDemo', { runId: wizId })
+    const p = parked.json?.data?.result
+    expect(p?.status === 'paused', `parked ${parked.text}`)
+    expect(p?.state?.prepared === 'yes', `prepared ${JSON.stringify(p?.state)}`)
+    expect(p?.state?.finished === undefined, `finished before approval ${JSON.stringify(p?.state)}`)
+    const done = await c.run('wizardDemo', { runId: wizId, decision: 'approve' })
+    const d = done.json?.data?.result
+    expect(d?.status === 'done', `done ${done.text}`)
+    expect(d?.state?.finished === 'yes', `finished ${JSON.stringify(d?.state)}`)
   })
 
   await check('unknown path is a 404', async () => {
@@ -359,6 +413,8 @@ async function browserScenario(base, hostRule) {
       expect(answer === 'from the browser |done', `answer ${answer}`)
       // The method emitted 'message'; the page's on('message') received it.
       await page.waitForFunction(() => (document.querySelector('[data-entity="room-events"]')?.textContent ?? '').includes('[from the browser]'), null, { timeout: 15000 })
+      // A client action bound to on: 'object:chat-room/lobby.messages.added'.
+      await page.waitForFunction(() => (document.querySelector('[data-entity="room-feed"]')?.textContent ?? '').includes('(from the browser)'), null, { timeout: 15000 })
     })
     await check('no page errors', async () => expect(!errors.length, errors.join('; ')))
   } finally {

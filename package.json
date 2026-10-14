@@ -8,7 +8,9 @@
     "test:sdk": "pnpm --filter @morgana/sdk test",
     "build:sdk": "pnpm --filter @morgana/sdk run build",
     "typecheck": "pnpm -r run typecheck",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "release": "node scripts/release.mjs",
+    "release:dry": "node scripts/release.mjs --dry-run"
   },
   "packageManager": "pnpm@11.13.0",
   "devDependencies": {

@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import http from 'node:http'
 
 import { buildAi, extractJson, fileStore } from '../ai.mjs'
+import { createWizard } from '@morgana/wizard'
 
 /**
  * The local `ctx.ai`, against a stand-in for the cloud LLM route.
@@ -140,6 +141,48 @@ describe('local ctx.ai', () => {
       await expect(ai.generateText({ instructions: 'hi' })).rejects.toThrow(/MORGANA_URL/)
       await expect(ai.generateObject({ instructions: 'hi' })).rejects.toThrow(/MORGANA_URL/)
     })
+  })
+
+  it('runs a model-free wizard with no provider configured', async () => {
+    // A wizard of compute/approval steps needs no model, so `ctx.ai.wizard`
+    // cannot refuse merely because no provider is set — the cloud builds the
+    // service unconditionally too. Only a step that calls the model fails, and
+    // it fails on that step.
+    await withEnv({ MORGANA_URL: '' }, async () => {
+      const ai = await buildAi({ enabledActions: [], runAction: async () => null, dataDir: tempDir(), channels: noChannels, log: () => {} })
+      const w = ai.createWorkflow()
+      w.addComputeStep({ id: 'prepare', handler: (c) => {
+        c.setState((s) => ({ ...s, prepared: 'yes' }))
+        return w.signal.skip
+      } })
+      const result = await ai.wizard.run('model-free', w)
+      expect(result.status).toBe('done')
+      expect(result.state.prepared).toBe('yes')
+    })
+  })
+
+  it('runs a durable wizard and keeps its run across a fresh host', async () => {
+    const cloud = await cloudLlm(() => ({ text: 'hello there', tool_calls: [] }))
+    const dataDir = tempDir()
+    try {
+      await withEnv({ MORGANA_URL: cloud.url }, async () => {
+        const make = () =>
+          buildAi({ enabledActions: [], runAction: async () => null, dataDir, channels: noChannels, log: () => {} })
+
+        const ai = await make()
+        const w = createWizard(ai).addTextStep({ id: 'greet', instruction: 'greet' })
+        const result = await ai.wizard.run('w1', w)
+        expect(result.status).toBe('done')
+        expect(result.state.greet).toBe('hello there')
+
+        // A restart is a new host reading the same file: the run has to survive
+        // it, or a wizard that parks at a gate could never be continued.
+        const second = await make()
+        expect(await second.wizard.has('w1')).toBe(true)
+      })
+    } finally {
+      cloud.close()
+    }
   })
 
   it('generates text through the cloud route', async () => {

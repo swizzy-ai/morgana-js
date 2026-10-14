@@ -3,6 +3,7 @@
  */
 import { INTERACTION_EVENTS } from '@morgana/sdk';
 import type { SdkActionMeta } from './extract';
+import { objectEventProblem, parseObjectSelector, type ObjectMeta } from './server-host/objects';
 import {
   canonicalEvent,
   isBackendEvent,
@@ -77,6 +78,7 @@ export function deriveRoutes(
   hooks: Array<{ on: string | string[]; run: string | string[]; when?: Record<string, unknown>; auth?: 'public' | 'member'; cors?: unknown; enabled?: boolean }>,
   graph: BindingGraph,
   errors: string[] = [],
+  objectsCheck: { objects: ObjectMeta[]; errors: string[] } = { objects: [], errors: [] },
 ): { apis: HttpRoute[]; triggers: Trigger[]; bindings: Binding[] } {
   const apis: HttpRoute[] = []
   const triggers: Trigger[] = []
@@ -85,9 +87,40 @@ export function deriveRoutes(
   const seenTrigger = new Set<string>()
   const seenBinding = new Set<string>()
 
+  const laneOf = new Map(actions.map((a) => [a.name, a.lane]))
   const pushOn = (actionName: string, on: string, when?: Record<string, unknown>, auth?: 'public' | 'member', cors?: unknown, enabled?: boolean) => {
     const t = on.trim()
     if (t === 'compile' || t === '') return
+    // Server objects: `object:<type>[/<name>].<event>`. A server action gets a
+    // durable trigger; a client action listens to one instance over the
+    // page's live connection, so it must name it.
+    if (/^object:/i.test(t)) {
+      const fail = (msg: string) => objectsCheck.errors.push(`action "${actionName}": on '${t}' — ${msg}`)
+      const sel = parseObjectSelector(t)
+      if (!sel) return fail('write object:<type>.<event> or object:<type>/<name>.<event>')
+      const meta = objectsCheck.objects.find((m) => m.name === sel.type)
+      if (!meta) {
+        const known = objectsCheck.objects.map((m) => m.name).join(', ')
+        return fail(`there is no server object "${sel.type}"${known ? ` (there is: ${known})` : ''}`)
+      }
+      const problem = objectEventProblem(meta, sel.event)
+      if (problem) return fail(problem)
+      if (laneOf.get(actionName) === 'client') {
+        if (!sel.name) return fail(`a client action listens to one instance — object:${sel.type}/<name>.${sel.event}`)
+        const key = `${t} -> ${actionName}`
+        if (!seenBinding.has(key)) {
+          seenBinding.add(key)
+          bindings.push({ event: t, action: actionName })
+        }
+        return
+      }
+      const name = `${actionName}:${t}`
+      if (!seenTrigger.has(name)) {
+        seenTrigger.add(name)
+        triggers.push({ name, event: t, run: actionName, when, enabled })
+      }
+      return
+    }
     const http = HTTP_RE.exec(t)
     if (http) {
       const key = `${http[1]!.toUpperCase()} ${http[2]}`

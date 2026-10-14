@@ -139,3 +139,59 @@ describe('dispatch behavior parity', () => {
     expect(log[199]?.name).toBe('e249')
   })
 })
+
+describe('object events: a client action on one live instance', () => {
+  function loadObjectBus(bindings: Array<Record<string, string>>) {
+    const src = busPart(JSON.stringify(bindings)).join('\n')
+    const runs: Run[] = []
+    const subs: Array<{ type: string; name: string; fn: (e: string, d: unknown) => void }> = []
+    const factory = new Function(
+      'window',
+      'console',
+      'pathOverlaps',
+      `${src}\nreturn { dispatchPageEvent };`,
+    ) as (w: unknown, c: unknown, p: unknown) => { dispatchPageEvent: (event: string, target: string, el: unknown, raw: unknown) => void }
+    const api = factory(
+      {
+        __morgana_run: (action: string, _p: unknown, ev: Run['ev']) => runs.push({ action, ev }),
+        __morgana_objectEvents: (type: string, name: string, fn: (e: string, d: unknown) => void) => subs.push({ type, name, fn }),
+      },
+      { error: () => {} },
+      () => false,
+    )
+    return { api, runs, subs }
+  }
+
+  it('subscribes once per instance, fanning every matching selector onto the bus', () => {
+    const { runs, subs } = loadObjectBus([
+      { event: 'object:chat-room/lobby.messages.added', action: 'roomFeed' },
+      { event: 'object:chat-room/lobby.messages.added', action: 'alsoFeed' },
+      { event: 'object:chat-room/lobby.messages.removed', action: 'roomPurge' },
+    ])
+    // One subscription for the instance, even across two distinct events.
+    expect(subs).toHaveLength(1)
+    expect(subs[0]).toMatchObject({ type: 'chat-room', name: 'lobby' })
+
+    subs[0]!.fn('messages.added', { text: 'hi' })
+    expect(runs.map((r) => r.action).sort()).toEqual(['alsoFeed', 'roomFeed'])
+    expect(runs[0]!.ev.name).toBe('object:chat-room/lobby.messages.added')
+    expect(runs[0]!.ev.origin).toBe('lobby')
+    expect(runs[0]!.ev.payload).toEqual({ type: 'chat-room', name: 'lobby', event: 'messages.added', data: { text: 'hi' } })
+
+    runs.length = 0
+    subs[0]!.fn('messages.removed', null)
+    expect(runs.map((r) => r.action)).toEqual(['roomPurge'])
+  })
+
+  it('ships no subscription code when no client action listens to an object', () => {
+    const { subs } = loadObjectBus([{ event: 'clicked', action: 'a' }])
+    expect(subs).toEqual([])
+  })
+
+  it('does nothing when the page has no object transport', () => {
+    const src = busPart(JSON.stringify([{ event: 'object:chat-room/lobby.messages.added', action: 'roomFeed' }])).join('\n')
+    expect(() =>
+      new Function('window', 'console', 'pathOverlaps', src)({ __morgana_run: () => {} }, { error: () => {} }, () => false),
+    ).not.toThrow()
+  })
+})

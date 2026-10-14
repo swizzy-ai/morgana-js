@@ -1,6 +1,6 @@
 {
   "name": "@morgana/sdk-compile",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "SDK-first compiler: compile-lane actions build an IR, the rest ship to their lane. No morgana-core runtime dependency.",
   "license": "Apache-2.0",
@@ -44,7 +44,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/__tests__"
   ],
   "sideEffects": false,
   "engines": {
@@ -54,7 +55,8 @@
     "build": "tsup",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@morgana/sdk": "workspace:^",

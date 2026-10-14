@@ -13,7 +13,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { DatabaseSync } from 'node:sqlite'
+import { createRequire } from 'node:module'
 import {
   accessRefusal,
   assertInstanceName,
@@ -28,6 +28,10 @@ import {
   Journal,
   makeObjectsApi,
   makeSelfHost,
+  matchTriggers,
+  parseObjectSelector,
+  TRIGGER_JOB_PREFIX,
+  triggerPayload,
   nextScheduledAt,
   readInstance,
   readSnapshot,
@@ -36,6 +40,10 @@ import {
   SerialQueue,
   takeDue,
 } from '@morgana/sdk-compile/server-host'
+
+// Not `import … from 'node:sqlite'`: the bundler strips the scheme and the CLI
+// dies on `from 'sqlite'`. See the note in store.mjs.
+const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite')
 
 const { __mgSelf, __mgRun } = new Function(`${SELF_BUILDER_SRC}\n${RUN_MEMBER_SRC}\nreturn { __mgSelf, __mgRun }`)()
 
@@ -75,14 +83,26 @@ class HttpError extends Error {
  * @param {string} opts.dist
  * @param {string} opts.dataDir
  * @param {(caller: unknown) => Promise<Record<string, unknown>>} opts.makeCtx  the server ctx an object method sees
+ * @param {(action: string, params: unknown, caller: unknown) => Promise<unknown>} [opts.runAction]  runs a triggered action
  */
-export async function createObjectsHost({ dist, dataDir, makeCtx }) {
+export async function createObjectsHost({ dist, dataDir, makeCtx, runAction }) {
   let metas = []
   try {
     metas = JSON.parse(fs.readFileSync(path.join(dist, 'server', 'objects.json'), 'utf8'))
   } catch {
     metas = []
   }
+  // `on: 'object:<type>[/<name>].<event>'` server triggers, from the build.
+  let triggers = []
+  try {
+    triggers = JSON.parse(fs.readFileSync(path.join(dist, 'server', 'triggers.json'), 'utf8'))
+      .filter((t) => typeof t.event === 'string' && t.event.startsWith('object:') && t.enabled !== false)
+      .map((t) => ({ ...parseObjectSelector(t.event), action: t.run }))
+      .filter((t) => t.type)
+  } catch {
+    triggers = []
+  }
+  const callOpts = (type) => ({ triggers: triggers.filter((t) => t.type === type) })
   const byType = new Map()
   for (const meta of metas) {
     const mod = await import(`${pathToFileURL(path.join(dist, 'server', 'objects', `${meta.name}.js`)).href}?t=${Date.now()}`)
@@ -149,7 +169,7 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
     await queue
       .run(k, async () => {
         for (const due of takeDue(storage(type, name))) {
-          await settle(type, name, await callMethod(storage(type, name), typeOf(type).meta, name, due.method, due.params, null, invokeFor(type, null)), null)
+          await settle(type, name, await callMethod(storage(type, name), typeOf(type).meta, name, due.method, due.params, null, invokeFor(type, null), undefined, callOpts(type)), null)
         }
       })
       .catch((err) => console.error(`[morgana] ${type} "${name}" scheduled run failed:`, err?.message ?? err))
@@ -158,7 +178,10 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
       dueJobs(sql).map(async (j) => {
         claimJob(sql, j.id)
         try {
-          await runJob(type, name, j.job, j.params, j.caller)
+          if (j.job.startsWith(TRIGGER_JOB_PREFIX)) {
+            // A trigger queued by a commit: the bound action, as its caller.
+            if (runAction) await runAction(j.job.slice(TRIGGER_JOB_PREFIX.length), j.params, j.caller)
+          } else await runJob(type, name, j.job, j.params, j.caller)
           finishJob(sql, j.id)
         } catch (err) {
           const dropped = failJob(sql, j.id)
@@ -184,7 +207,7 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
   async function settle(type, name, out) {
     for (const e of out.events) publish(type, name, e.event, e.data)
     if (out.stateChanged) publish(type, name, '__state', { state: out.state, computed: out.computed })
-    if (out.scheduled || out.jobs.length) arm(type, name)
+    if (out.scheduled || out.jobs.length || out.triggers) arm(type, name)
     return out
   }
 
@@ -197,9 +220,10 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
         if (ifMissing) return
         throw new HttpError(`${type} "${name}" already exists`, 409)
       }
-      const out = await createInstance(sql, meta, name, init ?? {}, caller, invokeFor(type, caller))
+      const out = await createInstance(sql, meta, name, init ?? {}, caller, invokeFor(type, caller), callOpts(type))
       index.exec('INSERT OR REPLACE INTO instances (type, name, createdAt) VALUES (?, ?, ?)', type, name, Date.now())
       await settle(type, name, out, caller)
+      publish(type, name, 'created', out.state)
       // Subscribers may have connected before the instance existed: give
       // them its first state.
       if (!out.stateChanged) publish(type, name, '__state', readSnapshot(sql, meta))
@@ -209,7 +233,7 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
   async function call(type, name, method, params, caller, onChunk) {
     const { meta } = typeOf(type)
     return queue.run(key(type, name), async () => {
-      const out = await callMethod(storage(type, name), meta, name, method, params ?? {}, caller, invokeFor(type, caller), onChunk)
+      const out = await callMethod(storage(type, name), meta, name, method, params ?? {}, caller, invokeFor(type, caller), onChunk, callOpts(type))
       await settle(type, name, out, caller)
       return out.result
     })
@@ -221,7 +245,15 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
       const existed = destroyInstance(storage(type, name), meta)
       index.exec('DELETE FROM instances WHERE type = ? AND name = ?', type, name)
       clearTimeout(timers.get(key(type, name)))
-      publish(type, name, '__removed', {})
+      publish(type, name, 'removed', {})
+      // The instance's queue is gone with it, so `removed` triggers go now.
+      for (const t of matchTriggers(triggers, type, name, 'removed')) {
+        if (runAction) {
+          void runAction(t.action, { event: triggerPayload(type, name, 'removed', null) }, null).catch((err) =>
+            console.error(`[morgana] trigger ${t.action} failed:`, err?.message ?? err),
+          )
+        }
+      }
       return existed
     })
   }
@@ -271,6 +303,12 @@ export async function createObjectsHost({ dist, dataDir, makeCtx }) {
     browserMeta,
     /** ctx.objects for server code running as `caller`. */
     api: (caller) => makeObjectsApi(browserMeta, serverTransport(caller)),
+    /** `ctx.object` for an action an object event triggered, else undefined. */
+    instanceFor(event, caller) {
+      const o = event && typeof event === 'object' ? event.object : null
+      if (!o || !o.serverObject || !byType.has(o.type)) return undefined
+      return makeObjectsApi(browserMeta, serverTransport(caller))[camel(o.type)].get(String(o.instanceId))
+    },
     /**
      * The browser surface — `/api/server-objects/...`. Returns false when the path
      * is not an objects route. Access is checked for every operation.

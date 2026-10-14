@@ -13,9 +13,10 @@
  *   Do not re-add them to `ServerApi`.
  */
 
-import type { ObjectsApi } from '../objects'
+import type { ObjectInstance, ObjectsApi } from '../objects'
 import type { ActionContract, ActionInput, ActionOutput, ActionName, AppEventName, AppEventPayload, EventScope, RunOptions } from '../contracts'
 import type { AgentsHandle, ToolsHandle } from '../ai-agents'
+import type { WizardsHandle, WizardBuilder } from '../ai-wizard'
 import type { BaseContext } from './base'
 import type { QueueHandle } from '../data'
 import type { ObjectHandle } from '../handles'
@@ -284,6 +285,10 @@ export interface AiHandle {
   agents: AgentsHandle
   /** Tools an agent may call. A tool's body is the server action of that name. */
   tools: ToolsHandle
+  /** Durable wizard runs. A wizard is defined in code; its runs are stored. */
+  wizard: WizardsHandle
+  /** Build a wizard to hand to `wizard.run`/`resume`. The package's `createWorkflow`. */
+  createWorkflow(options?: Record<string, unknown>): WizardBuilder
 }
 
 /** Calling other actions — contract-typed via the generated registry. */
@@ -420,6 +425,12 @@ export interface ServerContext<C extends ActionContract = ActionContract> extend
   auth: ServerAuthHandle
   /** Server objects by camelCase name — `ctx.objects.chatRoom.getOrCreate('general')`. */
   objects: ObjectsApi
+  /**
+   * When this action runs because of `on: 'object:<type>[/<name>].<event>'`:
+   * that instance (the event itself is `ctx.args.event` — `{ kind, source,
+   * event, object: { type, instanceId }, payload, timestamp }`).
+   */
+  object?: ObjectInstance<any>
   /** Every server/edge concern: collections, files, queue, events, HTTP… */
   server: ServerApi
   /**

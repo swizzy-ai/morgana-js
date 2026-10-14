@@ -1,8 +1,8 @@
 {
   "name": "@morgana/sdk",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "type": "module",
-  "description": "The Morgana framework developer interface \u2014 types-first: contexts, object handles, contracts, and configs.",
+  "description": "The Morgana framework developer interface — types-first: contexts, object handles, contracts, and configs.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -41,7 +41,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "!src/**/__tests__"
   ],
   "sideEffects": false,
   "engines": {
@@ -51,7 +52,8 @@
     "build": "tsup",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -2,12 +2,24 @@ import { defineServerObject } from '@morgana/sdk'
 
 /**
  * A chat room: durable state, its own message table, a streaming method,
- * a scheduled reminder and a background job — every server-object feature the
- * e2e suite checks, on both hosts.
+ * a scheduled reminder, a background job, `on` reactions and object-event
+ * triggers — every server-object feature the e2e suite checks, on both hosts.
  */
 export default defineServerObject({
   name: 'chat-room',
-  state: { title: '', count: 0, closed: false, reminders: 0, summaries: 0 },
+  state: {
+    title: '',
+    count: 0,
+    closed: false,
+    reminders: 0,
+    summaries: 0,
+    hasUnread: false,
+    unread: 0,
+    closedNotices: 0,
+    triggered: 0,
+    lastTriggered: '',
+    welcomed: false,
+  },
   collections: {
     messages: { columns: [{ name: 'text', type: 'string' }, { name: 'user', type: 'string' }] },
   },
@@ -26,7 +38,16 @@ export default defineServerObject({
     close: { role: 'admin' },
   },
   onCreate: async (self, init) => {
-    self.emit('created', { title: init.title ?? '' })
+    self.emit('opened', { title: init.title ?? '' })
+  },
+  // Reactions: run inside the call that caused them, committed with it.
+  on: {
+    'messages.added': (self) => {
+      self.set({ hasUnread: true, unread: self.state.unread + 1 })
+    },
+    'state.closed': (self, change) => {
+      if (change.value) self.set({ closedNotices: self.state.closedNotices + 1 })
+    },
   },
   methods: {
     post: async (self, p: { text: string }) => {
@@ -57,6 +78,17 @@ export default defineServerObject({
       self.set({ count: self.state.count + 1 })
       self.emit('message', msg)
       return { saved: msg.id }
+    },
+    markRead: async (self) => {
+      self.set({ hasUnread: false, unread: 0 })
+    },
+    /** Called by the onRoomMessage action, which a messages.added trigger runs. */
+    tally: async (self, p: { id: string }) => {
+      self.set({ triggered: self.state.triggered + 1, lastTriggered: p.id })
+    },
+    /** Called by the onRoomCreated action (an object:chat-room.created trigger). */
+    welcome: async (self) => {
+      self.set({ welcomed: true })
     },
     close: async (self) => {
       self.set({ closed: true })

@@ -484,6 +484,23 @@ export {
   type ToolsHandle,
 } from './ai-agents'
 
+// Wizard runs — the surface on `ctx.ai.wizard`. Implemented by @morgana/wizard;
+// declared here so an author writes against the contract.
+export {
+  WIZARD_EVENTS,
+  type SignalLike,
+  type WizardBuilder,
+  type WizardDecision,
+  type WizardDefinition,
+  type WizardLike,
+  type WizardConfigLike,
+  type WizardRunMeta,
+  type WizardRunOptions,
+  type WizardRunResult,
+  type WizardRunStatus,
+  type WizardsHandle,
+} from './ai-wizard'
+
 
 // Config — the single morgana.config.ts
 export type { MorganaConfig, ConfigVars, Hook, ServerApiRoute, ServerApiCors, ServerApiMethod, TransformerConfigChanges, TransformerDomainChanges, AppDefinition, DesktopWindow, AiProviderConfig, DesktopConfig } from './config'

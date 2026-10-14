@@ -16,6 +16,7 @@ export const roomPage = defineClientAction({
     page.place(ctx.ui.button({ id: 'room-ask', label: 'ask' }))
     page.place(ctx.ui.text({ id: 'room-answer', content: '' }))
     page.place(ctx.ui.text({ id: 'room-events', content: '' }))
+    page.place(ctx.ui.text({ id: 'room-feed', content: '' }))
     return { ok: true }
   },
 })

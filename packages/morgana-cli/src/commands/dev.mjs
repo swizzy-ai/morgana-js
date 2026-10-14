@@ -120,6 +120,8 @@ const appAuth = createLocalAppAuth(store)
 const objectsHost = await createObjectsHost({
   dist,
   dataDir,
+  // on: 'object:…' triggers run as the caller whose call caused the event.
+  runAction: (action, params, caller) => runAction(action, params, { session: { token: null, user: caller } }),
   makeCtx: async (caller) =>
     (
       await makeHostContext({
@@ -264,6 +266,7 @@ async function runAction(name, params, reqCtx = {}) {
     response: reqCtx.response,
     streamSink: reqCtx.streamSink,
     objects: objectsHost.api(reqCtx.session?.user ?? null),
+    object: objectsHost.instanceFor(params?.event, reqCtx.session?.user ?? null),
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',

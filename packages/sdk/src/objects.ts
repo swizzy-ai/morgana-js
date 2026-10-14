@@ -95,6 +95,25 @@ export interface ObjectTaskSelf<S = Record<string, any>, C = Record<string, any>
 type MethodFn<S, C> = (self: ObjectSelf<S, C>, params: any) => unknown
 type JobFn<S, C> = (self: ObjectTaskSelf<S, C>, params: any) => unknown
 
+/**
+ * Reactions — run inside the call that caused them and commit with it, so a
+ * record and the flag it implies can never disagree:
+ *
+ *   on: { 'messages.added': (self, row) => self.set({ hasUnread: true }) }
+ *
+ * Keys: `<collection>.added | .updated | .removed`, `state.<key>`, or a
+ * custom event from `self.emit`.
+ */
+export type ObjectReactions<S, C> = {
+  [K in `${keyof C & string}.${'added' | 'updated'}`]?: (self: ObjectSelf<S, C>, row: ObjectRow, previous?: ObjectRow) => unknown
+} & {
+  [K in `${keyof C & string}.removed`]?: (self: ObjectSelf<S, C>, row: ObjectRow) => unknown
+} & {
+  [K in keyof S & string as `state.${K}`]?: (self: ObjectSelf<S, C>, change: { value: S[K]; previous: S[K] }) => unknown
+} & {
+  [event: string]: ((self: ObjectSelf<S, C>, data: any, previous?: any) => unknown) | undefined
+}
+
 export interface ServerObjectSpec<
   S extends Record<string, any> = Record<string, any>,
   C extends Record<string, { columns: ObjectColumn[] }> = Record<string, { columns: ObjectColumn[] }>,
@@ -115,6 +134,8 @@ export interface ServerObjectSpec<
    * (actions, other objects) may always call everything.
    */
   access?: Partial<Record<'create' | 'read' | 'subscribe' | 'list' | 'remove' | (keyof M & string), ObjectAccessRule>>
+  /** Reactions to this instance's own writes, state changes and events — see ObjectReactions. */
+  on?: ObjectReactions<S, C>
   /** Runs inside the create transaction. */
   onCreate?: (self: ObjectSelf<S, C>, init: Partial<S>) => unknown
   /**

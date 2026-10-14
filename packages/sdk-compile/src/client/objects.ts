@@ -145,6 +145,24 @@ if (typeof window !== 'undefined') {
     })
 }
 
+/**
+ * For client actions bound to `object:<type>/<name>.<event>` (client/bus.ts):
+ * every frame of that instance, with lifecycle frames under their own names.
+ */
+if (typeof window !== 'undefined') {
+  ;(window as unknown as { __morgana_objectEvents?: unknown }).__morgana_objectEvents = (
+    type: string,
+    name: string,
+    listener: (event: string, data: unknown) => void,
+  ) =>
+    transport.subscribe!(type, name, (e, d) => {
+      if (e === '__state') {
+        const s = d as Snapshot
+        listener('state', { ...s.state, ...s.computed })
+      } else listener(e, d)
+    })
+}
+
 let api: Record<string, unknown> | null = null
 
 /** The page's ctx.objects (built once per page from the manifest). */

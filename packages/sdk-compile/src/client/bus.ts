@@ -63,6 +63,7 @@ export function busPart(bindingsJson: string): string[] {
     `var __handlers=new Map([${entries}]);`,
     `var __stateHandlers = ${JSON.stringify(state)};`,
     `var __bindingDefs = ${JSON.stringify(defs)};`,
+    ...objectSubscriptions(page),
     '// Runtime subscribers, keyed by event. Subscribing composes a call chain',
     '// (cold); dispatch invokes the chain once — no scan, no per-dispatch',
     '// allocation, no per-dispatch loop.',
@@ -122,4 +123,26 @@ export function busPart(bindingsJson: string): string[] {
     '  dispatchPageEvent("prop:changed", target, el, { prop: prop, value: value, oldValue: oldValue });',
     '}',
   ];
+}
+
+/**
+ * Client actions on `object:<type>/<name>.<event>`: one live subscription per
+ * instance (shared with ctx.objects), dispatching matching frames onto the
+ * page bus under the selector itself, so they reach the compiled handlers.
+ * Parsed here, at build time, so the browser does no selector parsing.
+ */
+function objectSubscriptions(page: ClientBinding[]): string[] {
+  const seen = new Set<string>()
+  const subs: Array<{ full: string; type: string; name: string; event: string }> = []
+  for (const b of page) {
+    const m = /^object:([a-z][a-z0-9-]*)\/([^.\s]+)\.(.+)$/.exec(b.event)
+    if (!m || seen.has(b.event)) continue
+    seen.add(b.event)
+    subs.push({ full: b.event, type: m[1]!, name: decodeURIComponent(m[2]!), event: m[3]! })
+  }
+  if (!subs.length) return []
+  return [
+    '// Object events for client actions — one subscription per instance.',
+    `(function(subs){if(!window.__morgana_objectEvents)return;var by={};subs.forEach(function(s){var k=s.type+"/"+s.name;(by[k]=by[k]||[]).push(s);});Object.keys(by).forEach(function(k){var list=by[k];window.__morgana_objectEvents(list[0].type,list[0].name,function(e,d){for(var i=0;i<list.length;i++){var s=list[i];if(s.event===e)dispatchPageEvent(s.full,s.name,null,{type:s.type,name:s.name,event:e,data:d});}});});})(${JSON.stringify(subs)});`,
+  ]
 }

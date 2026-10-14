@@ -348,14 +348,28 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // Bindings are resolved against the compiled graph, so `on:` can be scoped to
   // an object and validated. This runs after the compile lane, which is why the
   // object ids are known by now.
+  // Server objects: compiled before routes (an `on: 'object:…'` selector is
+  // checked against them) and before pages render (every page's manifest
+  // carries the browser's view of them).
+  const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
+  ir.serverObjects = browserObjectMeta(serverObjects)
+  if (serverObjects.length) {
+    fs.mkdirSync(path.join(dir, '.morgana'), { recursive: true })
+    fs.writeFileSync(path.join(dir, '.morgana', 'objects.d.ts'), objectTypesDts(dir, serverObjects))
+  }
+
   const bindingErrors: string[] = []
+  const objectErrors: string[] = []
   const graph = buildBindingGraph(ir, EMITTABLE)
   const { apis, triggers, bindings } = deriveRoutes(
     runtimeActions,
     (scan.config.hooks ?? []) as Array<{ on: string | string[]; run: string | string[]; when?: Record<string, unknown>; auth?: 'public' | 'member'; cors?: unknown; enabled?: boolean }>,
     graph,
     bindingErrors,
+    { objects: serverObjects.map((o) => o.meta), errors: objectErrors },
   )
+  // A misspelled object selector would be a trigger that never fires — a build error.
+  if (objectErrors.length) throw new Error(objectErrors.join('\n'))
   // A selector naming a missing object, or an event nothing emits, is a mistake
   // worth surfacing — but not worth failing a build over, so it is a loud warning.
   warnings.push(...bindingErrors)
@@ -378,15 +392,6 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const desktopApis = apis.filter((r) => isDesktopRun(r.action))
   const serverTriggers = triggers.filter((t) => !isDesktopRun(t.run))
   const desktopTriggers = triggers.filter((t) => isDesktopRun(t.run))
-
-  // Server objects: compiled before pages render, because every page's
-  // manifest carries the browser's view of them (ctx.objects proxies).
-  const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
-  ir.serverObjects = browserObjectMeta(serverObjects)
-  if (serverObjects.length) {
-    fs.mkdirSync(path.join(dir, '.morgana'), { recursive: true })
-    fs.writeFileSync(path.join(dir, '.morgana', 'objects.d.ts'), objectTypesDts(dir, serverObjects))
-  }
 
   const pages: Record<string, string> = {}
   for (const page of ir.pages.values()) {

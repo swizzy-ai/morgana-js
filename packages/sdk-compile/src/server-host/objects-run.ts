@@ -10,6 +10,7 @@ import {
   readInstance,
   type ObjectMeta,
   type ObjectSql,
+  type ObjectTrigger,
   type PendingEvent,
   type PendingJob,
   type QueryOptions,
@@ -41,6 +42,8 @@ export interface SelfHost {
   callMethod(method: string, params?: Record<string, unknown>): Promise<unknown>
   /** A streaming method's yield, sent to the caller as it happens. */
   chunk(value: unknown): Promise<void>
+  /** `on` reactions queued by this call's writes and emits (drained by the runner). */
+  takeReactions(): Array<{ event: string; data: unknown; previous?: unknown }>
 }
 
 /**
@@ -67,6 +70,7 @@ export const SELF_BUILDER_SRC = `function __mgSelf(h, meta, ctx, kind) {
     emit: function (e, d) { return h.emit(e, d); }
   };
   Object.defineProperty(self, '__chunk', { value: function (v) { return h.chunk(v); }, enumerable: false });
+  Object.defineProperty(self, '__takeReactions', { value: function () { return h.takeReactions(); }, enumerable: false });
   if (kind === 'method') {
     self.set = function (p) { return h.set(p); };
     self.schedule = function (w, m, p) { return h.schedule(w, m, p || {}); };
@@ -111,6 +115,7 @@ export function makeSelfHost(
     chunk: async (value) => {
       if (onChunk) await onChunk(structuredClone(value))
     },
+    takeReactions: () => journal.takeReactions(),
   }
 }
 
@@ -132,6 +137,8 @@ export interface CallOutcome {
   events: PendingEvent[]
   jobs: PendingJob[]
   scheduled: boolean
+  /** Trigger deliveries queued by this commit (the host's sweep sends them). */
+  triggers: number
 }
 
 export class ObjectError extends Error {
@@ -169,8 +176,10 @@ async function transact(
   invoke: Invoke,
   baseState: Record<string, unknown>,
   onChunk?: (value: unknown) => void | Promise<void>,
+  opts: CallOptions & { creating?: boolean } = {},
 ): Promise<CallOutcome> {
   const journal = new Journal(sql, meta, baseState)
+  if (opts.triggers?.length || opts.creating) journal.outbox = { name, triggers: opts.triggers ?? [], created: opts.creating }
   const host = makeSelfHost(journal, name, caller, undefined, onChunk)
   const out = await invoke({ kind, name: member, params: structuredClone(params ?? {}), host })
   journal.commit(out.computed ?? {}, caller)
@@ -182,7 +191,13 @@ async function transact(
     events: journal.events,
     jobs: journal.jobs,
     scheduled: journal.schedules.length > 0,
+    triggers: journal.triggersQueued,
   }
+}
+
+/** Host options for a call: the deployed `object:` triggers to queue for. */
+export interface CallOptions {
+  triggers?: ObjectTrigger[]
 }
 
 /** Create an instance by name; `onCreate` (if any) runs in the same transaction. */
@@ -193,6 +208,7 @@ export async function createInstance(
   init: Record<string, unknown>,
   caller: AuthUser | null,
   invoke: Invoke,
+  opts: CallOptions = {},
 ): Promise<CallOutcome> {
   ensureSchema(sql, meta)
   if (readInstance(sql)) throw new ObjectError(`${meta.name} "${name}" already exists`, 409)
@@ -204,7 +220,7 @@ export async function createInstance(
   sql.exec("INSERT OR REPLACE INTO __meta (k, v) VALUES ('state', ?)", JSON.stringify(state))
   try {
     // With no onCreate an empty run still evaluates `computed` once.
-    return await transact(sql, meta, name, meta.hasOnCreate ? 'onCreate' : 'method', meta.hasOnCreate ? 'onCreate' : '', init ?? {}, caller, invoke, state)
+    return await transact(sql, meta, name, meta.hasOnCreate ? 'onCreate' : 'method', meta.hasOnCreate ? 'onCreate' : '', init ?? {}, caller, invoke, state, undefined, { ...opts, creating: true })
   } catch (err) {
     // A failed onCreate leaves nothing behind.
     sql.exec("DELETE FROM __meta WHERE k IN ('instance', 'state', 'computed')")
@@ -226,12 +242,13 @@ export async function callMethod(
   caller: AuthUser | null,
   invoke: Invoke,
   onChunk?: (value: unknown) => void | Promise<void>,
+  opts: CallOptions = {},
 ): Promise<CallOutcome> {
   if (!meta.methods.includes(method)) throw new ObjectError(`${meta.name} has no method "${method}"`, 404)
   ensureSchema(sql, meta)
   const inst = readInstance(sql)
   if (!inst) throw new ObjectError(`${meta.name} "${name}" does not exist`, 404)
-  return transact(sql, meta, name, 'method', method, params, caller, invoke, inst.state, onChunk)
+  return transact(sql, meta, name, 'method', method, params, caller, invoke, inst.state, onChunk, opts)
 }
 
 /** Remove an instance's data entirely. */
@@ -287,6 +304,20 @@ export const RUN_MEMBER_SRC = `async function __mgRun(def, kind, name, params, s
       while (!(step = await it.next()).done) await self.__chunk(step.value);
       result = step.value;
     } else result = await out;
+  }
+  // \`on\` reactions: what the member wrote or emitted, handled in this same
+  // call (so they commit with it). Reactions may cause more; a chain longer
+  // than 8 rounds is a loop and fails the call.
+  if (def.on) {
+    for (var round = 0; ; round++) {
+      var q = self.__takeReactions();
+      if (!q || !q.length) break;
+      if (round >= 8) throw new Error(def.name + ': "on" reactions kept triggering each other (more than 8 rounds) — check them for a loop');
+      for (var i = 0; i < q.length; i++) {
+        var react = def.on[q[i].event];
+        if (typeof react === 'function') await react(self, q[i].data, q[i].previous);
+      }
+    }
   }
   var computed = {};
   var st = self.state;
