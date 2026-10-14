@@ -138,8 +138,7 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
   if (inputs.assetsDir) copyDir(inputs.assetsDir, path.join(outDir, 'assets'), files, outDir)
   if (inputs.objects?.length) {
     for (const o of inputs.objects) write(`server/objects/${o.meta.name}.js`, o.code)
-    write('server/objects.json', `${JSON.stringify(inputs.objects.map((o) => o.meta), null, 2)}
-`)
+    write('server/objects.json', `${JSON.stringify(inputs.objects.map((o) => o.meta), null, 2)}\n`)
   }
   for (const a of inputs.serverActions) {
     write(`server/actions/${a.name}.js`, a.code)

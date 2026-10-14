@@ -140,6 +140,9 @@ export function makeObjectsApi(metas: ObjectsMeta, t: ObjectsTransport): Record<
  * called it.
  */
 export const OBJECTS_API_SRC = [
+  // A bundler that keeps function names (esbuild keepNames, as wrangler
+  // builds) leaves `__name(fn, "x")` calls in the source; give them a no-op.
+  'var __name = function (f) { return f; };',
   streamCall.toString(),
   makeInstanceProxy.toString(),
   makeObjectsApi.toString(),

@@ -289,6 +289,11 @@ async function main({ base, projectId, envName, bearer, dist }) {
   const apis = readJson(dist, 'server/apis.json', [])
   const stores = readJson(dist, 'server/stores.json', [])
   const triggers = readJson(dist, 'server/triggers.json', []).map(adaptTrigger)
+  // Server objects (defineServerObject): definition + bundled code each.
+  const serverObjects = readJson(dist, 'server/objects.json', []).map((meta) => ({
+    meta,
+    code: fs.readFileSync(path.join(dist, 'server', 'objects', `${meta.name}.js`), 'utf8'),
+  }))
 
   // 1. action code
   const actionDir = path.join(dist, 'server', 'actions')
@@ -361,9 +366,14 @@ async function main({ base, projectId, envName, bearer, dist }) {
     triggers,
     apis,
     manifest,
+    serverObjects,
     assets: collectAssets(dist),
   })
   say(`deploy   ${deployRes.success ? 'ok' : 'FAILED'}`)
+  if (serverObjects.length) say(`  objects  ${(deployRes.serverObjects ?? []).join(', ') || '(none stored)'}`)
+  if (serverObjects.length && (deployRes.serverObjects ?? []).length !== serverObjects.length) {
+    throw new DeployFailed(`declared ${serverObjects.length} server object(s), worker stored ${(deployRes.serverObjects ?? []).length} — is the worker up to date?`)
+  }
   const revision = deployRes.revision ?? deployRes.deployed?.[0]?.revision
   if (revision !== undefined) say(`  revision ${revision}`)
 

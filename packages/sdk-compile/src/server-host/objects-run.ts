@@ -269,6 +269,12 @@ export class SerialQueue {
  */
 export const RUN_MEMBER_SRC = `async function __mgRun(def, kind, name, params, self) {
   var result = null;
+  if (kind === 'job') {
+    var job = def.jobs && def.jobs[name];
+    if (typeof job !== 'function') throw new Error(def.name + ' has no job "' + name + '"');
+    result = await job(self, params);
+    return { result: result === undefined ? null : result, computed: {} };
+  }
   if (kind === 'onCreate') { if (typeof def.onCreate === 'function') result = await def.onCreate(self, params); }
   else if (name) {
     var fn = def.methods && def.methods[name];
