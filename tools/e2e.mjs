@@ -91,6 +91,25 @@ function client(base, hostHeader) {
     jar,
     request,
     get: (p) => request('GET', p, { raw: true }),
+    /** GET recording when the first body chunk arrived. */
+    timed: (p) =>
+      new Promise((resolve, reject) => {
+        const url = new URL(p, base)
+        const lib = url.protocol === 'https:' ? https : http
+        const t0 = Date.now()
+        let first = -1
+        let text = ''
+        const req = lib.request(url, { method: 'GET', headers: { ...(hostHeader ? { host: hostHeader } : {}), 'accept-encoding': 'identity' } }, (res) => {
+          res.setEncoding('utf8')
+          res.on('data', (d) => {
+            if (first < 0) first = Date.now() - t0
+            text += d
+          })
+          res.on('end', () => resolve({ status: res.statusCode, text, firstChunkMs: first, totalMs: Date.now() - t0 }))
+        })
+        req.on('error', reject)
+        req.end()
+      }),
     post: (p, body) => request('POST', p, { body: body ?? {} }),
     run: (action, params = {}) => request('POST', `/api/actions/${action}/run`, { body: { params } }),
     async loadRuntimeKey() {
@@ -195,6 +214,12 @@ async function scenarios(c, label) {
     const r = await c.request('POST', '/hooks/test', { body: {}, raw: true })
     expect(r.status === 202 && r.text === 'accepted', `status ${r.status} body ${JSON.stringify(r.text)}`)
     expect(String(r.headers['content-type']).startsWith('text/plain'), `content-type ${r.headers['content-type']}`)
+  })
+  await check('ctx.server.response.stream sends chunks as they are produced', async () => {
+    const r = await c.timed('/stream/demo')
+    expect(r.status === 200, `status ${r.status}`)
+    expect(r.text === 'one\n{"n":2}\nthree\n', `body ${JSON.stringify(r.text)}`)
+    expect(r.firstChunkMs < r.totalMs - 500, `first chunk at ${r.firstChunkMs}ms of ${r.totalMs}ms — buffered, not streamed`)
   })
   await check('param page: /products/42/', async () => {
     const r = await c.get('/products/42/')

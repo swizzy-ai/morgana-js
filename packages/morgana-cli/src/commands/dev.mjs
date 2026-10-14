@@ -234,6 +234,7 @@ async function runAction(name, params, reqCtx = {}) {
     onSession: reqCtx.onSession,
     request: reqCtx.request,
     response: reqCtx.response,
+    streamSink: reqCtx.streamSink,
     // Opaque — built by the backend package, carried verbatim (see host-context).
     desktop,
     base: '',
@@ -271,6 +272,9 @@ async function requestContext(req, url, body, params = {}) {
   return {
     cookies,
     response: {},
+    // Set by ctx.server.response.stream: the HTTP response is written as the
+    // action produces chunks, and finished when it returns.
+    streamSink: null,
     session: { token, user },
     onSession: (s) =>
       cookies.push(
@@ -309,6 +313,28 @@ function sendCaptured(res, captured, result) {
   headers['content-type'] = captured.contentType ?? headers['content-type'] ?? MIME['.json']
   res.writeHead(status, headers)
   return res.end(JSON.stringify(body))
+}
+
+/** Give a request context a stream sink bound to this HTTP response. */
+function withStream(rc, res) {
+  rc.streamSink = {
+    started: false,
+    start(contentType, status, headers) {
+      if (this.started) return
+      this.started = true
+      if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
+      res.writeHead(status ?? 200, {
+        'content-type': contentType ?? 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-accel-buffering': 'no',
+        ...(headers ?? {}),
+      })
+    },
+    write(chunk) {
+      res.write(chunk)
+    },
+  }
+  return rc
 }
 
 /** An auth refusal thrown by an action (ctx.auth.require) keeps its status. */
@@ -392,8 +418,9 @@ const server = http.createServer(async (req, res) => {
       try {
         const body = await readBody(req)
         for (const [k, v] of url.searchParams) if (!(k in body)) body[k] = v
-        const rc = await requestContext(req, url, body, params)
+        const rc = withStream(await requestContext(req, url, body, params), res)
         const result = await runAction(route.action, { ...body, ...params }, rc)
+        if (rc.streamSink.started) return res.end()
         if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
         if (rc.response.set) return sendCaptured(res, rc.response, result)
         // An action returning a rendered page answers with the page itself —
@@ -402,6 +429,8 @@ const server = http.createServer(async (req, res) => {
         if (isPageResult(result)) return send(res, 200, result.html, MIME['.html'])
         return sendJson(res, 200, { success: true, data: { result } })
       } catch (err) {
+        // A stream already sent its headers: end it rather than answer twice.
+        if (res.headersSent) return res.end()
         return sendJson(res, errorStatus(err), { success: false, message: String(err?.message ?? err) })
       }
     }
@@ -414,12 +443,14 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readBody(req)
       const params = body && typeof body === 'object' && 'params' in body ? body.params : body
-      const rc = await requestContext(req, url, params ?? {})
+      const rc = withStream(await requestContext(req, url, params ?? {}), res)
       const result = await runAction(name, params ?? {}, rc)
+      if (rc.streamSink.started) return res.end()
       if (rc.cookies.length) res.setHeader('set-cookie', rc.cookies)
       if (rc.response.set) return sendCaptured(res, rc.response, result)
       return sendJson(res, 200, { success: true, data: { result } })
     } catch (err) {
+      if (res.headersSent) return res.end()
       const missing = err?.code === 'ACTION_MISSING' || String(err?.message).includes('Cannot find module')
       return sendJson(res, missing ? 404 : errorStatus(err), {
         success: false,

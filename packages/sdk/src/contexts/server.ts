@@ -383,7 +383,15 @@ export interface ServerApi {
     status(code: number): void
     setHeader(name: string, value: string): void
     respond(input: ServerResponseInput): void
-    stream(handler: (emit: (chunk: unknown) => void) => Promise<void>): void
+    /**
+     * Stream the body as it is produced: each `emit(chunk)` is sent at once —
+     * a string as-is, anything else as one JSON line (NDJSON). Status and
+     * headers set before the first emit apply. Resolves when the handler does.
+     */
+    stream(
+      handler: (emit: (chunk: unknown) => Promise<void> | void) => Promise<void>,
+      opts?: { contentType?: string },
+    ): Promise<void>
   }
   collections: CollectionsHandle
   files: FilesHandle

@@ -426,8 +426,17 @@ export async function makeHostContext(opts) {
         status: (code) => capture(code),
         setHeader: (name, value) => capture(undefined, { [name]: value }),
         respond: (input = {}) => capture(input.status, input.headers, input.contentType, input.body),
-        stream: () => {
-          throw new Error('ctx.server.response.stream is not supported yet — respond with the whole body')
+        /**
+         * Stream the body: `emit(chunk)` sends each chunk as it is produced —
+         * a string as-is, anything else as one JSON line. The worker does the
+         * same. Only possible when an HTTP response is waiting on this action.
+         */
+        stream: async (handler, o = {}) => {
+          const sink = opts.streamSink
+          if (!sink) throw new Error('ctx.server.response.stream needs an HTTP request (not a queue/cron/action-to-action call)')
+          sink.start(o.contentType ?? response.contentType, response.status, response.headers)
+          await handler((chunk) => sink.write(typeof chunk === 'string' ? chunk : `${JSON.stringify(chunk)}
+`))
         },
       },
       collections,
