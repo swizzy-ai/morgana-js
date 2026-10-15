@@ -3,7 +3,7 @@
  */
 import { extend, type HandleCtx } from './shared'
 
-function badgeMethods(ctx: HandleCtx): Record<string, unknown> {
+export function badgeMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setLabel: (label: string) => {
       ctx.setProp('label', label)
@@ -30,7 +30,7 @@ function badgeMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function alertMethods(ctx: HandleCtx): Record<string, unknown> {
+export function alertMethods(ctx: HandleCtx): Record<string, unknown> {
   const setShown = (shown: boolean): void => {
     ctx.setProp('visible', shown)
     if (ctx.el) ctx.el.style.display = shown ? '' : 'none'
@@ -80,7 +80,7 @@ export function paintProgressValue(el: HTMLElement, value: number, max: number):
   if (label) label.textContent = `${pct}%`
 }
 
-function progressMethods(ctx: HandleCtx): Record<string, unknown> {
+export function progressMethods(ctx: HandleCtx): Record<string, unknown> {
   const max = (): number => {
     const v = ctx.getProp('max')
     return typeof v === 'number' && v > 0 ? v : 100
@@ -102,7 +102,7 @@ function progressMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function toastMethods(ctx: HandleCtx): Record<string, unknown> {
+export function toastMethods(ctx: HandleCtx): Record<string, unknown> {
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
   let seq = 0
   const maxToasts = (): number => {
@@ -177,7 +177,7 @@ function toastMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function separatorMethods(ctx: HandleCtx): Record<string, unknown> {
+export function separatorMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setOrientation: (orientation: string) => {
       ctx.setProp('orientation', orientation)
@@ -190,7 +190,7 @@ function separatorMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function skeletonMethods(ctx: HandleCtx): Record<string, unknown> {
+export function skeletonMethods(ctx: HandleCtx): Record<string, unknown> {
   const dim = (v: unknown): string | null => {
     if (v === undefined || v === null || v === '') return null
     if (typeof v === 'number') return `${v * 4}px`
@@ -215,7 +215,7 @@ function skeletonMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function avatarMethods(ctx: HandleCtx): Record<string, unknown> {
+export function avatarMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setSrc: (src: string) => {
       ctx.setProp('src', src)

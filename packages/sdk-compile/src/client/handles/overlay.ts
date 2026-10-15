@@ -22,7 +22,7 @@ function isOpen(ctx: HandleCtx): boolean {
   return ctx.el?.getAttribute('data-open') === 'true'
 }
 
-function dialogMethods(ctx: HandleCtx): Record<string, unknown> {
+export function dialogMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     open: () => setOpen(ctx, true),
     close: () => setOpen(ctx, false),
@@ -55,7 +55,7 @@ function dialogMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function dropdownMethods(ctx: HandleCtx): Record<string, unknown> {
+export function dropdownMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return {
@@ -92,7 +92,7 @@ function dropdownMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function popoverMethods(ctx: HandleCtx): Record<string, unknown> {
+export function popoverMethods(ctx: HandleCtx): Record<string, unknown> {
   const panel = (): Element | null => ctx.el?.querySelector('[data-part="popover-panel"]') ?? null
   const paint = (open: boolean): void => {
     ctx.setProp('open', open)
@@ -142,7 +142,7 @@ function popoverMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function menuMethods(ctx: HandleCtx): Record<string, unknown> {
+export function menuMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     ...dropdownMethods(ctx),
     selectItem: (value: string) => {
@@ -157,7 +157,7 @@ function menuMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function accordionMethods(ctx: HandleCtx): Record<string, unknown> {
+export function accordionMethods(ctx: HandleCtx): Record<string, unknown> {
   const keyOf = (node: Element): string => node.getAttribute('data-item-key') ?? ''
   const multiple = (): boolean => ctx.getProp('multiple') === true
   const collapsible = (): boolean => ctx.getProp('collapsible') !== false
@@ -272,7 +272,7 @@ function accordionMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
+export function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
   const tabs = (): HTMLElement[] => Array.from(ctx.el?.querySelectorAll<HTMLElement>('[data-part="tab"]') ?? [])
   const keyOf = (t: Element): string => t.getAttribute('data-tab-key') ?? ''
   const setActive = (key: string): void => {
@@ -322,7 +322,7 @@ function tabsMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function tooltipMethods(ctx: HandleCtx): Record<string, unknown> {
+export function tooltipMethods(ctx: HandleCtx): Record<string, unknown> {
   const paint = (visible: boolean): void => {
     ctx.setProp('visible', visible)
     if (!ctx.el) return
@@ -352,7 +352,7 @@ function tooltipMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function drawerMethods(ctx: HandleCtx): Record<string, unknown> {
+export function drawerMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     open: () => setOpen(ctx, true),
     close: () => setOpen(ctx, false),

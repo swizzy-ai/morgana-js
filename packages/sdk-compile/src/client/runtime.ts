@@ -13,17 +13,13 @@
 
 import { pageObjects } from './objects'
 import type { ObjectsMeta } from '../objects-api'
-import { qrMarkup } from '../qr'
 import { CREATABLE_KINDS } from '../kinds'
 import { STATE_PROPS, stateRules } from '../style/states'
 import { conditionRules } from '../style/conditions'
 import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } from '../style/props'
 import { resolveMakeToken } from '../compile-ctx/tokens'
 import { wrapElement } from './dom-handle'
-import { extendHandle } from './handles'
-import { paintChecked } from './handles/inputs'
-import { paintProgressValue } from './handles/feedback'
-import { repaintChartEl } from './handles/data'
+import { extendFromRegistry, registry } from './registry'
 import { hasRuntimeCode, mountCustomObject, type MountedCustomObject } from './custom-objects'
 import type { PageManifest } from '../render/manifest'
 
@@ -236,17 +232,17 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
   // progress and chart knobs proved it). `all` is the object's full props so
   // painters that need siblings (progress max, chart series) read live state.
   if (prop === 'checked' && (kind === 'toggle' || kind === 'switch' || kind === 'checkbox' || kind === 'radio')) {
-    paintChecked(el, value === true || value === 'true')
+    registry.paint.checked?.(el, value === true || value === 'true')
     return
   }
   if (prop === 'value' && kind === 'progress') {
     const max = Number(all?.['max'] ?? el.getAttribute('aria-valuemax') ?? 100)
-    paintProgressValue(el, Number(value) || 0, max)
+    registry.paint.progress?.(el, Number(value) || 0, max)
     return
   }
   if ((prop === 'kind' || prop === 'chartKind' || prop === 'series' || prop === 'labels' || prop === 'palette' || prop === 'points') && kind === 'chart') {
     const spec = { ...(all ?? {}), [prop]: value } as { kind?: string; series?: unknown; labels?: unknown; palette?: unknown }
-    repaintChartEl(el, { kind: String(spec.kind ?? (all?.['chartKind'] as string) ?? 'bar'), series: spec.series, labels: spec.labels, palette: spec.palette })
+    registry.paint.chart?.(el, { kind: String(spec.kind ?? (all?.['chartKind'] as string) ?? 'bar'), series: spec.series, labels: spec.labels, palette: spec.palette })
     return
   }
   // The newer components' semantic props paint through the same painter the
@@ -261,7 +257,7 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
   }
   // A QR code re-encodes from its full props when any of them changes.
   if (kind === 'qrCode' && (prop === 'value' || prop === 'ecc' || prop === 'codeColor' || prop === 'codeBackground')) {
-    el.innerHTML = qrMarkup({ ...(all ?? {}), [prop]: value })
+    if (registry.paint.qr) el.innerHTML = registry.paint.qr({ ...(all ?? {}), [prop]: value })
     return
   }
   // Theme scope and colour mode are attributes the stylesheet scopes on.
@@ -638,8 +634,9 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       if (mounted) mountedComponents.set(id, mounted)
     }
 
-    // Layer on the kind-specific methods each typed handle declares.
-    extendHandle({
+    // Layer on the kind-specific methods each typed handle declares — only the
+    // kinds this project uses were registered (registry.ts).
+    extendFromRegistry({
       id,
       kind,
       meta,

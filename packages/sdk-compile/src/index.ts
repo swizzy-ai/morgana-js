@@ -45,6 +45,8 @@ export interface CompileOptions {
   actionsDirs?: string[]
   /** Minify emitted JS. Overrides `minify` in morgana.config.ts. */
   minify?: boolean
+  /** Minify when neither the caller nor the config says: `morgana build` passes true, dev leaves it off. */
+  defaultMinify?: boolean
 }
 
 export interface CompileResult extends EmitResult {
@@ -213,7 +215,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const scan = scanProject({ dir, actionsDirs: opts.actionsDirs })
   const warnings: string[] = [...scan.warnings]
   // A call-site flag wins over the config, which wins over the readable default.
-  const minify = opts.minify ?? scan.config.minify ?? false
+  const minify = opts.minify ?? scan.config.minify ?? opts.defaultMinify ?? false
 
   const ir = createEmptyIR()
   seedFromConfig(ir, scan.config)
@@ -428,6 +430,9 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     bindings,
     minify,
     customObjectsJs,
+    // Every kind the project creates (row templates and components included):
+    // the browser gets those kinds' code and no other.
+    new Set([...ir.objects.values()].map((n) => n.kind)),
   )
   const fonts = await resolveFonts({ dir, config: scan.config, warnings })
   ir.fontCss = fonts.css

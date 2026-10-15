@@ -18,6 +18,7 @@
  * catalog) gets the genuine implementation, not a stand-in.
  */
 
+import { HANDLE_BUILDERS, PAINTERS } from './client/handles/catalog'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire, isBuiltin } from 'node:module'
@@ -520,15 +521,11 @@ export async function bundleDesktopAction(opts: BundleOptions): Promise<string> 
  * before any action registers, and so a project with no browser actions still
  * gets a working `ctx.ui`.
  */
-export async function bundleClientRuntime(projectDir: string, minify = false): Promise<string> {
+export async function bundleClientRuntime(projectDir: string, minify = false, kinds?: Set<string>): Promise<string> {
   const entry = resolveClientRuntimeEntry()
   return run({ projectDir, file: entry, name: 'page runtime', factory: 'client', minify }, {
     stdin: {
-      contents: [
-        `import { makeUi } from ${JSON.stringify(entry)};`,
-        `import { bootLive } from ${JSON.stringify(path.join(path.dirname(entry), 'live.ts'))};`,
-        'window.__morgana_runtime = { makeUi: makeUi, bootLive: bootLive };',
-      ].join('\n'),
+      contents: runtimeEntrySource(path.dirname(entry), kinds),
       resolveDir: path.dirname(entry),
       sourcefile: 'client-runtime.morgana-entry.js',
       loader: 'js',
@@ -536,6 +533,45 @@ export async function bundleClientRuntime(projectDir: string, minify = false): P
     platform: 'browser',
     format: 'iife',
   })
+}
+
+/**
+ * The page runtime's entry, generated per project: it imports the builders and
+ * painters for the kinds the project uses, and nothing else — the bundler then
+ * drops every other kind's code. With no kinds given (tests, tools), all of it.
+ */
+export function runtimeEntrySource(clientDir: string, kinds?: Set<string>): string {
+  const at = (rel: string) => JSON.stringify(path.join(clientDir, rel))
+  const wanted = (k: string) => !kinds || kinds.has(k)
+  const imports = new Map<string, Set<string>>()   // module path → names
+  const use = (from: string, name: string) => {
+    const set = imports.get(from) ?? new Set<string>()
+    set.add(name)
+    imports.set(from, set)
+  }
+  const byKind: string[] = []
+  for (const [kind, b] of Object.entries(HANDLE_BUILDERS)) {
+    if (!wanted(kind)) continue
+    use(`handles/${b.module}.ts`, b.name)
+    byKind.push(`${JSON.stringify(kind)}: ${b.name}`)
+  }
+  const paints: string[] = []
+  for (const [slot, p] of Object.entries(PAINTERS)) {
+    if (!p.kinds.some(wanted)) continue
+    use(`${p.from.replace(/^\.\//, '')}.ts`, p.name)
+    paints.push(`${slot}: ${p.name}`)
+  }
+  use('handles/animate.ts', 'extendAnimate')
+  return [
+    `import { makeUi } from ${at('runtime.ts')};`,
+    `import { bootLive } from ${at('live.ts')};`,
+    `import { registry } from ${at('registry.ts')};`,
+    ...[...imports].map(([from, names]) => `import { ${[...names].join(', ')} } from ${at(from)};`),
+    `Object.assign(registry.byKind, { ${byKind.join(', ')} });`,
+    `Object.assign(registry.paint, { ${paints.join(', ')} });`,
+    'registry.animate = extendAnimate;',
+    'window.__morgana_runtime = { makeUi: makeUi, bootLive: bootLive };',
+  ].join('\n')
 }
 
 // ── custom objects ─────────────────────────────────────────────────────────

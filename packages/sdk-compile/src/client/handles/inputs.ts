@@ -10,7 +10,7 @@ import { extend, setText, type HandleCtx } from './shared'
 
 // ── Button ──────────────────────────────────────────────────────────────────
 
-function buttonMethods(ctx: HandleCtx): Record<string, unknown> {
+export function buttonMethods(ctx: HandleCtx): Record<string, unknown> {
   const setDisabled = (on: boolean): void => {
     ctx.setProp('disabled', on)
     if (ctx.el) {
@@ -42,7 +42,7 @@ function buttonMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Input / textarea ────────────────────────────────────────────────────────
 
-function inputMethods(ctx: HandleCtx): Record<string, unknown> {
+export function inputMethods(ctx: HandleCtx): Record<string, unknown> {
   const field = (): HTMLInputElement | HTMLTextAreaElement | null =>
     (ctx.el as unknown as HTMLInputElement | HTMLTextAreaElement) ?? null
   return {
@@ -175,7 +175,7 @@ export function toggleMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Number input ──────────────────────────────────────────────────────────
 
-function numberInputMethods(ctx: HandleCtx): Record<string, unknown> {
+export function numberInputMethods(ctx: HandleCtx): Record<string, unknown> {
   const bounds = (): { min: number; max: number; step: number } => {
     const rawMin = ctx.getProp('min')
     const rawMax = ctx.getProp('max')
@@ -228,7 +228,7 @@ function numberInputMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Combobox ──────────────────────────────────────────────────────────────
 
-function comboboxMethods(ctx: HandleCtx): Record<string, unknown> {
+export function comboboxMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const options = (): Array<{ label: string; value: string; disabled?: boolean }> => {
@@ -296,7 +296,7 @@ function comboboxMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Tags input ────────────────────────────────────────────────────────────
 
-function tagsMethods(ctx: HandleCtx): Record<string, unknown> {
+export function tagsMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const max = (): number => {
@@ -353,7 +353,7 @@ function tagsMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Rating ────────────────────────────────────────────────────────────────
 
-function ratingMethods(ctx: HandleCtx): Record<string, unknown> {
+export function ratingMethods(ctx: HandleCtx): Record<string, unknown> {
   const max = (): number => {
     const m = Number(ctx.getProp('max') ?? 5)
     return Number.isFinite(m) && m >= 1 ? Math.min(10, Math.floor(m)) : 5
@@ -385,7 +385,7 @@ function ratingMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Editable ──────────────────────────────────────────────────────────────
 
-function editableMethods(ctx: HandleCtx): Record<string, unknown> {
+export function editableMethods(ctx: HandleCtx): Record<string, unknown> {
   const paint = (editing: boolean, draft?: string): void => {
     ctx.setProp('editing', editing)
     if (!ctx.el) return
@@ -436,7 +436,7 @@ function editableMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── File upload ───────────────────────────────────────────────────────────
 
-function fileMethods(ctx: HandleCtx): Record<string, unknown> {
+export function fileMethods(ctx: HandleCtx): Record<string, unknown> {
   const entry = (): HTMLInputElement | null => ctx.el?.querySelector('input[data-part="file-input"]') as HTMLInputElement | null
   const snapshot = (): Array<{ name: string; size: number; type: string }> => {
     const input = entry()
@@ -475,7 +475,7 @@ function fileMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Pin input ─────────────────────────────────────────────────────────────
 
-function pinInputMethods(ctx: HandleCtx): Record<string, unknown> {
+export function pinInputMethods(ctx: HandleCtx): Record<string, unknown> {
   const cells = (): HTMLInputElement[] =>
     Array.from(ctx.el?.querySelectorAll('input[data-part="cell"]') ?? []) as HTMLInputElement[]
   const read = (): string => cells().map((c) => c.value).join('')
@@ -510,7 +510,7 @@ function pinInputMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Slider ────────────────────────────────────────────────────────────────
 
-function sliderMethods(ctx: HandleCtx): Record<string, unknown> {
+export function sliderMethods(ctx: HandleCtx): Record<string, unknown> {
   const bounds = (): { min: number; max: number; step: number } => ({
     min: Number(ctx.getProp('min') ?? 0),
     max: Number(ctx.getProp('max') ?? 100),
@@ -573,7 +573,7 @@ function sliderMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Select ──────────────────────────────────────────────────────────────────
 
-function selectMethods(ctx: HandleCtx): Record<string, unknown> {
+export function selectMethods(ctx: HandleCtx): Record<string, unknown> {
   const native = (): HTMLSelectElement | null =>
     ctx.el?.tagName === 'SELECT' ? (ctx.el as HTMLSelectElement) : null
   const composite = (): HTMLElement | null => ctx.el?.querySelector('[data-part="value"]')?.parentElement ?? null
@@ -655,7 +655,7 @@ function selectMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Form ────────────────────────────────────────────────────────────────────
 
-function formMethods(ctx: HandleCtx): Record<string, unknown> {
+export function formMethods(ctx: HandleCtx): Record<string, unknown> {
   const field = (name: string): HTMLElement | null =>
     ctx.el?.querySelector<HTMLElement>(`[name="${CSS.escape(String(name))}"]`) ?? null
 
@@ -822,7 +822,7 @@ function formMethods(ctx: HandleCtx): Record<string, unknown> {
 
 // ── Label ───────────────────────────────────────────────────────────────────
 
-function labelMethods(ctx: HandleCtx): Record<string, unknown> {
+export function labelMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setLabel: (text: string) => {
       ctx.setProp('label', text)

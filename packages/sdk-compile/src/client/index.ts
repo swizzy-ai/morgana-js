@@ -18,12 +18,14 @@ export async function renderClientJs(
   bindings: Array<{ event: string; action: string; origin?: string; prop?: string }> = [],
   minify = false,
   customObjectsJs: string | null = null,
+  /** The kinds the project uses: only their runtime code ships. All when absent. */
+  kinds?: Set<string>,
 ): Promise<string> {
   // The runtime must exist before makeCtx is called, and author code must be
   // registered before the first dispatch — so: runtime, helpers, actions,
   // listeners, behaviors, lifecycle.
   const [runtime, bundle] = await Promise.all([
-    bundleClientRuntime(projectDir, minify),
+    bundleClientRuntime(projectDir, minify, kinds),
     bundleBrowserActions(projectDir, actions, minify),
   ]);
   const bindingsJson = JSON.stringify(bindings);
@@ -47,7 +49,7 @@ export async function renderClientJs(
     ...formPart(),
     ...pointerPart(),
     ...windowPart(),
-    ...behaviorsPart(),
+    ...behaviorsPart(kinds),
     ...lifecyclePart(),
     // Init router last, after everything else is ready
     'if(typeof initRouter!=="undefined") initRouter();',

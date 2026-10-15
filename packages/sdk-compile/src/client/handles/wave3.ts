@@ -18,7 +18,7 @@ function call<T>(ctx: HandleCtx, fn: string, ...args: unknown[]): T | undefined 
   return p(ctx.el, ...args) as T
 }
 
-const datePicker = (ctx: HandleCtx) => ({
+export const datePicker = (ctx: HandleCtx) => ({
   getValue: () => ctx.el?.getAttribute('data-value') ?? String(ctx.getProp('value') ?? ''),
   setValue: (v: string) => {
     ctx.setProp('value', v)
@@ -30,7 +30,7 @@ const datePicker = (ctx: HandleCtx) => ({
   isOpen: () => ctx.el?.getAttribute('data-open') === 'true',
 })
 
-const dateRange = (ctx: HandleCtx) => ({
+export const dateRange = (ctx: HandleCtx) => ({
   getValue: () => ({ start: ctx.el?.getAttribute('data-start') ?? '', end: ctx.el?.getAttribute('data-end') ?? '' }),
   /** Set both ends (`YYYY-MM-DD`); swapped if reversed. Emits `changed` once. */
   setValue: (start: string, end: string) => {
@@ -49,7 +49,7 @@ const dateRange = (ctx: HandleCtx) => ({
   isOpen: () => ctx.el?.getAttribute('data-open') === 'true',
 })
 
-const radioGroup = (ctx: HandleCtx) => ({
+export const radioGroup = (ctx: HandleCtx) => ({
   getValue: () => ctx.el?.getAttribute('data-value') ?? String(ctx.getProp('value') ?? ''),
   setValue: (v: string) => {
     ctx.setProp('value', v)
@@ -61,7 +61,7 @@ const radioGroup = (ctx: HandleCtx) => ({
   },
 })
 
-const pagination = (ctx: HandleCtx) => {
+export const pagination = (ctx: HandleCtx) => {
   const page = () => Number(ctx.el?.getAttribute('data-page') ?? ctx.getProp('page') ?? 1)
   const pages = () => Number(ctx.el?.getAttribute('data-pages') ?? 1)
   const go = (n: number) => {
@@ -86,7 +86,7 @@ const pagination = (ctx: HandleCtx) => {
   }
 }
 
-const collapsible = (ctx: HandleCtx) => {
+export const collapsible = (ctx: HandleCtx) => {
   const set = (open: boolean) => ctx.setProp('open', open)
   return {
     open: () => set(true),
@@ -96,7 +96,7 @@ const collapsible = (ctx: HandleCtx) => {
   }
 }
 
-const carousel = (ctx: HandleCtx) => {
+export const carousel = (ctx: HandleCtx) => {
   const index = () => Number(ctx.el?.getAttribute('data-index') ?? ctx.getProp('index') ?? 0)
   const go = (i: number) => {
     ctx.setProp('index', i)
@@ -111,7 +111,7 @@ const carousel = (ctx: HandleCtx) => {
   }
 }
 
-const colorPicker = (ctx: HandleCtx) => ({
+export const colorPicker = (ctx: HandleCtx) => ({
   getValue: () => ctx.el?.getAttribute('data-value') ?? String(ctx.getProp('value') ?? ''),
   setValue: (v: string) => {
     ctx.setProp('value', v)
@@ -119,7 +119,7 @@ const colorPicker = (ctx: HandleCtx) => ({
   },
 })
 
-const contextMenu = (ctx: HandleCtx) => ({
+export const contextMenu = (ctx: HandleCtx) => ({
   /** Open at viewport coordinates (defaults to the object's top-left). */
   open: (x?: number, y?: number) => {
     const r = ctx.el?.getBoundingClientRect()
@@ -133,7 +133,7 @@ const contextMenu = (ctx: HandleCtx) => ({
   },
 })
 
-const commandPalette = (ctx: HandleCtx) => ({
+export const commandPalette = (ctx: HandleCtx) => ({
   open: () => call(ctx, 'cpaOpen'),
   close: () => call(ctx, 'cpaClose'),
   toggle: () => call(ctx, ctx.el?.getAttribute('data-open') === 'true' ? 'cpaClose' : 'cpaOpen'),
@@ -144,7 +144,7 @@ const commandPalette = (ctx: HandleCtx) => ({
   },
 })
 
-const qrCode = (ctx: HandleCtx) => ({
+export const qrCode = (ctx: HandleCtx) => ({
   getValue: () => String(ctx.getProp('value') ?? ''),
   /** Re-encodes and repaints. */
   setValue: (text: string) => ctx.setProp('value', String(text ?? '')),

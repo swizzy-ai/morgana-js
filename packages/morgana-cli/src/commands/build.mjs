@@ -29,7 +29,8 @@ export async function build({ dir, minify } = {}) {
   const projectDir = dir ?? process.cwd()
   const out = path.join(projectDir, 'dist')
 
-  const result = await compileProject({ dir: projectDir, outDir: out, minify })
+  // A build is what ships: minified unless the flag or the config says otherwise.
+  const result = await compileProject({ dir: projectDir, outDir: out, minify, defaultMinify: true })
 
   const sizeOf = (rel) => {
     try {

@@ -19,7 +19,7 @@ export function repaintChartEl(el: HTMLElement, spec: { kind?: string; series?: 
 
 type Row = Record<string, unknown>
 
-function tableMethods(ctx: HandleCtx): Record<string, unknown> {
+export function tableMethods(ctx: HandleCtx): Record<string, unknown> {
   const table = (): HTMLTableElement | null => (ctx.el?.tagName === 'TABLE' ? (ctx.el as HTMLTableElement) : null)
 
   /** Read the rendered rows back out as records, honouring column data-column. */
@@ -278,7 +278,7 @@ function tableMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function mediaMethods(ctx: HandleCtx): Record<string, unknown> {
+export function mediaMethods(ctx: HandleCtx): Record<string, unknown> {
   const media = (): HTMLMediaElement | null => {
     const el = ctx.el
     if (!el) return null
@@ -315,7 +315,7 @@ function mediaMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function breadcrumbsMethods(ctx: HandleCtx): Record<string, unknown> {
+export function breadcrumbsMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return {
@@ -350,7 +350,7 @@ function breadcrumbsMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function listMethods(ctx: HandleCtx): Record<string, unknown> {
+export function listMethods(ctx: HandleCtx): Record<string, unknown> {
   const items = (): Element[] => Array.from(ctx.el?.children ?? [])
   return {
     count: () => items().length,
@@ -377,7 +377,7 @@ function listMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function chartMethods(ctx: HandleCtx): Record<string, unknown> {
+export function chartMethods(ctx: HandleCtx): Record<string, unknown> {
   /**
    * `ChartStateView` (sdk/handles.ts) — 12 fields, previously never
    * constructed anywhere. Built from the chart's declared props so both the
@@ -462,7 +462,7 @@ function chartMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function stepsMethods(ctx: HandleCtx): Record<string, unknown> {
+export function stepsMethods(ctx: HandleCtx): Record<string, unknown> {
   const items = (): Array<Record<string, unknown>> =>
     Array.isArray(ctx.getProp('items')) ? (ctx.getProp('items') as Array<Record<string, unknown>>) : []
   const paint = (current: number): void => {
@@ -500,7 +500,7 @@ function stepsMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function timelineMethods(ctx: HandleCtx): Record<string, unknown> {
+export function timelineMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return {
@@ -523,7 +523,7 @@ function timelineMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function statMethods(ctx: HandleCtx): Record<string, unknown> {
+export function statMethods(ctx: HandleCtx): Record<string, unknown> {
   const write = (part: string, prop: string, value: string): void => {
     ctx.setProp(prop, value)
     const node = ctx.el?.querySelector(`[data-part="${part}"]`)
@@ -546,7 +546,7 @@ function statMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function tagMethods(ctx: HandleCtx): Record<string, unknown> {
+export function tagMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setLabel: (label: string) => {
       ctx.setProp('label', label)
@@ -564,7 +564,7 @@ function tagMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function statusMethods(ctx: HandleCtx): Record<string, unknown> {
+export function statusMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     setLabel: (label: string) => {
       ctx.setProp('label', label)
@@ -578,7 +578,7 @@ function statusMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function dataListMethods(ctx: HandleCtx): Record<string, unknown> {
+export function dataListMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   return {
@@ -601,7 +601,7 @@ function dataListMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function avatarGroupMethods(ctx: HandleCtx): Record<string, unknown> {
+export function avatarGroupMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const paint = (avatars: Array<{ src?: string; name?: string }>, max?: number): void => {
@@ -633,7 +633,7 @@ function avatarGroupMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function progressCircleMethods(ctx: HandleCtx): Record<string, unknown> {
+export function progressCircleMethods(ctx: HandleCtx): Record<string, unknown> {
   const paint = (value: number): void => {
     const max = Number(ctx.getProp('max') ?? 100) || 100
     const v = Math.max(0, Math.min(max, Number(value) || 0))
@@ -655,7 +655,7 @@ function progressCircleMethods(ctx: HandleCtx): Record<string, unknown> {
   }
 }
 
-function codeBlockMethods(ctx: HandleCtx): Record<string, unknown> {
+export function codeBlockMethods(ctx: HandleCtx): Record<string, unknown> {
   return {
     copyCode: () => {
       const code = ctx.el?.querySelector('[data-part="source"]')?.textContent ?? String(ctx.getProp('content') ?? ctx.getProp('code') ?? '')
@@ -677,7 +677,7 @@ function codeBlockMethods(ctx: HandleCtx): Record<string, unknown> {
 }
 
 
-function treeMethods(ctx: HandleCtx): Record<string, unknown> {
+export function treeMethods(ctx: HandleCtx): Record<string, unknown> {
   const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
   const nodes = (): Element[] => Array.from(ctx.el?.querySelectorAll('[data-part="node"]') ?? [])
