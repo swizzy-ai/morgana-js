@@ -82,6 +82,12 @@ function loadBundle(js: string, stub: Stub): void {
   ) => Record<string, unknown>
   const win = run(stub.win, (globalThis as Record<string, unknown>)['document'])
   Object.assign(stub.win, win)
+  // State lives in memory once the page boots; read it from there.
+  const live = stub.win['__morgana_getState'] as (() => Record<string, unknown>) | undefined
+  if (live) {
+    live() // parse the page's JSON block now, while stub.state is still that block
+    Object.defineProperty(stub, 'state', { get: live, configurable: true })
+  }
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))

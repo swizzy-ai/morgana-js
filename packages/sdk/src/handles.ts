@@ -128,6 +128,12 @@ export interface BindShape {
   key?: string
   /** Rename fields: binding name → record field (`'*title'` reads `name`). */
   fields?: Record<string, string>
+  /**
+   * Bind one prop to the path instead of the object's content:
+   * `bind('meter.time', { prop: 'text' })`, `bind('brief', { prop: 'value' })`
+   * (a field bound to `value` also writes the path as you type).
+   */
+  prop?: string
 }
 
 /**
@@ -458,6 +464,8 @@ export interface ObjectHandle<P extends Record<string, any> = AnyProps> {
   track(event: string, opts?: TrackOptions): EventSource
   /** Emit an event directly on this object handle. */
   emit?(event: string, payload?: any): void
+  /** Browser lane: give it keyboard focus (without scrolling to it). */
+  focus?(): void
   /**
    * Animate this object — presets (`animate.slideLeft(...)`), the `make()`
    * words by name (`animate('pulse', ...)`), or raw keyframes

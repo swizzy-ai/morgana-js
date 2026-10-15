@@ -16,6 +16,7 @@ import type { ObjectsMeta } from '../objects-api'
 import { qrMarkup } from '../qr'
 import { CREATABLE_KINDS } from '../kinds'
 import { STATE_PROPS, stateRules } from '../style/states'
+import { conditionRules } from '../style/conditions'
 import { hydrateStyleCtx, resolvePropsToCss, type StyleCtx, type StyleCtxJSON } from '../style/props'
 import { resolveMakeToken } from '../compile-ctx/tokens'
 import { wrapElement } from './dom-handle'
@@ -30,6 +31,8 @@ import type { PageManifest } from '../render/manifest'
 export interface RuntimeDeps {
   readState(): Record<string, unknown>
   commitState(path: string, mut: (root: Record<string, unknown>) => void): Record<string, unknown>
+  /** Write several paths at once; each changed path notifies once. */
+  commitMany?(patch: Record<string, unknown>): Record<string, unknown>
   subscribePath(path: string, fn: (path: string, value: unknown, oldValue: unknown, root: Record<string, unknown>) => void): () => void
   /** Join the binding index — elements added after first paint. Returns records added. */
   indexElement(el: Element): number
@@ -150,12 +153,27 @@ function applyCss(el: HTMLElement, kind: string, prop: string, value: unknown): 
   // A kind's defaults (a button's primary fill, radius, padding…) are already
   // in the build CSS. Resolving one prop with its kind would stamp them inline
   // again on every write — a transparent tab turned orange on its first click.
-  // Keep only what this prop actually changed.
-  const defaults = resolvePropsToCss({}, kind, styleCtx())
+  // Keep only what this prop actually changed. The defaults are the same for
+  // every write to a kind, so they are resolved once.
+  const defaults = kindDefaults(kind)
+  let own: Record<string, string> | null = null
   for (const [cssProp, cssValue] of Object.entries(css)) {
-    if (defaults[cssProp] === cssValue && !(cssProp in resolvePropsToCss({ [prop]: value }, '', styleCtx()))) continue
+    if (defaults[cssProp] === cssValue) {
+      own ??= resolvePropsToCss({ [prop]: value }, '', styleCtx())
+      if (!(cssProp in own)) continue
+    }
     el.style.setProperty(cssProp, cssValue)
   }
+}
+
+const defaultsByKind = new Map<string, Record<string, string>>()
+function kindDefaults(kind: string): Record<string, string> {
+  let d = defaultsByKind.get(kind)
+  if (!d) {
+    d = resolvePropsToCss({}, kind, styleCtx())
+    defaultsByKind.set(kind, d)
+  }
+  return d
 }
 
 function applyText(el: HTMLElement, id: string, prop: string, value: unknown): void {
@@ -256,6 +274,10 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
   // State styles (hover/focus/active/disabled) are rules, not inline styles —
   // the runtime sheet is rebuilt from the manifest, which setProp updated.
   // `disabled` is also the component flag: only a style object is a state style.
+  if (prop === 'conditions' || prop === 'appear' || prop === 'leave') {
+    flushRuntimeSheet()
+    return
+  }
   if (STATE_PROPS.has(prop) && (prop !== 'disabled' || (typeof value === 'object' && value !== null))) {
     flushRuntimeSheet()
     return
@@ -265,6 +287,26 @@ function applyProp(id: string, kind: string, el: HTMLElement, prop: string, valu
   if (FLAG_PROPS.has(prop)) return applyFlag(el, prop, value)
   if (ATTR_PROPS.has(prop)) return applyAttr(el, prop, value)
   return applyCss(el, kind, prop, value)
+}
+
+/**
+ * Write a prop onto a rendered element exactly as `set()` would — the path a
+ * state binding and a stamped list row take. Returns nothing; an element the
+ * manifest does not know (a stamped row) is resolved by its own kind.
+ */
+export function writeElementProp(el: HTMLElement, prop: string, value: unknown): void {
+  const id = el.getAttribute('data-entity') ?? ''
+  const kind = el.getAttribute('data-kind') ?? ''
+  // A field already showing this value keeps its caret where it is.
+  if (prop === 'value' && 'value' in el && (el as HTMLInputElement).value === String(value ?? '')) return
+  const meta = manifest().objects[id]
+  if (meta) meta.props[prop] = value
+  applyProp(id, kind, el, prop, value, (meta?.props ?? {}) as Record<string, unknown>)
+}
+
+/** The page manifest, for the live layer. */
+export function pageManifest(): PageManifest {
+  return manifest()
 }
 
 // ── runtime stylesheet (breakpoint writes) ─────────────────────────────────
@@ -301,6 +343,14 @@ function flushRuntimeSheet(): void {
       if (decls) out.push(`@media ${query}{${selectorFor(id)}{${decls}}}`)
     }
     out.push(...stateRules(selectorFor(id), meta.kind, (meta.props ?? {}) as Record<string, unknown>, styleCtx()))
+    const props = (meta.props ?? {}) as Record<string, unknown>
+    if (props['conditions'] || props['appear'] || props['leave']) {
+      const base = resolvePropsToCss(props, meta.kind, styleCtx())
+      out.push(...conditionRules(
+        { id, selectors: [selectorFor(id)], rowRoot: null, shownDisplay: base['display'] ?? 'revert-layer' },
+        meta.kind, props, styleCtx(), mediaQueryFor,
+      ))
+    }
   }
   let styleEl = document.getElementById(RUNTIME_STYLE_ID) as HTMLStyleElement | null
   if (!styleEl) {
@@ -522,6 +572,11 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       },
       move(to: unknown) {
         setProp('placement', to)
+        return handle
+      },
+      /** Keyboard focus, without scrolling the page to it. Fields override this with their own field. */
+      focus() {
+        ;(el as HTMLElement | null)?.focus?.({ preventScroll: true })
         return handle
       },
       remove() {
@@ -865,6 +920,8 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
   ui['setState'] = (next: Record<string, unknown> | ((s: Record<string, unknown>) => Record<string, unknown>)) => {
     const state = ui['state'] as { set(p: string, v: unknown): void; getAll(): Record<string, unknown> }
     const patch = typeof next === 'function' ? next(state.getAll()) : next
+    // One commit for the whole patch: each changed path notifies once.
+    if (deps.commitMany) return deps.commitMany(patch ?? {})
     for (const [k, v] of Object.entries(patch ?? {})) state.set(k, v)
     return state.getAll()
   }

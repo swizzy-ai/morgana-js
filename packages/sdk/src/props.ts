@@ -157,6 +157,26 @@ export interface VisualProps {
   overflow?: OverflowToken
   /** Smooths state changes: `fast` | `normal` | `slow` | `none` | CSS. */
   transition?: 'fast' | 'normal' | 'slow' | 'none' | (string & {})
+  /** A CSS transform: `translateX(8px)`, `scale(.98)`. */
+  transform?: string
+  /** The focus outline: `'none'` drops the browser's ring. */
+  outline?: string
+  /** Whether a text area can be resized by hand. */
+  resize?: 'none' | 'vertical' | 'horizontal' | 'both'
+  /** `'none'` lets clicks pass through. */
+  pointerEvents?: 'none' | 'auto'
+}
+
+/**
+ * Where an object starts as it appears (`appear`) or ends as it leaves
+ * (`leave`). Compiled to a transition — no script runs.
+ */
+export interface MotionSpec {
+  opacity?: number
+  transform?: string
+  /** Duration in ms. Default 400. */
+  ms?: number
+  easing?: string
 }
 
 /** Styles for one interaction state — the same props as the object itself. */
@@ -175,6 +195,30 @@ export interface StyleProps extends VisualProps {
   theme?: string
   /** Colour mode for this subtree: `light`, `dark`, or `system` (follow the OS). */
   mode?: 'light' | 'dark' | 'system'
+  /**
+   * How this looks while something is true — compiled to CSS, so the browser
+   * only flips an attribute. Keys: `view=work` (a state value, `|` for any of
+   * several), `@split` (a breakpoint), `#composer:dragover` (another object's
+   * state: dragover, hover, focus, dragging), `:last` / `:first` /
+   * `:fromEnd(n)` (its row's place in a list); join with `&`. Values are the
+   * object's own props, plus `hidden`.
+   */
+  conditions?: Record<string, VisualProps & { hidden?: boolean }>
+  /** Where it starts each time it appears (or is stamped into a list). */
+  appear?: MotionSpec
+  /** Where it ends as it hides. */
+  leave?: MotionSpec
+  /** Its height eases when a condition changes what is inside it. */
+  easesHeight?: boolean
+  /** Files dragged over it light it up (`#id:dragover`) and arrive as `filesAdded`. */
+  acceptsFiles?: boolean
+  /** A click opens the file picker for the object named here (which `acceptsFiles`). */
+  browsesFilesFor?: string
+  /**
+   * Dragging this by hand moves the object named here sideways (its
+   * `--drag-x`), and `released` fires with `{ dx, width }` on letting go.
+   */
+  drags?: string
 }
 
 /** Design tokens a theme sets. Every built-in component paints from these. */

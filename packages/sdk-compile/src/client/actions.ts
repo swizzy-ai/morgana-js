@@ -25,6 +25,7 @@ export function actionsPart(): string[] {
     '  return {',
     '    readState:readState,',
     '    commitState:commitState,',
+    '    commitMany:commitMany,',
     '    subscribePath:subscribePath,',
     '    indexElement:indexElement,',
     '    forgetElement:forgetElement,',

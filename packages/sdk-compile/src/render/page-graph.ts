@@ -33,6 +33,7 @@ export interface PageGraphJson {
     customObject?: string
   }>
   stateDefaults: Record<string, unknown>
+  stateDecls?: Record<string, { address?: string; keep?: 'session' | 'device' }>
   libraries: LibraryDecl[]
   icons: Record<string, unknown>
   breakpoints: Record<string, { minWidth?: number; maxWidth?: number; label?: string }>
@@ -78,6 +79,7 @@ export function extractPageGraph(ir: ProjectIR, pageName: string): PageGraphJson
     page: { name: page.name, address: page.address, rootIds: [...page.rootIds], app: page.app, render: page.render },
     objects,
     stateDefaults: ir.stateDefaults,
+    stateDecls: Object.fromEntries(ir.stateDecls),
     libraries: [...ir.libraries.values()],
     icons: Object.fromEntries(ir.icons),
     breakpoints: Object.fromEntries(ir.breakpoints),
@@ -110,6 +112,7 @@ export function hydratePageGraph(json: PageGraphJson): ProjectIR {
     })
   }
   ir.stateDefaults = clone(json.stateDefaults)
+  for (const [k, v] of Object.entries(json.stateDecls ?? {})) ir.stateDecls.set(k, { ...v })
   for (const lib of json.libraries) ir.libraries.set(lib.name, { ...lib })
   for (const [k, v] of Object.entries(json.icons)) ir.icons.set(k, v as { kind: string; [key: string]: unknown })
   for (const [k, v] of Object.entries(json.breakpoints)) ir.breakpoints.set(k, { ...v })

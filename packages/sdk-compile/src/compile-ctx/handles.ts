@@ -285,7 +285,11 @@ export function makeHandle(state: CompileState, node: ObjNode): Record<string, u
     },
     bind: (source: unknown, shape?: unknown) => {
       if (typeof source === 'string') {
-        node.bindings.push({ prop: '*', source, shape: (shape as Record<string, unknown>) as { items?: string; key?: string; fields?: Record<string, string> } | undefined })
+        // `{ prop }` binds one prop (text, placeholder, background, value…);
+        // without it a list follows the array and anything else shows the value.
+        const prop = typeof (shape as { prop?: unknown })?.prop === 'string' ? (shape as { prop: string }).prop : '*'
+        node.bindings = node.bindings.filter((b) => b.prop !== prop)
+        node.bindings.push({ prop, source, shape: (shape as Record<string, unknown>) as { items?: string; key?: string; fields?: Record<string, string> } | undefined })
       } else if (Array.isArray(source)) {
         node.props['data'] = source
       }

@@ -154,6 +154,21 @@ export function buildState(state: CompileState): Record<string, unknown> {
       if (cur) delete cur[parts[parts.length - 1] as string]
     },
     getAll: () => state.ir.stateDefaults,
+    /**
+     * Declare a state key: its starting value, and whether it follows the
+     * address (`?view=work`) or survives a reload. Conditions that read it
+     * (`view=work`) are compiled into the stylesheet; the page restores it
+     * before first paint.
+     */
+    define: (key: string, opts: { initial?: unknown; address?: string | boolean; keep?: 'session' | 'device' } = {}) => {
+      if (typeof key !== 'string' || !key) throw new Error('ctx.ui.state.define(key, { initial, address, keep }) needs a key')
+      if (opts.keep !== undefined && opts.keep !== 'session' && opts.keep !== 'device') {
+        throw new Error(`ctx.ui.state.define("${key}"): keep is 'session' or 'device'`)
+      }
+      if (opts.initial !== undefined) setPath(key, opts.initial)
+      const address = opts.address === true ? key : typeof opts.address === 'string' && opts.address ? opts.address : undefined
+      state.ir.stateDecls.set(key, { ...(address ? { address } : {}), ...(opts.keep ? { keep: opts.keep } : {}) })
+    },
   }
   return api
 }

@@ -4,12 +4,14 @@
 import { escAttr, escHtml } from './html';
 import { renderNode } from './node';
 import { buildManifest, manifestJson } from './manifest';
+import { prePaintScript } from './live';
 import type { ProjectIR } from '../ir';
 
 export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: string } = {}): string {
   const page = ir.pages.get(pageName)
   if (!page) throw new Error(`unknown page "${pageName}"`)
   const body = page.rootIds.map((id) => renderNode(ir, id)).join('\n')
+  const manifest = buildManifest(ir, pageName)
   const pageProps = (ir.objects.get(pageName)?.props ?? {}) as Record<string, unknown>
   const title = opts.title ?? (typeof pageProps['title'] === 'string' && pageProps['title'] !== '' ? pageProps['title'] : pageName)
   const stateJson = JSON.stringify({ ...(ir.stateDefaults as Record<string, unknown>) }).replace(/</g, '\\u003c')
@@ -90,9 +92,10 @@ export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: 
     ...headExtra,
     '</head>',
     `<body ${[...bodyAttrs, ...bodyTagAttrs].join(' ')}>`,
+    prePaintScript(pageName, manifest.live!),
     body,
     `<script id="__MORGANA_STATE__" type="application/json">${stateJson}</script>`,
-    `<script id="__MORGANA_OBJECTS__" type="application/json">${manifestJson(buildManifest(ir, pageName))}</script>`,
+    `<script id="__MORGANA_OBJECTS__" type="application/json">${manifestJson(manifest)}</script>`,
     '<script src="/assets/client.js"></script>',
     iconInit,
     '</body>',

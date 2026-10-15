@@ -98,6 +98,9 @@ const EVENT_ALIASES: Record<string, string> = {
   invalid: 'invalid',
   filtered: 'filtered',
   appended: 'appended',
+  // the live page (client/live.ts)
+  filesadded: 'filesAdded',
+  released: 'released',
 }
 
 /** The event a prop watcher dispatches. Namespaced so it cannot collide. */
@@ -105,7 +108,23 @@ export const PROP_CHANGED = 'prop:changed'
 
 /** Canonicalize a friendly event name, or null when nothing emits that name. */
 export function canonicalEvent(raw: string): string | null {
-  return EVENT_ALIASES[raw.trim().toLowerCase()] ?? null
+  const t = raw.trim()
+  if (/^key:/i.test(t)) return keyEvent(t.slice(4))
+  return EVENT_ALIASES[t.toLowerCase()] ?? null
+}
+
+/**
+ * A keyboard combo, written the way the page reports it: modifiers first in a
+ * fixed order (Mod is Cmd or Ctrl), then the key as `KeyboardEvent.key` names
+ * it, letters upper-case. `key:mod+enter` and `key:Mod+Enter` are one event.
+ */
+export function keyEvent(combo: string): string | null {
+  const parts = combo.split('+').map((p) => p.trim()).filter(Boolean)
+  const key = parts.pop()
+  if (!key) return null
+  const mods = new Set(parts.map((p) => p.toLowerCase()))
+  const name = key.length === 1 ? key.toUpperCase() : key[0]!.toUpperCase() + key.slice(1)
+  return `key:${mods.has('mod') || mods.has('cmd') || mods.has('ctrl') ? 'Mod+' : ''}${mods.has('alt') ? 'Alt+' : ''}${mods.has('shift') ? 'Shift+' : ''}${name}`
 }
 
 /**
@@ -285,7 +304,7 @@ export function resolveBindings(
   // The event must be one something can actually dispatch, whether that is a
   // DOM event or a custom object's declared event.
   const isCustomEvent = graph.componentEvents.has(parsed.last)
-  if (event !== PROP_CHANGED && !isCustomEvent && !graph.emittable.has(event)) {
+  if (event !== PROP_CHANGED && !isCustomEvent && !graph.emittable.has(event) && !event.startsWith('key:')) {
     errors.push(
       `action "${actionName}" listens on "${parsed.friendly}" — nothing dispatches "${parsed.friendly}"`,
     )

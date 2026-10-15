@@ -111,6 +111,14 @@ export interface TriggerDecl {
   event?: string
 }
 
+/** A declared state key. */
+export interface StateDecl {
+  /** Query parameter the key follows, both ways. */
+  address?: string
+  /** Survives a reload: per tab (`session`) or per browser (`device`). */
+  keep?: 'session' | 'device'
+}
+
 export interface ProjectIR {
   objects: Map<string, ObjNode>
   pages: Map<string, PageNode>
@@ -126,6 +134,8 @@ export interface ProjectIR {
   breakpoints: Map<string, { minWidth?: number; maxWidth?: number; label?: string }>
   measures: Map<string, number | string>
   stateDefaults: Record<string, unknown>
+  /** Declared state keys (`ctx.ui.state.define`): which follow the address, which are kept. */
+  stateDecls: Map<string, StateDecl>
   inlineWhens: InlineWhenRecord[]
   logs: string[]
   /** Public vars from morgana.config.ts — build-time constants, safe to ship. */
@@ -182,6 +192,7 @@ export function createEmptyIR(): ProjectIR {
     breakpoints: new Map(),
     measures: new Map(),
     stateDefaults: {},
+    stateDecls: new Map(),
     inlineWhens: [],
     logs: [],
     vars: {},

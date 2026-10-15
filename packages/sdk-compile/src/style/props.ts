@@ -428,7 +428,14 @@ export function resolvePropsToCss(
         if (y) css['top'] = y
       }
     } else if (p.mode === 'pin') {
+      // Fixed to the window, at its own coordinates.
       css['position'] = 'fixed'
+      if (Array.isArray(p.at)) {
+        const x = dimToCss(p.at[0], ctx)
+        const y = dimToCss(p.at[1], ctx)
+        if (x) css['left'] = x
+        if (y) css['top'] = y
+      }
     }
     if (typeof p.order === 'number') css['order'] = String(p.order)
     if (typeof p.grow === 'number') css['flex-grow'] = String(p.grow)
@@ -505,14 +512,20 @@ export function resolvePropsToCss(
   if (kind === 'image' || kind === 'video') {
     css['max-width'] = css['max-width'] ?? '100%'
     if (typeof props['fit'] === 'string' && props['fit'] !== '') css['object-fit'] = props['fit'] as string
-    if (typeof props['aspectRatio'] === 'string' && props['aspectRatio'] !== '') {
-      css['aspect-ratio'] = props['aspectRatio'] as string
-    } else if (typeof props['aspectRatio'] === 'number') {
-      css['aspect-ratio'] = String(props['aspectRatio'])
-    }
+  }
+  // A fixed shape, width to height — any object, not only media.
+  if (typeof props['aspectRatio'] === 'string' && props['aspectRatio'] !== '') {
+    css['aspect-ratio'] = props['aspectRatio'] as string
+  } else if (typeof props['aspectRatio'] === 'number') {
+    css['aspect-ratio'] = String(props['aspectRatio'])
   }
   if (typeof props['display'] === 'string') css['display'] = props['display'] as string
   if (typeof props['cursor'] === 'string') css['cursor'] = props['cursor'] as string
+  if (typeof props['transform'] === 'string' && props['transform'] !== '') css['transform'] = props['transform'] as string
+  // `outline: 'none'` drops the browser's focus ring (GAPS #25); any other value is CSS.
+  if (typeof props['outline'] === 'string' && props['outline'] !== '') css['outline'] = props['outline'] as string
+  if (props['resize'] === 'none' || props['resize'] === 'vertical' || props['resize'] === 'horizontal' || props['resize'] === 'both') css['resize'] = props['resize'] as string
+  if (props['pointerEvents'] === 'none' || props['pointerEvents'] === 'auto') css['pointer-events'] = props['pointerEvents'] as string
   // Smooths state changes (hover/focus/active): a speed word or raw CSS.
   const transition = props['transition']
   if (typeof transition === 'string' && transition !== '') {

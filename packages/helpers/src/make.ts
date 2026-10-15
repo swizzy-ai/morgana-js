@@ -8,8 +8,31 @@ import { length, radius, space, textSize, WEIGHT, type Size, type TextSize, type
 type Handle = ObjectHandle<any>
 type Length = Exclude<Size, 'none'> | 'full' | 'fit' | number | (string & {})
 
-/** Where words land: the normal look, a state (hover…), or a screen size. */
-type Scope = { state?: 'hover' | 'focus' | 'active' | 'disabled'; screen?: string }
+/**
+ * Where words land: the normal look, a state (hover…), a screen size, or a
+ * condition (`view=work`, `#composer:dragover`, `:last`, joined with `&`).
+ */
+type Scope = { state?: 'hover' | 'focus' | 'active' | 'disabled'; screen?: string; cond?: string }
+
+/** Where an object comes from as it appears. */
+const APPEARS = {
+  fade: { opacity: 0 },
+  rise: { opacity: 0, transform: 'translateY(8px)' },
+  riseFar: { opacity: 0, transform: 'translateY(16px)' },
+  fromRight: { transform: 'translateX(104%)' },
+  fromBelow: { transform: 'translateY(104%)' },
+  grow: { opacity: 0, transform: 'scale(.97)' },
+} as const
+/** Where an object goes as it leaves. */
+const LEAVES = {
+  fade: { opacity: 0 },
+  sink: { opacity: 0, transform: 'translateY(8px)' },
+  toRight: { transform: 'translateX(104%)' },
+  toBottom: { transform: 'translateY(104%)' },
+} as const
+export type Appearance = keyof typeof APPEARS
+export type Leaving = keyof typeof LEAVES
+const EASE = 'cubic-bezier(.2,.8,.2,1)'
 
 export class Make {
   constructor(
@@ -19,8 +42,12 @@ export class Make {
   ) {}
 
   private put(props: Record<string, unknown>): this {
-    const { state, screen } = this.scope
-    if (screen) {
+    const { state, screen, cond } = this.scope
+    if (cond) {
+      const key = screen ? `${cond} & @${screen}` : cond
+      const prev = (this.h.get('conditions') ?? {}) as Record<string, Record<string, unknown>>
+      this.h.setProps({ conditions: { ...prev, [key]: { ...(prev[key] ?? {}), ...props } } } as never)
+    } else if (screen) {
       this.h.setWithBreakpoint(screen, props as never)
     } else if (state) {
       const prev = this.h.get(state)
@@ -180,6 +207,51 @@ export class Make {
   scrollsDown(): this { return this.put({ overflow: 'hidden auto' }) }
   clipped(): this { return this.put({ overflow: 'hidden' }) }
 
+  // ---- showing, motion ----
+
+  /** Shown (in a condition: shown while it holds). */
+  shown(): this { return this.put({ hidden: false }) }
+  /** Hidden (in a condition: hidden while it holds). */
+  hidden(): this { return this.put({ hidden: true }) }
+  /** Each time it appears (shown, or stamped into a list) it comes in like this. */
+  appears(how: Appearance = 'rise', ms = 450): this {
+    this.h.setProps({ appear: { ...APPEARS[how], ms, easing: EASE } } as never)
+    return this
+  }
+  /** As it hides it goes out like this, staying on screen until it has. */
+  leaves(how: Leaving = 'fade', ms = 450): this {
+    this.h.setProps({ leave: { ...LEAVES[how], ms, easing: EASE } } as never)
+    return this
+  }
+  /** Its height eases when what is inside it changes screen. */
+  easesHeight(): this { this.h.setProps({ easesHeight: true } as never); return this }
+  /** Follows a hand drag sideways (see `dragsAside`). */
+  followsDrag(): this { return this.put({ transform: 'translateX(var(--drag-x, 0px))' }) }
+  /** No focus ring. */
+  noOutline(): this { return this.put({ outline: 'none' }) }
+  /** A text area that cannot be resized by hand. */
+  fixedSize(): this { return this.put({ resize: 'none' }) }
+  /** Clicks pass through it. */
+  clickThrough(): this { return this.put({ pointerEvents: 'none' }) }
+
+  // ---- behaviour that arrives as events ----
+
+  /** Files dragged onto it light it up (`whileFilesOver`) and arrive as `filesAdded`. */
+  acceptsFiles(): this { this.h.setProps({ acceptsFiles: true } as never); return this }
+  /** Clicking it opens the file picker; the files arrive as `filesAdded` on `target`. */
+  opensFilePickerFor(target: string): this { this.h.setProps({ browsesFilesFor: target } as never); return this }
+  /** Dragging it by hand moves `target` sideways; `released` fires with `{ dx, width }`. */
+  dragsAside(target: string): this { this.h.setProps({ drags: target } as never); return this }
+
+  // ---- looks that follow state ----
+
+  /** Its background follows a state path. */
+  backgroundFrom(path: string): this { this.h.bind(path, { prop: 'bg' } as never); return this }
+  /** Its text colour follows a state path. */
+  textColorFrom(path: string): this { this.h.bind(path, { prop: 'color' } as never); return this }
+  /** Its width follows a state path (`'42%'`). */
+  widthFrom(path: string): this { this.h.bind(path, { prop: 'width' } as never); return this }
+
   // ---- mode ----
 
   darkMode(): this { return this.put({ mode: 'dark' }) }
@@ -195,5 +267,26 @@ export class Make {
   onTablet(): Make { return new Make(this.h, this.t, { screen: 'tablet' }) }
   onDesktop(): Make { return new Make(this.h, this.t, { screen: 'desktop' }) }
   /** Any breakpoint you declared: `.onScreen('split')`. */
-  onScreen(name: string): Make { return new Make(this.h, this.t, { screen: name }) }
+  onScreen(name: string): Make { return new Make(this.h, this.t, { ...(this.scope.cond ? { cond: this.scope.cond } : {}), screen: name }) }
+
+  // ---- conditions: everything after them applies while they hold ----
+
+  private and(part: string): Make {
+    const cond = this.scope.cond ? `${this.scope.cond} & ${part}` : part
+    return new Make(this.h, this.t, { ...(this.scope.screen ? { screen: this.scope.screen } : {}), cond })
+  }
+  /** While a state value is one of these: `.while('view', 'work')`, `.while('view', ['brief', 'work'])`. */
+  while(key: string, value: string | number | boolean | Array<string | number | boolean>): Make {
+    return this.and(`${key}=${(Array.isArray(value) ? value : [value]).map(String).join('|')}`)
+  }
+  /** While files are dragged over another object (which `acceptsFiles`). */
+  whileFilesOver(id: string): Make { return this.and(`#${id}:dragover`) }
+  /** While another object is hovered. */
+  whileHovering(id: string): Make { return this.and(`#${id}:hover`) }
+  /** In a list: when its row is the first. */
+  ifFirst(): Make { return this.and(':first') }
+  /** In a list: when its row is the last. */
+  ifLast(): Make { return this.and(':last') }
+  /** In a list: when its row is `n` from the end (1 is the last). */
+  ifFromEnd(n: number): Make { return this.and(`:fromEnd(${n})`) }
 }

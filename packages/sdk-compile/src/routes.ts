@@ -25,6 +25,9 @@ export const EMITTABLE = new Set([
   // compile and never fire.
   'copied', 'copyFailed', 'complete', 'notified', 'dismissed', 'cancelled',
   'closed', 'opened', 'patched', 'invalid', 'filtered', 'appended',
+  // The live page: files dropped or picked, a hand drag let go. Keys arrive
+  // as `key:<combo>` and are accepted by shape.
+  'filesAdded', 'released',
 ])
 
 export interface HttpRoute {

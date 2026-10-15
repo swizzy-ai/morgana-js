@@ -49,6 +49,13 @@ export interface StateHandle {
   remove(path: string): void
   getAll(): Record<string, unknown>
   /**
+   * Compile lane: declare a key — its starting value, whether it follows the
+   * address (`address: 'view'` ↔ `?view=…`) and whether it survives a reload
+   * (`keep: 'session'` per tab, `'device'` per browser). Restored before
+   * first paint, so the page never flashes the wrong screen.
+   */
+  define?(key: string, opts?: { initial?: unknown; address?: string | boolean; keep?: 'session' | 'device' }): void
+  /**
    * Subscribe to state changes (reactive stores) — the listener receives the
    * changed path; returns an unsubscribe function. Optional: plain stores
    * omit it and path-based `bind()` sources degrade to one-shot reads.
@@ -349,6 +356,8 @@ export interface ActionTriggerEvent<P = any> {
   timestamp: number
   traceId?: string
   session?: boolean
+  /** Set when the event came from inside a list row: the list, the row's key, and its record. */
+  row?: { list: string; key: string; record: unknown }
 }
 
 /**

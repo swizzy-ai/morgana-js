@@ -7,7 +7,8 @@ export function clickPart(): string[] {
     'document.addEventListener("click", function(e){',
     '  var el = e.target && e.target.closest ? e.target.closest("[data-entity]") : null;',
     '  if(!el) return;',
-    '  var name = el.getAttribute("data-entity");',
+    '  // A stamped list row reports its template object, so one binding serves every row.',
+    '  var name = el.getAttribute("data-tpl") || el.getAttribute("data-entity");',
     '  dispatchPageEvent("clicked", name, el, e);',
     '});',
   ];

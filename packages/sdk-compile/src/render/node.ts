@@ -1,7 +1,7 @@
 /**
  * Node dispatch + generic renderer + kind tag map.
  */
-import { baseAttrs, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
+import { baseAttrs, DIRECTIVE_PROPS, escAttr, escHtml, STRUCTURAL_PROPS, type RenderNode } from './html';
 import { iconFor, withIcon } from './icons';
 import { renderButton, renderCombobox, renderEditable, renderField, renderFileUpload, renderNumberInput, renderPinInput, renderRating, renderSelect, renderSlider, renderTagsInput, renderToggle } from './templates/form';
 import { renderChart, renderDataList, renderList, renderProgress, renderProgressCircle, renderStat, renderSteps, renderTable, renderTag, renderTimeline, renderTreeView } from './templates/data';
@@ -327,7 +327,7 @@ function renderGeneric(ir: ProjectIR, node: RenderNode): string {
   const icon = iconFor(ir, props)
   for (const [k, v] of Object.entries(props)) {
     if (v === undefined || v === null) continue
-    if (STRUCTURAL_PROPS.has(k)) continue
+    if (STRUCTURAL_PROPS.has(k) || DIRECTIVE_PROPS.has(k)) continue
     if ((node.kind === 'text' || node.kind === 'label' || node.kind === 'button') && (k === 'content' || k === 'label' || k === 'text')) {
       textContent = String(v)
       continue

@@ -15,7 +15,7 @@ import { SetTo } from './set'
 import { Theme, theme } from './theme'
 import { makeAnimate, type Animate } from './animate'
 
-export { Make } from './make'
+export { Make, type Appearance, type Leaving } from './make'
 export { SetTo } from './set'
 export { Theme, theme } from './theme'
 export { Animation, Move, type Animate, type Trigger } from './animate'
@@ -99,6 +99,8 @@ export interface Verbs {
     on(page: string | PageSentence | PageHandle): void
     /** Pin it at a spot inside its parent (which `.anchors()`): `place(x).at(0, 0).in(box)`. */
     at(left: string | number, top: string | number): { in(parent: Target): void }
+    /** Fix it to the window, whatever scrolls: `place(panel).fixedAt(0, 0).in(frame)`. */
+    fixedAt(left: string | number, top: string | number): { in(parent: Target): void }
   }
   /** How a thing looks. */
   make(thing: Target): Make
@@ -108,8 +110,12 @@ export interface Verbs {
   hide(thing: Target): void
   enable(thing: Target): void
   disable(thing: Target): void
-  /** Lists: `fill(jobs).with(records)`. */
-  fill(list: Target): { with(records: unknown[]): void }
+  /**
+   * Lists: `fill(jobs).with(records)`, or rows that follow state:
+   * `fill(log).from('log', 'id')` stamps, updates and removes rows as the
+   * array at that path changes (keyed by the record field you name).
+   */
+  fill(list: Target): { with(records: unknown[]): void; from(path: string, key?: string): void }
   /** Lists: `add(record).to(trail)`. */
   add(record: Record<string, unknown>): { to(list: Target): void }
   /** Lists: empty it. */
@@ -220,6 +226,13 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
           },
         }
       },
+      fixedAt(left, top) {
+        return {
+          in(parent) {
+            find(parent).place(find(thing), { mode: 'pin', at: [left, top] } as never)
+          },
+        }
+      },
       on(page) {
         const pg = typeof page === 'string' ? pages.get(page) ?? ctx.ui.pages.get(page) : page instanceof PageSentence ? page.handle : page
         if (!pg) throw new Error(`[helpers] No page named "${String(page)}". Create it first: create.page('${String(page)}').`)
@@ -232,7 +245,10 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
     hide: (thing) => find(thing).set('hidden', true),
     enable: (thing) => find(thing).set('disabled', false),
     disable: (thing) => find(thing).set('disabled', true),
-    fill: (list) => ({ with: (records) => find(list).set('data', records) }),
+    fill: (list) => ({
+      with: (records) => find(list).set('data', records),
+      from: (path, key) => find(list).bind(path, key ? { key } : undefined),
+    }),
     add: (record) => ({
       to(list) {
         const l = find(list) as Handle & { append?: (r: Record<string, unknown>) => void }

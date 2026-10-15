@@ -3,6 +3,7 @@
  */
 import { allThemeCss, rootThemeCss } from './themes';
 import { stateRules } from './states';
+import { conditionRules } from './conditions';
 import { wave3Styles } from './wave3';
 import { buildStyleCtx, cssDeclsToString, resolvePropsToCss } from './props';
 import { resolvePartStyles } from './parts';
@@ -28,6 +29,23 @@ function tokenClassRules(ir: ProjectIR): string[] {
   return out
 }
 
+/** Every object inside a list's row template → the template's root. */
+export function templateRows(ir: ProjectIR): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const node of ir.objects.values()) {
+    const root = node.contentTemplateId
+    if (!root || out.has(root)) continue
+    const stack = [root]
+    while (stack.length) {
+      const id = stack.pop() as string
+      if (out.has(id)) continue
+      out.set(id, root)
+      for (const c of ir.objects.get(id)?.children ?? []) stack.push(c)
+    }
+  }
+  return out
+}
+
 export function renderStyleCss(ir: ProjectIR): string {
   const ctx = buildStyleCtx(ir)
   const skeletonUses = [...ir.objects.values()].some(
@@ -43,6 +61,8 @@ export function renderStyleCss(ir: ProjectIR): string {
     ...rootThemeCss(),
     ...allThemeCss(ctx.themes),
     'body{margin:0;font-family:var(--font-body, system-ui,-apple-system,sans-serif);background:var(--background);color:var(--foreground)}',
+    // While an object is dragged by hand it follows the pointer, not a transition.
+    '[data-drag-active]{transition:none !important}',
     // Text renders as <p>/<h*>; the browser's default block margins put space
     // no prop asked for around every text object. Spacing is gap and pad only.
     '[data-kind="text"],[data-kind="heading"]{margin:0}',
@@ -276,10 +296,16 @@ export function renderStyleCss(ir: ProjectIR): string {
   // props.
   const framework = lines.splice(1)
   lines.push('@layer morgana{', ...framework, '}')
+  // Objects inside a list's row template are also reached as `[data-tpl]` —
+  // the rows the browser stamps from it share its compiled styles.
+  const rowRootOf = templateRows(ir)
+  const selectorsOf = (id: string): string[] =>
+    rowRootOf.has(id) ? [`[data-entity="${id}"]`, `[data-tpl="${id}"]`] : [`[data-entity="${id}"]`]
   for (const node of ir.objects.values()) {
     if (node.kind === 'page') continue
     const css = resolvePropsToCss(node.props as Record<string, unknown>, node.kind, ctx)
     const decls = cssDeclsToString(css)
+    const own = selectorsOf(node.id).join(',')
     // The component's own per-object defaults (part geometry, variant
     // colours) are framework styling: they go in the layer, so the object's
     // props below — unlayered — always win over them.
@@ -289,8 +315,8 @@ export function renderStyleCss(ir: ProjectIR): string {
       if (partDecls) parts.push(`${rule.selector}{${partDecls}}`)
     }
     if (parts.length) lines.push(`@layer morgana{${parts.join('')}}`)
-    if (decls) lines.push(`[data-entity="${node.id}"]{${decls}}`)
-    lines.push(...stateRules(`[data-entity="${node.id}"]`, node.kind, node.props as Record<string, unknown>, ctx))
+    if (decls) lines.push(`${own}{${decls}}`)
+    lines.push(...stateRules(own, node.kind, node.props as Record<string, unknown>, ctx))
   }
   const mediaQuery = (bp: string): string | null => {
     const shape = ir.breakpoints.get(bp)
@@ -307,8 +333,19 @@ export function renderStyleCss(ir: ProjectIR): string {
       const css = resolvePropsToCss(props as Record<string, unknown>, node.kind, ctx)
       const decls = cssDeclsToString(css)
       if (!decls) continue
-      lines.push(`@media ${query}{[data-entity="${node.id}"]{${decls}}}`)
+      lines.push(`@media ${query}{${selectorsOf(node.id).join(',')}{${decls}}}`)
     }
+  }
+  // Conditions last: they are what changes while the page runs, so they win
+  // over the base and breakpoint rules (by specificity, and by order).
+  for (const node of ir.objects.values()) {
+    const props = node.props as Record<string, unknown>
+    if (!props['conditions'] && !props['appear'] && !props['leave']) continue
+    const base = resolvePropsToCss(props, node.kind, ctx)
+    lines.push(...conditionRules(
+      { id: node.id, selectors: selectorsOf(node.id), rowRoot: rowRootOf.get(node.id) ?? null, shownDisplay: base['display'] ?? 'revert-layer' },
+      node.kind, props, ctx, mediaQuery,
+    ))
   }
   lines.push('')
   return lines.join('\n')

@@ -526,7 +526,8 @@ export async function bundleClientRuntime(projectDir: string, minify = false): P
     stdin: {
       contents: [
         `import { makeUi } from ${JSON.stringify(entry)};`,
-        'window.__morgana_runtime = { makeUi: makeUi };',
+        `import { bootLive } from ${JSON.stringify(path.join(path.dirname(entry), 'live.ts'))};`,
+        'window.__morgana_runtime = { makeUi: makeUi, bootLive: bootLive };',
       ].join('\n'),
       resolveDir: path.dirname(entry),
       sourcefile: 'client-runtime.morgana-entry.js',

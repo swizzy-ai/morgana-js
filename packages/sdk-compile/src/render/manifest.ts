@@ -10,6 +10,7 @@
 
 import { buildStyleCtx, serializeStyleCtx } from '../style/props'
 import type { ObjNode, ProjectIR } from '../ir'
+import { liveTables, type LiveTables } from './live'
 
 export interface ManifestObject {
   kind: string
@@ -43,6 +44,8 @@ export interface PageManifest {
   /** Server objects reachable through ctx.objects (proxies are built from this). */
   serverObjects: Record<string, { name: string; methods: string[]; streaming: string[] }>
   style: ReturnType<typeof serializeStyleCtx>
+  /** Declared state, reflected keys, list row templates, height morphs. */
+  live?: LiveTables
 }
 
 function manifestObject(node: ObjNode): ManifestObject {
@@ -117,6 +120,7 @@ export function buildManifest(ir: ProjectIR, pageName: string): PageManifest {
     vars: (ir.vars ?? {}) as Record<string, unknown>,
     serverObjects: ir.serverObjects ?? {},
     style: serializeStyleCtx(buildStyleCtx(ir)),
+    live: liveTables(ir, include),
   }
 }
 

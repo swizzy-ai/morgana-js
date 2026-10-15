@@ -3,6 +3,8 @@
  * Pure mappers: no IR mutation, no DOM.
  */
 
+import { togglesVisibility } from '../style/conditions'
+
 export function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
@@ -41,8 +43,20 @@ export function baseAttrs(node: RenderNode): string[] {
   // Hidden at build: the same inline display:none the runtime applies (and
   // clears on show). An attribute or class would lose to the object's own
   // `display` rule, so the object painted on first load anyway.
+  // An object whose conditions show or hide it keeps its base `hidden` in the
+  // stylesheet instead, where a condition rule can override it.
   const hidden = node.props?.['hidden']
-  if (hidden === true || hidden === 'true') attrList.push('style="display:none"')
+  if ((hidden === true || hidden === 'true') && !togglesVisibility(node.props ?? {})) attrList.push('style="display:none"')
+  // A row stamped from a list template answers to its template's styles.
+  const tpl = node.props?.['__tpl']
+  if (typeof tpl === 'string' && tpl) attrList.push(`data-tpl="${escAttr(tpl)}"`)
+  // Behaviours the page runtime attaches by attribute.
+  if (node.props?.['acceptsFiles'] === true) attrList.push('data-accepts-files')
+  const browse = node.props?.['browsesFilesFor']
+  if (typeof browse === 'string' && browse) attrList.push(`data-browse-files="${escAttr(browse)}"`)
+  if (node.props?.['easesHeight'] === true) attrList.push('data-morph')
+  const drags = node.props?.['drags']
+  if (typeof drags === 'string' && drags) attrList.push(`data-drags="${escAttr(drags)}"`)
   return attrList
 }
 
@@ -50,7 +64,7 @@ export function baseAttrs(node: RenderNode): string[] {
 export function carryProps(props: Record<string, unknown>, skip: Set<string>): string[] {
   const out: string[] = []
   for (const [k, v] of Object.entries(props)) {
-    if (v === undefined || v === null || skip.has(k)) continue
+    if (v === undefined || v === null || skip.has(k) || DIRECTIVE_PROPS.has(k)) continue
     // Objects (hover/focus state styles, item lists) have no attribute form;
     // String() would write "[object Object]" into the markup.
     if (typeof v === 'object' || typeof v === 'function') continue
@@ -62,3 +76,5 @@ export function carryProps(props: Record<string, unknown>, skip: Set<string>): s
 }
 
 export const STRUCTURAL_PROPS = new Set(['id', 'name', 'placement', 'data', 'address', 'app'])
+/** Props that are compile-time instructions, never attributes. */
+export const DIRECTIVE_PROPS = new Set(['conditions', 'appear', 'leave', '__tpl', 'acceptsFiles', 'browsesFilesFor', 'easesHeight', 'drags'])

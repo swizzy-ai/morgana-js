@@ -53,7 +53,11 @@ function install(): Harness {
     win: {} as Record<string, any>,
     streams,
     removed,
-    state,
+    // State lives in memory once the page boots; read it from there.
+    get state() {
+      const live = (h.win as Record<string, unknown>)['__morgana_getState'] as (() => Record<string, unknown>) | undefined
+      return live ? live() : state
+    },
     status: 200,
     live: () => streams.filter((s) => !s.closed),
     teardown: () => {},
