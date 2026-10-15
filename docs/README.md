@@ -21,6 +21,7 @@ and typechecks — so the snippets compile.
 | 8 | [Types](08-types.md) | `morgana types` and contracts |
 | 9 | [The full example](09-example.md) | The team board, start to finish, deployed |
 | 10 | [Fonts and assets](10-fonts-and-assets.md) | Google and self-hosted fonts, the type scale, weights, tracking, outlines; the `assets/` folder |
+| 11 | [Designing an app](11-designing-an-app.md) | The order to plan in: actions, events, UI objects, server, then server objects |
 
 ## The docs explain; `morgana spec` lists
 

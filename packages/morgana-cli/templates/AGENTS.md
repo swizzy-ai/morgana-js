@@ -18,6 +18,20 @@ npx morgana spec --all           # everything
 `spec` is generated from the installed SDK, so it is exact. Guide:
 https://github.com/swizzy-ai/morgana-js/tree/main/docs
 
+## Design before code
+
+Plan in Morgana's order, one table per page, before writing files:
+
+1. **Actions** — every verb (load the list, add an item, approve).
+2. **Event** — the `on` that runs each one.
+3. **UI objects** — what each browser action reads and writes (this gives the pages).
+4. **Server** — the server action or collection each calls.
+5. **Server objects** — last: only for a thing people watch live, that takes
+   concurrent writes and has its own lifecycle. Records are collection rows.
+
+Repeated things (rows, log lines) are one `list` with a content template
+(`list.addContent(template)`, `*field` bindings), fed with `set('data', records)`.
+
 ## Commands
 
 ```bash
