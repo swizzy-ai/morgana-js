@@ -152,9 +152,9 @@ export class Theme {
       `@media (prefers-color-scheme:dark){${t}[data-mode="system"],[data-mode="system"] ${t}{${dark}}}`
   }
 
-  /** Everything this theme adds to a page's head: font imports, then scrollbars. */
+  /** Everything this theme adds to a page's inline head CSS: tokens, then scrollbars. */
   pageCss(): string {
-    let css = this.fontImport() + this.tokenCss()
+    let css = this.tokenCss()
     if (this.bars) {
       const { width, thumb, hover } = this.bars
       const t = this.cssColor(thumb)
@@ -170,10 +170,21 @@ export class Theme {
     return css
   }
 
-  /** The CSS a page needs to load this theme's Google fonts ('' when there are none). */
-  fontImport(): string {
+  /**
+   * The `<link>` tags a page needs for this theme's Google fonts ('' when there
+   * are none). Preconnect opens the connection early; the stylesheet loads
+   * non-blocking (`media=print` flips to `all` on load) with a `<noscript>`
+   * fallback — a render-blocking `@import` costs first paint a full round trip.
+   */
+  headLinks(): string {
     if (this.webFonts.length === 0) return ''
-    return `@import url('https://fonts.googleapis.com/css2?${this.webFonts.join('&')}&display=swap');`
+    const href = `https://fonts.googleapis.com/css2?${this.webFonts.join('&')}&display=swap`
+    return (
+      '<link rel="preconnect" href="https://fonts.googleapis.com" />' +
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' +
+      `<link rel="stylesheet" href="${href}" media="print" onload="this.media='all'" />` +
+      `<noscript><link rel="stylesheet" href="${href}" /></noscript>`
+    )
   }
 
   /** The font for the whole page: `.pageFont('read')` (a named font) or a family. */

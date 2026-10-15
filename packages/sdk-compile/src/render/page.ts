@@ -29,6 +29,11 @@ export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: 
         .join('')}});</script>`
       : ''
   const headExtra: string[] = []
+  // headLinks is raw <link> markup the compiler places high in the head, so a
+  // preconnect or font stylesheet is discovered before the stylesheet even
+  // finishes parsing (which is what a `@import` inside headCSS forces).
+  const headLinks =
+    typeof pageProps['headLinks'] === 'string' && pageProps['headLinks'] !== '' ? [pageProps['headLinks']] : []
   const bodyTagAttrs: string[] = []
   if (typeof pageProps['meta'] === 'string' && pageProps['meta'] !== '') {
     headExtra.push(pageProps['meta'].includes('<') ? pageProps['meta'] : `<meta name="description" content="${escAttr(pageProps['meta'])}" />`)
@@ -83,6 +88,7 @@ export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: 
     '<head>',
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
+    ...headLinks,
     // Asset base, so a browser action can build a URL with ctx.assets.url().
     // The worker rewrites this to its env-scoped route at serve time.
     '<meta name="morgana-asset-base" content="/assets" />',
@@ -96,7 +102,11 @@ export function renderPageHtml(ir: ProjectIR, pageName: string, opts: { title?: 
     body,
     `<script id="__MORGANA_STATE__" type="application/json">${stateJson}</script>`,
     `<script id="__MORGANA_OBJECTS__" type="application/json">${manifestJson(manifest)}</script>`,
-    '<script src="/assets/client.js"></script>',
+    // `defer`: the runtime is not needed to paint, and downloading it must not
+    // hold up DOMContentLoaded. A deferred classic script still runs in order,
+    // after the document is parsed and before DOMContentLoaded fires, so the
+    // init script above it has already read the state and objects tables.
+    '<script defer src="/assets/client.js"></script>',
     iconInit,
     '</body>',
     '</html>',

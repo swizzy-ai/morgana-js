@@ -190,9 +190,14 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
         pages.set(name, handle)
         const page = new PageSentence(handle)
         if (look.hasRoles) page.theme(look.name).mode('system')
-        // The theme's page CSS — its Google fonts and scrollbars — in the page head.
+        // The theme's page CSS — its tokens and scrollbars — inline in the head,
+        // and its Google-font links placed high so the connection opens early.
         const pageCss = look.pageCss()
-        if (pageCss) handle.setProps({ headCSS: pageCss })
+        const headLinks = look.headLinks()
+        const headProps: Record<string, unknown> = {}
+        if (pageCss) headProps.headCSS = pageCss
+        if (headLinks) headProps.headLinks = headLinks
+        if (Object.keys(headProps).length > 0) handle.setProps(headProps)
         return page
       }
       if (key === 'app') return (name: string) => new AppSentence(ctx, name)

@@ -172,6 +172,18 @@ describe('Page props are all read', () => {
     expect(node.kind).toBe('page')
   })
 
+  it('headLinks is emitted verbatim, before the stylesheet', () => {
+    const { ir } = build('page', { headLinks: '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' }, 'home')
+    const html = renderPageHtml(ir, 'home')
+    expect(html).toContain('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />')
+    expect(html.indexOf('rel="preconnect"')).toBeLessThan(html.indexOf('href="/assets/style.css"'))
+  })
+
+  it('the client runtime script is deferred, not render-blocking', () => {
+    const { ir } = build('page', {}, 'home')
+    expect(renderPageHtml(ir, 'home')).toContain('<script defer src="/assets/client.js"></script>')
+  })
+
   it('tags become data attributes on the body', () => {
     const ir = createEmptyIR()
     const state = { ir, config: {}, actionName: 'test' } as CompileState

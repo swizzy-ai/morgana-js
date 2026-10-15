@@ -400,6 +400,12 @@ export interface PageProps extends SharedProps {
   meta?: string
   favicon?: string
   headCSS?: string
+  /**
+   * Raw HTML `<link>` tags for the head (preconnect, preload, a font
+   * stylesheet). Emitted verbatim, early in the head — before `headCSS` — so a
+   * connection can be opened while the stylesheet is still parsing.
+   */
+  headLinks?: string
   headScript?: string
   isSpa?: boolean
   spaRoute?: string
