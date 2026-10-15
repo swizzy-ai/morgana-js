@@ -366,11 +366,24 @@ export interface GradientSpec {
 export interface ImageProps extends SharedProps {
   src?: string
   alt?: string
+  /**
+   * Layout size (a measure, `stretch`, a percentage) — applied as CSS. A plain
+   * integer is also emitted as the `<img>` intrinsic dimension, so the browser
+   * reserves space before the image loads. A layout token is not.
+   */
   width?: string
   height?: string
   fallback?: string
   aspectRatio?: string
   fit?: 'cover' | 'contain' | 'fill' | 'none'
+  /** The hero/LCP image: load eagerly at high priority. Images default to lazy. */
+  priority?: boolean
+  /** Responsive candidates, passed through to the `<img>`. */
+  srcset?: string
+  sizes?: string
+  /** Decode off the main thread; defaults to `async`. */
+  decoding?: 'async' | 'sync' | 'auto'
+  fetchpriority?: 'high' | 'low' | 'auto'
 }
 
 export interface LinkProps extends BoxProps {

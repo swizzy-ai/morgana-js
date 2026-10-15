@@ -192,6 +192,32 @@ describe('image + toggle', () => {
     expect(css(build([{ id: 'i', kind: 'image', props: { fit: 'cover', aspectRatio: '16/9' } }]))).toContain('object-fit:cover')
   })
 
+  it('only a numeric size becomes an intrinsic dimension', () => {
+    const imgOf = (ir: ProjectIR): string => html(ir).match(/<img[^>]*>/)?.[0] ?? ''
+    // `stretch` is a layout token: it belongs in CSS, not as width="stretch".
+    expect(imgOf(build([{ id: 'i', kind: 'image', props: { src: 'a.png', width: 'stretch' } }]))).not.toContain('width=')
+    expect(imgOf(build([{ id: 'i', kind: 'image', props: { src: 'a.png', width: '50%' } }]))).not.toContain('width=')
+    const sized = imgOf(build([{ id: 'i', kind: 'image', props: { src: 'a.png', width: 640, height: 360 } }]))
+    expect(sized).toContain('width="640"')
+    expect(sized).toContain('height="360"')
+  })
+
+  it('images lazy-load and decode async by default; priority opts out', () => {
+    const lazy = html(build([{ id: 'i', kind: 'image', props: { src: 'a.png' } }]))
+    expect(lazy).toContain('loading="lazy"')
+    expect(lazy).toContain('decoding="async"')
+    const hero = html(build([{ id: 'i', kind: 'image', props: { src: 'a.png', priority: true } }]))
+    expect(hero).toContain('loading="eager"')
+    expect(hero).toContain('fetchpriority="high"')
+    expect(hero).not.toContain('data-prop-priority')
+  })
+
+  it('srcset and sizes pass through', () => {
+    const h = html(build([{ id: 'i', kind: 'image', props: { src: 'a.png', srcset: 'a-2x.png 2x', sizes: '100vw' } }]))
+    expect(h).toContain('srcset="a-2x.png 2x"')
+    expect(h).toContain('sizes="100vw"')
+  })
+
   it('switch DOM with state-driven CSS', () => {
     const h = html(build([{ id: 's', kind: 'switch', props: { checked: true, label: 'On', size: 'lg', disabled: true } }]))
     expect(h).toContain('data-checked="true"')
