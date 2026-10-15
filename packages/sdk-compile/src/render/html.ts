@@ -38,6 +38,11 @@ export function baseAttrs(node: RenderNode): string[] {
   if (typeof theme === 'string' && theme !== '') attrList.push(`data-theme="${escAttr(theme.toLowerCase())}"`)
   const mode = node.props?.['mode']
   if (mode === 'light' || mode === 'dark' || mode === 'system') attrList.push(`data-mode="${mode}"`)
+  // Hidden at build: the same inline display:none the runtime applies (and
+  // clears on show). An attribute or class would lose to the object's own
+  // `display` rule, so the object painted on first load anyway.
+  const hidden = node.props?.['hidden']
+  if (hidden === true || hidden === 'true') attrList.push('style="display:none"')
   return attrList
 }
 

@@ -43,6 +43,9 @@ export function renderStyleCss(ir: ProjectIR): string {
     ...rootThemeCss(),
     ...allThemeCss(ctx.themes),
     'body{margin:0;font-family:var(--font-body, system-ui,-apple-system,sans-serif);background:var(--background);color:var(--foreground)}',
+    // Text renders as <p>/<h*>; the browser's default block margins put space
+    // no prop asked for around every text object. Spacing is gap and pad only.
+    '[data-kind="text"],[data-kind="heading"]{margin:0}',
     '[data-part="icon"]{display:inline-flex;align-items:center;justify-content:center;flex:none}',
     // An icon whose library loads deferred must still occupy its box, or the
     // swap from empty placeholder to svg nudges the line it sits on. Reserve

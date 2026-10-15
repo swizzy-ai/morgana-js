@@ -147,7 +147,13 @@ function applyCss(el: HTMLElement, kind: string, prop: string, value: unknown): 
     return
   }
   const css = resolvePropsToCss({ [prop]: value }, kind, styleCtx())
+  // A kind's defaults (a button's primary fill, radius, padding…) are already
+  // in the build CSS. Resolving one prop with its kind would stamp them inline
+  // again on every write — a transparent tab turned orange on its first click.
+  // Keep only what this prop actually changed.
+  const defaults = resolvePropsToCss({}, kind, styleCtx())
   for (const [cssProp, cssValue] of Object.entries(css)) {
+    if (defaults[cssProp] === cssValue && !(cssProp in resolvePropsToCss({ [prop]: value }, '', styleCtx()))) continue
     el.style.setProperty(cssProp, cssValue)
   }
 }
