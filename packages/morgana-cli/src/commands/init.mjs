@@ -122,6 +122,7 @@ const packageJson = (name) => `${JSON.stringify(
     // this CLI itself depends on, so a new project gets a tested set.
     dependencies: {
       '@studiomorgana/sdk': rangeFor('@studiomorgana/sdk'),
+      '@studiomorgana/helpers': rangeFor('@studiomorgana/helpers'),
     },
     // The CLI is a project dependency so `npm run dev` works without a
     // global install — and always matches this project's compiler.

@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@studiomorgana/agents": "workspace:^",
+    "@studiomorgana/helpers": "workspace:^",
     "@studiomorgana/sdk": "workspace:^",
     "@studiomorgana/sdk-compile": "workspace:^",
     "@studiomorgana/wizard": "workspace:^"
