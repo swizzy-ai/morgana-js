@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/eject",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "Eject a Morgana app to a plain React + Express codebase with no framework trace.",
   "license": "Apache-2.0",

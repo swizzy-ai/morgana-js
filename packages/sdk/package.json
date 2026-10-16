@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/sdk",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "type": "module",
   "description": "The Morgana framework developer interface — types-first: contexts, object handles, contracts, and configs.",
   "license": "Apache-2.0",

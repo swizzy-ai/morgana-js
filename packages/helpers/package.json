@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/helpers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Morgana helpers: write UI in plain English — create, place, make, set, show, fill, when, go, theme.",
   "license": "Apache-2.0",
