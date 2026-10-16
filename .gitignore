@@ -43,3 +43,6 @@ packages/morgana-server/
 # Internal handoff notes. The repository is public; this records unpublished
 # state, live infrastructure detail and decisions not meant to be public.
 HANDOFF.md
+
+# Local editor/tool state (launch configs and the like) — not project material.
+.claude/
