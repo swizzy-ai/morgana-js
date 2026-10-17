@@ -1,0 +1,21 @@
+{
+  "name": "kanban-ai",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A kanban board with a live backend and an AI planning feature, in the Swizzy style. Printed by `morgana example kanban-ai`.",
+  "scripts": {
+    "dev": "morgana dev",
+    "build": "morgana build",
+    "types": "morgana types",
+    "typecheck": "morgana types && tsc --noEmit"
+  },
+  "dependencies": {
+    "@studiomorgana/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@studiomorgana/cli": "workspace:^",
+    "@studiomorgana/sdk-compile": "workspace:^",
+    "typescript": "~5.8.2"
+  }
+}

@@ -79,6 +79,15 @@ export const COMMANDS = {
     },
   },
 
+  example: {
+    describe: 'print an annotated example project as markdown, for agents to copy',
+    usage: 'morgana example [name] [--list]',
+    flags: { list: { type: 'boolean', describe: 'list the examples' } },
+    async run(args, { positional, bool }) {
+      const { example } = await import('./commands/example.mjs')
+      example({ name: positional(args, 0, ''), list: bool(args, 'list') })
+    },
+  },
   build: {
     describe: 'compile the project to dist/',
     usage: 'morgana build [--dir <path>] [--no-minify]',

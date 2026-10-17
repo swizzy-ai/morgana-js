@@ -22,6 +22,22 @@ importers:
         specifier: workspace:^
         version: link:../../packages/morgana-cli
 
+  examples/kanban-ai:
+    dependencies:
+      '@studiomorgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+    devDependencies:
+      '@studiomorgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+      '@studiomorgana/sdk-compile':
+        specifier: workspace:^
+        version: link:../../packages/sdk-compile
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
   examples/morgana-docs:
     dependencies:
       '@studiomorgana/sdk':
