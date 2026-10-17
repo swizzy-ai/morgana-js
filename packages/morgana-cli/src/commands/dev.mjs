@@ -147,20 +147,24 @@ const SECURE = false
 const actionModules = new Map()
 
 async function getAction(name) {
-  if (!actionModules.has(name)) {
-    // Server first, desktop second: a server module and a desktop module may
-    // never share a name (the compiler rejects the collision), so order is
-    // a fallback, not a shadow.
-    const file = [
-      path.join(dist, 'server', 'actions', `${name}.js`),
-      path.join(dist, 'desktop', 'actions', `${name}.js`),
-    ].find((f) => fs.existsSync(f))
-    if (!file) {
-      throw Object.assign(new Error(`Action "${name}" is not deployed`), { code: 'ACTION_MISSING' })
-    }
-    actionModules.set(name, await import(pathToFileURL(file).href))
+  // Server first, desktop second: a server module and a desktop module may
+  // never share a name (the compiler rejects the collision), so order is
+  // a fallback, not a shadow.
+  const file = [
+    path.join(dist, 'server', 'actions', `${name}.js`),
+    path.join(dist, 'desktop', 'actions', `${name}.js`),
+  ].find((f) => fs.existsSync(f))
+  if (!file) {
+    throw Object.assign(new Error(`Action "${name}" is not deployed`), { code: 'ACTION_MISSING' })
   }
-  return actionModules.get(name)
+  // Keyed by the file's mtime: `morgana dev` recompiles on save, and a module
+  // cached by name alone kept running the previous build's code until restart.
+  const version = fs.statSync(file).mtimeMs
+  const cached = actionModules.get(name)
+  if (!cached || cached.version !== version) {
+    actionModules.set(name, { version, mod: await import(`${pathToFileURL(file).href}?v=${version}`) })
+  }
+  return actionModules.get(name).mod
 }
 
 /** Event ring log: client lifecycle posts plus server-side action runs. */
@@ -176,6 +180,11 @@ function logEvent(entry) {
  * it, so a channel behaves the same in development as it does deployed.
  */
 const channels = new ChannelHub()
+// A page's message on a channel reaches the server objects that declare it
+// (`channel` in defineServerObject), as a call to their `receive` method.
+channels.on('published', ({ channel, payload, from }) => {
+  if (from === 'page') objectsHost.deliver(channel, payload)
+})
 
 /**
  * The grant, for a locally-hosted channel.
@@ -588,7 +597,7 @@ const server = http.createServer(async (req, res) => {
     const type = typeof body.type === 'string' ? body.type : ''
     if (type.startsWith('channel:')) {
       const name = type.slice('channel:'.length)
-      const ok = channels.publish(name, body.payload ?? {})
+      const ok = channels.publish(name, body.payload ?? {}, 'page')
       return sendJson(res, ok ? 200 : 404, { success: ok, event: type })
     }
     if (type) logEvent({ event: type, ...(body.payload ?? {}), ts: Date.now() })

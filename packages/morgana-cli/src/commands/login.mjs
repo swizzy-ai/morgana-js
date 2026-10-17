@@ -86,7 +86,10 @@ function writeCredentials(creds, file = credentialsPath()) {
 function openBrowser(url) {
   const table = {
     darwin: ['open', [url]],
-    win32: ['cmd', ['/c', 'start', '', url]],
+    // Not `cmd /c start`: cmd ends a command at the first `&`, so the browser got the
+    // URL cut before `state=` and the callback came back without it. rundll32 takes
+    // the whole URL as one argument.
+    win32: ['rundll32', ['url.dll,FileProtocolHandler', url]],
   }
   const [cmd, argv] = table[process.platform] ?? ['xdg-open', [url]]
   try {

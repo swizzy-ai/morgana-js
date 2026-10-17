@@ -128,6 +128,22 @@ export function makeObjectsApi(metas: ObjectsMeta, t: ObjectsTransport): Record<
       remove: (name: string) => t.remove(meta.name, String(name)),
     }
   }
+  // By a type held as a value: its key (`adStream`) or its name (`ad-stream`).
+  // Kept inside this function: OBJECTS_API_SRC ships it to the sandbox as source.
+  const typeOf = (type: string): Record<string, (...a: unknown[]) => unknown> | undefined => {
+    const k = String(type)
+    if (metas[k]) return api[k] as Record<string, (...a: unknown[]) => unknown>
+    for (const [key, meta] of Object.entries(metas)) if (meta.name === k) return api[key] as Record<string, (...a: unknown[]) => unknown>
+    return undefined
+  }
+  const mustType = (type: string) => {
+    const found = typeOf(type)
+    if (!found) throw Object.assign(new Error(`no server object "${String(type)}"`), { status: 404 })
+    return found
+  }
+  api['get'] = (type: string, id?: string) => (id === undefined ? mustType(type) : mustType(type)['get']!(String(id)))
+  api['create'] = (type: string, id: string, init?: Record<string, unknown>) => mustType(type)['create']!(String(id), init)
+  api['has'] = (type: string) => typeOf(type) !== undefined
   return api
 }
 

@@ -43,6 +43,22 @@ export interface ObjectMeta {
    * a custom event name.
    */
   on?: string[]
+  /** The instance's channel (`{name}` = instance name) and the method that receives page messages on it. */
+  channel?: { name: string; receive: string }
+}
+
+/**
+ * The instance a channel belongs to under a `channel.name` template, or null.
+ * `'task-{name}'` and `task-abc` → `abc`. Shared by both hosts.
+ */
+export function channelInstance(template: string, channel: string): string | null {
+  const at = template.indexOf('{name}')
+  if (at < 0) return null
+  const head = template.slice(0, at)
+  const tail = template.slice(at + '{name}'.length)
+  if (!channel.startsWith(head) || !channel.endsWith(tail) || channel.length <= head.length + tail.length) return null
+  const name = channel.slice(head.length, channel.length - tail.length)
+  return INSTANCE_NAME_RE.test(name) ? name : null
 }
 
 /** Events an instance announces about itself (triggers and subscribers). */
@@ -515,6 +531,8 @@ export function accessRefusal(meta: ObjectMeta, what: string, user: AuthUser | n
 export function validateObjectMeta(meta: ObjectMeta): string[] {
   const errors: string[] = []
   if (!OBJECT_NAME_RE.test(meta.name)) errors.push(`object name "${meta.name}" must be lowercase letters, digits and -, starting with a letter`)
+  // `ctx.objects.get / create / has` are the by-type calls; an object by that name would hide one.
+  if (['get', 'create', 'has'].includes(meta.name)) errors.push(`object name "${meta.name}" is reserved — ctx.objects.${meta.name}() is the by-type call`)
   const members = new Set([...meta.methods, ...meta.jobs])
   if (members.size !== meta.methods.length + meta.jobs.length) {
     errors.push(`object "${meta.name}" uses one name for both a method and a job`)
@@ -534,6 +552,16 @@ export function validateObjectMeta(meta: ObjectMeta): string[] {
     }
     const problem = objectEventProblem(meta, key)
     if (problem) errors.push(`object "${meta.name}": on "${key}" — ${problem}`)
+  }
+  if (meta.channel) {
+    const { name, receive } = meta.channel
+    // Channel names are [A-Za-z0-9:_-]; `{name}` appears exactly once.
+    if (typeof name !== 'string' || name.split('{name}').length !== 2 || !/^[A-Za-z0-9:_-]*$/.test(name.replace('{name}', ''))) {
+      errors.push(`object "${meta.name}": channel.name "${String(name)}" must contain {name} once, around letters, digits, : _ -`)
+    }
+    if (typeof receive !== 'string' || !meta.methods.includes(receive)) {
+      errors.push(`object "${meta.name}": channel.receive "${String(receive)}" is not one of its methods`)
+    }
   }
   const reserved = new Set(['create', 'read', 'subscribe', 'list', 'remove'])
   for (const name of members) {

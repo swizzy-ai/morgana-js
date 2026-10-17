@@ -1,29 +1,46 @@
 /**
- * Local secrets — what `morgana dev` merges into `ctx.vars` on the server.
+ * Local secrets — the values `morgana dev` merges into `ctx.vars`, and that
+ * `morgana deploy` sends to the worker.
  *
- * The deployed equivalent lives on the worker (`morgana secrets set` without
- * `--local`). Locally a secret is a line in `.morgana/secrets.json`, which
- * `morgana init` already gitignores (the whole `.morgana/` directory), so a key
- * typed here never reaches a commit or a build artefact.
+ * They live in `morgana.secrets.json` at the project root, not inside
+ * `.morgana/`, so the file is where a person looks for it. `morgana init` adds
+ * it to `.gitignore` and creates it empty, so a key typed here never reaches a
+ * commit or a build artefact. The file that `.morgana/secrets.json` held before
+ * is still read, so nothing breaks while it is moved.
  */
 import fs from 'node:fs'
 import path from 'node:path'
 
 export const SECRET_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/
+export const SECRETS_FILE = 'morgana.secrets.json'
 
 export function localSecretsPath(dir) {
+  return path.join(dir, SECRETS_FILE)
+}
+
+/** Where secrets were kept before they moved to the project root. */
+export function legacySecretsPath(dir) {
   return path.join(dir, '.morgana', 'secrets.json')
 }
 
-/** Name → value. A missing or unreadable file is no secrets, not an error. */
-export function readLocalSecrets(dir) {
+function readSecretsFile(file) {
   try {
-    const parsed = JSON.parse(fs.readFileSync(localSecretsPath(dir), 'utf8'))
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
     return Object.fromEntries(Object.entries(parsed).filter(([, v]) => typeof v === 'string'))
   } catch {
     return {}
   }
+}
+
+/** Name → value. The project-root file wins over the legacy one. A missing file is no secrets, not an error. */
+export function readLocalSecrets(dir) {
+  return { ...readSecretsFile(legacySecretsPath(dir)), ...readSecretsFile(localSecretsPath(dir)) }
+}
+
+/** True when secrets still sit in the old location, so the caller can say where they should move. */
+export function hasLegacySecrets(dir) {
+  return fs.existsSync(legacySecretsPath(dir))
 }
 
 export function writeLocalSecrets(dir, secrets) {

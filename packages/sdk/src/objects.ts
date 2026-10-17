@@ -146,6 +146,19 @@ export interface ServerObjectSpec<
   methods?: M
   /** Background work started with `self.defer(job, params)`. */
   jobs?: J
+  /**
+   * Each instance's own channel, and the method that receives it.
+   *
+   * `name` is a channel name with `{name}` standing for the instance name:
+   * `'task-{name}'` gives instance `abc` the channel `task-abc`. Whatever a
+   * page publishes there (`ctx.events.publish('task-abc', msg)`) is delivered
+   * to the instance as a call to the `receive` method, with the message as its
+   * params, one at a time like every other call. Messages servers publish are
+   * not delivered back, so an object can publish on its own channel freely.
+   * Several object types may share one channel name; each instance that
+   * exists receives the message.
+   */
+  channel?: { name: string; receive: keyof M & string }
 }
 
 /** Declare a server object. Identity at runtime; the compiler reads it. */
@@ -212,6 +225,28 @@ export interface ObjectType<D> {
  */
 export interface ObjectRegistry {}
 
-export type ObjectsApi = { [K in keyof ObjectRegistry]: ObjectType<ObjectRegistry[K]> } & {
-  [name: string]: ObjectType<any>
+/** A registered object's key: the type name in camelCase (`ad-stream` → `adStream`). */
+export type ObjectKey = keyof ObjectRegistry & string
+
+/**
+ * `ctx.objects` — each object by name (`ctx.objects.adStream`), or by a type
+ * you hold as a value:
+ *
+ *   ctx.objects.get('deck')                     the type: create, get, list, remove…
+ *   ctx.objects.get('deck', sessionId)          one instance
+ *   ctx.objects.create('deck', sessionId, init)  a new instance
+ *
+ * The type may be written as its key (`adStream`) or its name (`ad-stream`).
+ * A registered key is fully typed; any other string is checked at runtime
+ * and fails with "no server object" when nothing has that name.
+ */
+export type ObjectsApi = { [K in ObjectKey]: ObjectType<ObjectRegistry[K]> } & {
+  get<K extends ObjectKey>(type: K): ObjectType<ObjectRegistry[K]>
+  get<K extends ObjectKey>(type: K, id: string): ObjectInstance<ObjectRegistry[K]>
+  get(type: string): ObjectType<any>
+  get(type: string, id: string): ObjectInstance<any>
+  create<K extends ObjectKey>(type: K, id: string, init?: Partial<StateOf<ObjectRegistry[K]>>): Promise<ObjectInstance<ObjectRegistry[K]>>
+  create(type: string, id: string, init?: Record<string, unknown>): Promise<ObjectInstance<any>>
+  /** True when a server object type with this key or name exists. */
+  has(type: string): boolean
 }

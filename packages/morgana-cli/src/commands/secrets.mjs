@@ -3,7 +3,7 @@
  *
  *   morgana secrets set RESEND_API_KEY re_123        deployed project (worker)
  *   echo re_123 | morgana secrets set RESEND_API_KEY  value from stdin
- *   morgana secrets set RESEND_API_KEY re_123 --local  .morgana/secrets.json for `morgana dev`
+ *   morgana secrets set RESEND_API_KEY re_123 --local  morgana.secrets.json for `morgana dev`
  *   morgana secrets list [--local]
  *   morgana secrets remove RESEND_API_KEY [--local]
  *
@@ -14,7 +14,8 @@
  */
 import { say, warn, row, bold, dim } from '../ui.mjs'
 import { resolveTarget, resolveCredential } from './deploy.mjs'
-import { SECRET_NAME_RE, readLocalSecrets, writeLocalSecrets, localSecretsPath } from '../lib/secrets.mjs'
+import { SECRET_NAME_RE, readLocalSecrets, writeLocalSecrets, localSecretsPath, hasLegacySecrets, legacySecretsPath } from '../lib/secrets.mjs'
+import { call } from '../lib/secrets-remote.mjs'
 
 async function readStdin() {
   if (process.stdin.isTTY) return ''
@@ -26,25 +27,6 @@ async function readStdin() {
 function checkName(name) {
   if (!name) throw new Error('a secret name is required, e.g. `morgana secrets set RESEND_API_KEY <value>`')
   if (!SECRET_NAME_RE.test(name)) throw new Error(`invalid secret name "${name}" — use letters, digits and _`)
-}
-
-async function call(base, bearer, method, route, body) {
-  const res = await fetch(`${base}${route}`, {
-    method,
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${bearer}` },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  const text = await res.text()
-  let parsed
-  try {
-    parsed = JSON.parse(text)
-  } catch {
-    parsed = { message: text.slice(0, 300) }
-  }
-  if (!res.ok && !(method === 'DELETE' && res.status === 404)) {
-    throw new Error(`${method} ${route} → ${res.status} ${parsed?.message ?? ''}`)
-  }
-  return { status: res.status, body: parsed }
 }
 
 export async function secrets({ action, name, value, local = false, dir = process.cwd(), url, project, env, token } = {}) {
@@ -62,6 +44,7 @@ export async function secrets({ action, name, value, local = false, dir = proces
       say(`${bold('local secrets')} ${dim(localSecretsPath(dir))}`)
       if (!names.length) say(dim('  (none)'))
       for (const n of names) say(`  ${n}`)
+      if (hasLegacySecrets(dir)) warn(`found ${legacySecretsPath(dir)} — move it to ${localSecretsPath(dir)} (set any value once to copy it)`)
       return names
     }
     if (action === 'set') {

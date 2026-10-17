@@ -125,6 +125,11 @@ export function metaFromDefinition(def: unknown, where: string): ObjectMeta {
     hasOnCreate: isFn(d['onCreate']),
     ...(Object.keys(on).length ? { on: Object.keys(on) } : {}),
   }
+  if (d['channel'] !== undefined) {
+    const ch = d['channel'] as { name?: unknown; receive?: unknown } | null
+    if (!ch || typeof ch !== 'object') fail('`channel` must be { name: "<prefix>{name}", receive: "<method>" }')
+    meta.channel = { name: String(ch!.name ?? ''), receive: String(ch!.receive ?? '') }
+  }
   const errors = validateObjectMeta(meta)
   if (errors.length) fail(errors.join('; '))
   return meta

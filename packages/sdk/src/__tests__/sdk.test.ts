@@ -428,12 +428,13 @@ describe('context surface guards', () => {
     expect(noAuth).toBe(true)
   })
 
-  it('ctx.objects is the server-objects API (create/get/getOrCreate/list), not the old world-objects surface', () => {
-    type Api = ClientContext['objects'][string]
+  it('ctx.objects is the server-objects API (get/create/has, by type), not the old world-objects surface', () => {
+    type Api = ClientContext['objects']
+    const hasGet: 'get' extends keyof Api ? true : false = true
     const hasCreate: 'create' extends keyof Api ? true : false = true
-    const hasGetOrCreate: 'getOrCreate' extends keyof Api ? true : false = true
+    const hasHas: 'has' extends keyof Api ? true : false = true
     const noLegacyRun: 'run' extends keyof Api ? false : true = true
-    expect([hasCreate, hasGetOrCreate, noLegacyRun]).toEqual([true, true, true])
+    expect([hasGet, hasCreate, hasHas, noLegacyRun]).toEqual([true, true, true, true])
   })
 
   it('ctx.page lives at ctx.ui.page — not at the context root', () => {

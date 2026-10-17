@@ -12,7 +12,7 @@ import { TARGET_FLAGS, MINIFY_FLAGS, minifyRequested } from './commands.mjs'
 export const WORKER_COMMANDS = {
   deploy: {
     describe: 'build and publish the project to a worker',
-    usage: 'morgana deploy [--url <worker>] [--no-minify]',
+    usage: 'morgana deploy [--url <worker>] [--no-minify] [--no-secrets]',
     flags: {
       ...TARGET_FLAGS,
       ...MINIFY_FLAGS,
@@ -20,6 +20,9 @@ export const WORKER_COMMANDS = {
       // that lost its MORGANA_TOKEN would sit waiting on a consent window that
       // can never appear — five minutes, then a message about the wrong thing.
       login: { type: 'boolean', describe: 'sign in in the browser when there is no token (--no-login to fail instead)' },
+      // Secrets from morgana.secrets.json go up with every deploy, so the worker
+      // holds the values this project's code reads. --no-secrets skips them.
+      secrets: { type: 'boolean', describe: 'send morgana.secrets.json to the worker first (--no-secrets to skip)' },
     },
     async run(args, { str }) {
       const path = await import('node:path')
@@ -36,6 +39,7 @@ export const WORKER_COMMANDS = {
         token: str(args, 'token'),
         distDir: path.join(dir, 'dist'),
         noLogin: args.values.login === false,
+        noSecrets: args.values.secrets === false,
       })
     },
   },

@@ -315,6 +315,15 @@ export function transportPart(): string[] {
     '  },',
     '  channels: function(){ return Object.keys(__channels); },',
     '  projectParams: __projectParams,',
+    '  // Send on a channel. Lands as `channel:<name>` for every subscriber, and is',
+    '  // delivered to the server objects that declare this channel (`channel` in',
+    '  // defineServerObject). Resolves true when the host accepted it.',
+    '  publish: function(channel, payload){',
+    '    var name = String(channel || "").replace(/^channel:/, "");',
+    '    var h = __runtimeHeaders(); h["content-type"] = "application/json"; delete h.Accept;',
+    '    return fetch(__withProject("/api/events"), { method: "POST", headers: h, body: JSON.stringify({ type: "channel:" + name, payload: payload === undefined ? {} : payload }) })',
+    '      .then(function(r){ return r.ok; });',
+    '  },',
     '};',
   ]
 }

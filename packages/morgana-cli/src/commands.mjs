@@ -61,6 +61,24 @@ export const COMMANDS = {
     },
   },
 
+  upgrade: {
+    describe: 'move @studiomorgana/* packages to the latest published versions and install',
+    usage: 'morgana upgrade [--dir <path>] [--dry-run] [--skip-install]',
+    flags: {
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      'dry-run': { type: 'boolean', describe: 'show what would change, write nothing' },
+      'skip-install': { type: 'boolean', describe: 'update package.json without running install' },
+    },
+    async run(args, { str, bool }) {
+      const { upgrade } = await import('./commands/upgrade.mjs')
+      await upgrade({
+        dir: str(args, 'dir') || process.cwd(),
+        dryRun: bool(args, 'dry-run'),
+        install: !bool(args, 'skip-install'),
+      })
+    },
+  },
+
   build: {
     describe: 'compile the project to dist/',
     usage: 'morgana build [--dir <path>] [--no-minify]',

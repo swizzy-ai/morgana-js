@@ -946,6 +946,7 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       subscribe: (event: string, scope?: unknown, handler?: Handler) => () => void
       attach: (stream: string, ticket: string, opts?: unknown) => () => void
       detach: (stream: string) => void
+      publish: (channel: string, payload?: unknown) => Promise<boolean>
     }
   }).__morgana_events
 
@@ -971,6 +972,13 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
         if (onFrame) onFrame({ stream: `page:${event}`, event, data: payload, timestamp: Date.now() })
         if (handler) void handler({ name: event, origin, element: el, payload, timestamp: Date.now() })
       })
+    },
+    // publish: send on a channel — every subscriber hears it, and the server
+    // objects that declare the channel receive it. A page with no transport
+    // (no network half compiled in) cannot send, and says so.
+    publish: (channel: string, payload?: unknown) => {
+      if (!transport) return Promise.reject(new Error('[Morgana] events.publish() needs the channel transport'))
+      return transport.publish(channel, payload)
     },
     // observe: same as subscribe, but also receives a descriptor, so a caller
     // can distinguish the origin element without re-reading the DOM.

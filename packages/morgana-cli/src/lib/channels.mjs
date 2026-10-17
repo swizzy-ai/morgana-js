@@ -106,11 +106,16 @@ export class ChannelHub extends EventEmitter {
       .sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  publish(name, payload) {
+  /**
+   * `from` says who sent it: `'page'` for a browser's POST, `'server'` for
+   * `ctx.events.publish`. Server objects receive only page messages, so an
+   * object publishing on its own channel never hears itself.
+   */
+  publish(name, payload, from = 'server') {
     const c = this.channel(name)
     if (!c) return false
     c.publish(payload)
-    this.emit('published', { channel: name, payload })
+    this.emit('published', { channel: name, payload, from })
     return true
   }
 

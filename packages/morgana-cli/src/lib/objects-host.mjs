@@ -18,6 +18,7 @@ import {
   accessRefusal,
   assertInstanceName,
   callMethod,
+  channelInstance,
   claimJob,
   createInstance,
   dueJobs,
@@ -267,6 +268,12 @@ export async function createObjectsHost({ dist, dataDir, makeCtx, runAction }) {
     return { items: items.map((r) => ({ name: r.name, createdAt: Number(r.createdAt) })), total }
   }
 
+  /** True when the instance exists now (a removed one leaves an empty file behind). */
+  function exists(type, name) {
+    if (!fs.existsSync(path.join(root, type, `${encodeURIComponent(name).replace(/\*/g, '%2A')}.db`)) && !open.has(key(type, name))) return false
+    return readInstance(storage(type, name)) !== null
+  }
+
   function read(type, name) {
     typeOf(type)
     if (!fs.existsSync(path.join(root, type, `${encodeURIComponent(name).replace(/\*/g, '%2A')}.db`)) && !open.has(key(type, name))) return null
@@ -366,6 +373,23 @@ export async function createObjectsHost({ dist, dataDir, makeCtx, runAction }) {
       } catch (err) {
         const status = Number(err?.status) >= 400 && Number(err?.status) < 600 ? Number(err.status) : 500
         return sendJson(res, status, { success: false, message: String(err?.message ?? err) })
+      }
+    },
+    /**
+     * A page published `payload` on `channel`: call `receive` on every existing
+     * instance whose type declares that channel. Serialized like any call, run
+     * as no one (the page's message is data, not a caller), never awaited by the
+     * publisher, and a failure is logged rather than thrown back at the page.
+     */
+    deliver(channel, payload) {
+      for (const { meta } of byType.values()) {
+        if (!meta.channel) continue
+        const name = channelInstance(meta.channel.name, String(channel))
+        if (!name || !exists(meta.name, name)) continue
+        const params = payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : { message: payload }
+        void call(meta.name, name, meta.channel.receive, params, null).catch((err) =>
+          console.error(`[morgana] ${meta.name} "${name}" ${meta.channel.receive} failed:`, err?.message ?? err),
+        )
       }
     },
     /** WebSocket subscribe: `/api/server-objects/<type>/<name>/live`. */

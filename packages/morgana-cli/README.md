@@ -11,6 +11,9 @@ cd my-app && npm install
 npx morgana dev
 ```
 
+Works with npm and pnpm. A new project includes a `pnpm-workspace.yaml` that
+allows esbuild's install script, so `pnpm install` exits cleanly on pnpm 11.
+
 ## Commands
 
 | | |

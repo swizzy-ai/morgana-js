@@ -34,6 +34,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { say, warn, row, bold, dim } from '../ui.mjs'
+import { SECRETS_FILE, hasLegacySecrets, legacySecretsPath, localSecretsPath } from '../lib/secrets.mjs'
+import { pushLocalSecrets } from '../lib/secrets-remote.mjs'
 
 /**
  * A deploy that landed but is not usable, so publishing stops here.
@@ -145,6 +147,7 @@ export async function deploy({
   token,
   distDir,
   noLogin = false,
+  noSecrets = false,
 } = {}) {
   const { base, projectId, envName } = resolveTarget({ url, project, env })
   const dist = distDir || path.join(process.cwd(), 'dist')
@@ -278,13 +281,34 @@ function normalizeEvent(event) {
   if (e.startsWith('store.') && e.endsWith('.created')) return 'created'
   if (e.startsWith('store.') && e.endsWith('.updated')) return 'updated'
   if (e.startsWith('store.') && e.endsWith('.deleted')) return 'deleted'
+  // The worker fires a channel publish as `{ event: 'publish', source: <name> }`;
+  // the channel name goes in `source` (guessSource). Left as `channel:<name>`,
+  // the event never equalled 'publish' and no channel trigger ever fired.
+  if (e.startsWith('channel:')) return 'publish'
   return e
 }
 
-async function main({ base, projectId, envName, bearer, dist }) {
+async function main({ base, projectId, envName, bearer, dist, projectDir, noSecrets }) {
   const manifest = readJson(dist, 'manifest.json', null)
   if (!manifest) {
     throw new DeployFailed('dist/manifest.json missing — the build did not finish')
+  }
+
+  // Secrets go up before the code, so a new action never runs without the secrets
+  // it reads. Only names are printed. A failure stops the deploy before any code is sent.
+  if (noSecrets) {
+    say(row('secrets', dim('skipped (--no-secrets)')))
+  } else {
+    if (hasLegacySecrets(projectDir)) {
+      warn(`found ${legacySecretsPath(projectDir)} — secrets are read from ${localSecretsPath(projectDir)}; move the file there`)
+    }
+    let sent
+    try {
+      sent = await pushLocalSecrets({ base, bearer, projectId, envName, dir: projectDir })
+    } catch (err) {
+      throw new DeployFailed(`secrets not sent — not publishing the project:\n    ${err.message}`)
+    }
+    say(row('secrets', sent.length ? sent.join(', ') : dim(`none in ${SECRETS_FILE}`)))
   }
   const apis = readJson(dist, 'server/apis.json', [])
   const stores = readJson(dist, 'server/stores.json', [])
@@ -528,5 +552,5 @@ const TEXT_ASSETS = new Set([
 // hard-exiting with one open makes Node abort inside libuv ("Assertion failed:
 // !(handle->flags & UV_HANDLE_CLOSING)"), which replaces the real diagnosis with
 // a crash. Setting `process.exitCode` drains the loop and still exits non-zero.
-return main({ base, projectId, envName, bearer, dist })
+return main({ base, projectId, envName, bearer, dist, projectDir: path.dirname(dist), noSecrets })
 }

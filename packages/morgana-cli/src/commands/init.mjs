@@ -18,6 +18,7 @@ import path from 'node:path'
 import { say, row, bold, green, dim, warn } from '../ui.mjs'
 import { VERSION, rangeFor } from '../version.mjs'
 import { template } from '../templates.mjs'
+import { SECRETS_FILE } from '../lib/secrets.mjs'
 
 function writeFile(file, contents) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -103,7 +104,20 @@ dist/
 *.log
 .env*
 !.env.example
+${SECRETS_FILE}
 `
+
+/**
+ * Add any line the project's .gitignore lacks, and keep every line it has. An
+ * existing ignore file is extended, never replaced, so nothing it protects is lost.
+ */
+function mergeGitignore(file) {
+  if (!fs.existsSync(file)) return writeFile(file, gitignore)
+  const have = fs.readFileSync(file, 'utf8')
+  const present = new Set(have.split(/\r?\n/).map((l) => l.trim()))
+  const missing = gitignore.split('\n').filter((l) => l && !present.has(l))
+  if (missing.length) fs.writeFileSync(file, `${have.replace(/\s*$/, '')}\n${missing.join('\n')}\n`)
+}
 
 const packageJson = (name) => `${JSON.stringify(
   {
@@ -135,6 +149,13 @@ const packageJson = (name) => `${JSON.stringify(
   null,
   2,
 )}\n`
+
+// pnpm 11 blocks dependency install scripts unless they are allowed. esbuild's
+// script is what checks its native binary, so without this `pnpm install` exits
+// 1 with ERR_PNPM_IGNORED_BUILDS even though the CLI runs. npm ignores the file.
+const pnpmWorkspace = `allowBuilds:
+  esbuild: true
+`
 
 // `.morgana/**` is the point: it holds the generated types (`morgana types`)
 // that make ctx.actions, ctx.objects and custom ctx.ui creators typed.
@@ -188,7 +209,11 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
   writeFile(path.join(dir, 'assets', 'favicon.svg'), favicon(pkg))
   writeFile(path.join(dir, 'package.json'), packageJson(pkg))
   writeFile(path.join(dir, 'tsconfig.json'), tsconfig)
-  writeFile(path.join(dir, '.gitignore'), gitignore)
+  writeFile(path.join(dir, 'pnpm-workspace.yaml'), pnpmWorkspace)
+  mergeGitignore(path.join(dir, '.gitignore'))
+  // Secrets are never overwritten: a file that is already there is kept as it is.
+  const secretsFile = path.join(dir, SECRETS_FILE)
+  if (!fs.existsSync(secretsFile)) writeFile(secretsFile, '{}\n')
   writeFile(path.join(dir, 'README.md'), readme(pkg))
   // The guide for agents building here. CLAUDE.md imports it so Claude Code
   // and AGENTS.md-reading tools see one file.
@@ -203,6 +228,8 @@ export function init({ name = 'my-morgana-app', force = false } = {}) {
     'assets/favicon.svg',
     'package.json',
     'tsconfig.json',
+    'pnpm-workspace.yaml',
+    SECRETS_FILE,
     'AGENTS.md',
     '.gitignore',
     'README.md',
