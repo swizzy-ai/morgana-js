@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/sdk-compile",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "description": "SDK-first compiler: compile-lane actions build an IR, the rest ship to their lane. No morgana-core runtime dependency.",
   "license": "Apache-2.0",
