@@ -10,6 +10,7 @@
 // so helpers and hand-written code mix freely. `helpers(ctx)` binds the verbs
 // to this action's ctx — that is how a sentence finds the page it changes.
 import type { ClientContext, ObjectHandle, PageHandle } from '@studiomorgana/sdk'
+import { Bricks } from './bricks'
 import { Make } from './make'
 import { SetTo } from './set'
 import { Theme, theme } from './theme'
@@ -19,6 +20,7 @@ export { Make, type Appearance, type Leaving } from './make'
 export { SetTo } from './set'
 export { Theme, theme } from './theme'
 export { Animation, Move, type Animate, type Trigger } from './animate'
+export { Bricks, type CellLooks } from './bricks'
 export { duration, type Duration, type Speed } from './time'
 export type { Size, TextSize, Weight } from './words'
 
@@ -126,6 +128,13 @@ export interface Verbs {
   go: { to(address: string): void; back(): void }
   /** Motion: `animate.fadeIn(card).for('slow').whenItAppears()`, `animate.bounce(icon).when(button).clicked()`. */
   animate: Animate
+  /**
+   * Compound sentences so page code never writes a loop or a local helper:
+   * `bricks.repeat(10, …, (seg, i) => …)`, `bricks.cells(meter, […]…)`,
+   * `bricks.segmented(foot, 'theme.mode', […])`, `bricks.rows('log', line, 'log')`,
+   * `bricks.onlyWhile(key, 'authStep', 'email')`.
+   */
+  bricks: Bricks
   /** Light and dark, in the browser: `mode.dark()`, `mode.light()`, `mode.toggle()`. */
   mode: {
     light(): void
@@ -215,45 +224,50 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
 
   const inBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined'
 
-  return {
+  const place: Verbs['place'] = (thing) => ({
+    in(parent) {
+      const p = find(parent)
+      const child = find(thing)
+      if (p.type === 'list' || p.type === 'table') p.addContent(child)
+      else p.place(child)
+    },
+    at(left, top) {
+      return {
+        in(parent) {
+          find(parent).place(find(thing), { mode: 'free', at: [left, top] } as never)
+        },
+      }
+    },
+    fixedAt(left, top) {
+      return {
+        in(parent) {
+          find(parent).place(find(thing), { mode: 'pin', at: [left, top] } as never)
+        },
+      }
+    },
+    on(page) {
+      const pg = typeof page === 'string' ? pages.get(page) ?? ctx.ui.pages.get(page) : page instanceof PageSentence ? page.handle : page
+      if (!pg) throw new Error(`[helpers] No page named "${String(page)}". Create it first: create.page('${String(page)}').`)
+      ;(pg as unknown as Handle).place(find(thing))
+    },
+  })
+  const make: Verbs['make'] = (thing) => new Make(find(thing), look)
+  const set: Verbs['set'] = (thing) => new SetTo(find(thing))
+  const fill: Verbs['fill'] = (list) => ({
+    with: (records) => find(list).set('data', records),
+    from: (path, key) => find(list).bind(path, key ? { key } : undefined),
+  })
+
+  const verbs: Verbs = {
     create,
-    place: (thing) => ({
-      in(parent) {
-        const p = find(parent)
-        const child = find(thing)
-        if (p.type === 'list' || p.type === 'table') p.addContent(child)
-        else p.place(child)
-      },
-      at(left, top) {
-        return {
-          in(parent) {
-            find(parent).place(find(thing), { mode: 'free', at: [left, top] } as never)
-          },
-        }
-      },
-      fixedAt(left, top) {
-        return {
-          in(parent) {
-            find(parent).place(find(thing), { mode: 'pin', at: [left, top] } as never)
-          },
-        }
-      },
-      on(page) {
-        const pg = typeof page === 'string' ? pages.get(page) ?? ctx.ui.pages.get(page) : page instanceof PageSentence ? page.handle : page
-        if (!pg) throw new Error(`[helpers] No page named "${String(page)}". Create it first: create.page('${String(page)}').`)
-        ;(pg as unknown as Handle).place(find(thing))
-      },
-    }),
-    make: (thing) => new Make(find(thing), look),
-    set: (thing) => new SetTo(find(thing)),
+    place,
+    make,
+    set,
     show: (thing) => find(thing).set('hidden', false),
     hide: (thing) => find(thing).set('hidden', true),
     enable: (thing) => find(thing).set('disabled', false),
     disable: (thing) => find(thing).set('disabled', true),
-    fill: (list) => ({
-      with: (records) => find(list).set('data', records),
-      from: (path, key) => find(list).bind(path, key ? { key } : undefined),
-    }),
+    fill,
     add: (record) => ({
       to(list) {
         const l = find(list) as Handle & { append?: (r: Record<string, unknown>) => void }
@@ -277,6 +291,7 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
       return sentence
     },
     animate: makeAnimate({ find, inBrowser }),
+    bricks: new Bricks({ create, place, make, set, fill }),
     mode: {
       light: () => { ctx.ui.theme.set('light') },
       dark: () => { ctx.ui.theme.set('dark') },
@@ -294,4 +309,7 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
       },
     },
   }
+  const bricks = new Bricks({ create, place: verbs.place, make: verbs.make, set: verbs.set, fill: verbs.fill } as never)
+  verbs.bricks = bricks
+  return verbs
 }

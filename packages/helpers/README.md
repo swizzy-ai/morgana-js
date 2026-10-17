@@ -1,6 +1,9 @@
 # @studiomorgana/helpers
 
-Write Morgana UI as sentences. Every new project gets it from `morgana init`.
+Write Morgana UI as sentences. Every new project gets it from `morgana init`
+(installed alongside the SDK), so read this and use it — do not hand-roll a
+parallel helper layer per project, and do not hand-write `for`/`forEach`
+loops at the call site: a brick covers them.
 
 ```ts
 import { defineClientAction } from '@studiomorgana/sdk'
@@ -101,3 +104,40 @@ A duration `d` reads as English: `'quick'` `'normal'` `'slow'` `'very slow'`,
 
 Page-load motion (`whenItAppears` in a compile action) has fixed timing for
 now; for custom timing play it with `.now()` in a `loaded` action.
+
+## The bricks
+
+`helpers(ctx, theme)` also hands you `bricks` — compound sentences for the
+thing a page would otherwise write out longhand more than twice. Build page
+code from bricks; add a brick only when a pattern reaches here.
+
+```ts
+const { create, place, make, bricks } = helpers(ctx, station)
+
+// Fixed-count runs — builds the first, clone()s the rest; no loops in page code
+const segs = bricks.repeat(10, () => make(create.box('conv-seg')).background('track').done(),
+  (seg, i) => { place(seg).in(track); seg.setProps({ id: `conv-seg-${i}` }) })
+
+// Hidden unless a state value holds (batched steps, gated panels)
+bricks.onlyWhile(authEmail, 'authStep', 'email')
+
+// A meter of labelled live cells — caption over a state-bound value
+bricks.cells(meter, [['m-time', 'Time', 'meter.time'], ['m-tok', 'Tokens', 'meter.tokens']])
+
+// A segmented control: one key per member, the active one lit by state
+bricks.segmented(foot, 'theme.mode', [['system', 'System'], ['dark', 'Dark']])
+
+// A list whose rows follow a state array (the row becomes the record template)
+bricks.rows('log', logLine, 'log')
+```
+
+| Brick | Kills |
+|---|---|
+| `repeat(count, build, configure?)` | every fixed-count run (segments, bars, dots) — build one, clone the rest |
+| `onlyWhile(thing, path, when)` | batched show/hide state wiring |
+| `cells(into, [[id, label, path]], looks?)` | meter/status cells written by hand |
+| `segmented(into, stateKey, [[id, label]])` | pill groups and their active-state condition |
+| `rows(id, row, path, key?)` | a list template + `fill().from()` boilerplate |
+
+Looks are theme appearance names; pass your own with the optional parameters.
+Type `bricks.` in your editor to see every one.

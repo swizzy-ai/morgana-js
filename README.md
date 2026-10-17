@@ -11,6 +11,13 @@ npx morgana dev          # http://localhost:4317
 npx morgana deploy
 ```
 
+`morgana init` installs **[`@studiomorgana/helpers`](packages/helpers)** with the
+SDK. Read its README and use it — pages are written as sentences
+(`create · place · make · set · fill · when · animate · theme`), and its
+**bricks** (`repeat`, `cells`, `segmented`, `rows`, `onlyWhile`) exist so
+application code never hand-writes `for`/`forEach` loops or grows its own
+helper list. Reach for a brick before writing one.
+
 ```ts
 // A button click in the browser, a durable object on the server, one model.
 export const addCard = defineClientAction({
@@ -82,6 +89,7 @@ correctly from the first prompt.
 | Package | What it is |
 |---|---|
 | [`@studiomorgana/sdk`](packages/sdk) | the developer interface — contexts, objects, contracts, config |
+| [`@studiomorgana/helpers`](packages/helpers) | write UI as sentences — `create place make set fill when go theme animate`, plus compound **bricks** (repeat, cells, segmented, rows, onlyWhile) |
 | [`@studiomorgana/cli`](packages/morgana-cli) | the `morgana` command |
 | [`@studiomorgana/sdk-compile`](packages/sdk-compile) | the compiler |
 | [`@studiomorgana/agents`](packages/morgana-agents) | the agent loop behind `ctx.agents` |
