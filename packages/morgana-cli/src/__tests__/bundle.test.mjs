@@ -12,11 +12,16 @@ import { createRequire } from 'node:module'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const pkgRoot = path.resolve(here, '..', '..')
-const bundle = path.join(pkgRoot, 'dist', 'morgana.js')
+// The bundle under test is built into its own folder, not dist/. dist/ is what
+// the release ships and other test files may read it while this runs in parallel,
+// so rebuilding it here made the suite race itself. The folder sits inside the
+// package, because the bundle resolves its dependencies from where it lives.
+const buildDir = path.join(pkgRoot, '.bundle-test')
+const bundle = path.join(buildDir, 'morgana.js')
 
 const require_ = createRequire(import.meta.url)
 
@@ -28,8 +33,9 @@ const require_ = createRequire(import.meta.url)
  * developed on is worse than no test.
  */
 function build() {
-  const pkgJson = path.join(path.dirname(require_.resolve('tsup/package.json')), 'dist', 'cli-default.js')
-  execFileSync(process.execPath, [pkgJson], { cwd: pkgRoot, stdio: 'ignore', timeout: 180_000 })
+  const tsupCli = path.join(path.dirname(require_.resolve('tsup/package.json')), 'dist', 'cli-default.js')
+  fs.rmSync(buildDir, { recursive: true, force: true })
+  execFileSync(process.execPath, [tsupCli, '--out-dir', buildDir], { cwd: pkgRoot, stdio: 'ignore', timeout: 180_000 })
 }
 
 function run(args) {
@@ -42,9 +48,13 @@ function run(args) {
 describe('the built bundle', () => {
   beforeAll(() => {
     // Built here rather than assumed, so a test run cannot pass against a stale
-    // dist from an earlier commit.
+    // bundle from an earlier commit.
     build()
   }, 200_000)
+
+  afterAll(() => {
+    fs.rmSync(buildDir, { recursive: true, force: true })
+  })
 
   it('exists where package.json says the bin is', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(pkgRoot, 'package.json'), 'utf8'))
