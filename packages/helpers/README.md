@@ -105,6 +105,42 @@ A duration `d` reads as English: `'quick'` `'normal'` `'slow'` `'very slow'`,
 Page-load motion (`whenItAppears` in a compile action) has fixed timing for
 now; for custom timing play it with `.now()` in a `loaded` action.
 
+## Sequences: `steps()`
+
+Several steps as one action. Steps run in order and share a scope: name a
+result with `as`, then use it as `$name` or `$name.field`. The first failure
+stops the sequence with a message naming the step; an `otherwise` list runs
+instead, with the message in `$error`.
+
+```ts
+export const onSave = defineClientAction({
+  config: { on: 'save.clicked' },
+  handler: steps([
+    { do: 'read', from: 'task-input', as: 'title' },
+    { do: 'server', action: 'saveTask', send: ['title'], as: 'saved' },
+    { do: 'clear', object: 'task-input' },
+    { do: 'set', object: 'status', to: 'Saved.' },
+  ], { otherwise: [{ do: 'set', object: 'status', to: '$error' }] }),
+})
+
+export const saveTask = defineServerAction({
+  handler: steps.server([
+    { do: 'create', collection: 'tasks', values: { title: '$title', done: false }, as: 'task' },
+    { do: 'save', record: '$task' },
+    { do: 'return', value: '$task' },
+  ]),
+})
+```
+
+| Side | Steps |
+|---|---|
+| browser | `read`, `set`, `clear`, `show`, `hide`, `go`, `message`, `state.set`, `state.add`, `state.push` |
+| server | `create` (a draft), `save` (insert, or update when it has an id), `add`, `update`, `delete`, `find`, `return` |
+| either | `server` (call a server action with values from the scope), `call`, `wait`, `log` |
+
+Data steps refuse to run in the browser, and page steps on the server, with a
+message saying where they belong. Godtongue writes its rules as `steps()`.
+
 ## The bricks
 
 `helpers(ctx, theme)` also hands you `bricks` — compound sentences for the

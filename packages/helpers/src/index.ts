@@ -25,6 +25,7 @@ export { Bricks, type CellLooks } from './bricks'
 export { duration, type Duration, type Speed } from './time'
 export type { Size, TextSize, Weight } from './words'
 export { asset, SPRITE, type AssetPick } from './assets'
+export { steps, sideOf, resolve, type Step, type StepsOptions, type StepsResult } from './steps'
 
 type Handle = ObjectHandle<any>
 type Target = Handle | string
