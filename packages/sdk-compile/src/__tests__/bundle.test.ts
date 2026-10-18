@@ -188,6 +188,42 @@ describe('multi-file actions', () => {
     }
   }, 60_000)
 
+  it('gives each file the SDK names it imports, even when two files import different ones', async () => {
+    // A library the action uses imports its own SDK values, one of them renamed.
+    // esbuild loads a module path once, so both files sharing one "SDK module"
+    // would hand the library the action's names and fail the build.
+    const dir = makeProject({
+      'morgana.config.ts': CONFIG,
+      'src/actions/_shared/presets.ts': [
+        "import { ANIMATE_PRESETS, defineWords as words } from '@studiomorgana/sdk'",
+        '',
+        "export const count = () => ANIMATE_PRESETS.length + Object.keys(words({ size: { means: 'px', small: 8 } })).length",
+        '',
+      ].join('\n'),
+      'src/actions/server/measure.ts': [
+        "import { defineServerAction } from '@studiomorgana/sdk'",
+        "import { count } from '../_shared/presets'",
+        '',
+        'export const measure = defineServerAction({',
+        '  handler: () => ({ n: count() }),',
+        '})',
+        '',
+      ].join('\n'),
+    })
+    try {
+      const code = await bundleServerAction({
+        projectDir: dir,
+        file: path.join(dir, 'src', 'actions', 'server', 'measure.ts'),
+        name: 'measure',
+        factory: 'server',
+      })
+      expect(code).toContain('defineServerAction')
+      expect(code).toContain('slideLeft')
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  }, 60_000)
+
   it('reports the action and file when an import cannot be resolved', async () => {
     const dir = makeProject({
       'morgana.config.ts': CONFIG,

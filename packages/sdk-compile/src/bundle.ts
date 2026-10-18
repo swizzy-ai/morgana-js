@@ -223,6 +223,26 @@ function requiresSdk(file: string): boolean {
   }
 }
 
+/**
+ * The SDK module an importer gets, told apart by what it needs: no suffix is
+ * the whole barrel; `?a,b` is just `a` and `b`, each from its declaring
+ * module. The suffix is part of the module's identity — esbuild loads a module
+ * once, so two importers that need different names (an action and a library
+ * it uses) must not share one. The path stays `morgana-sdk`, so bundles that
+ * only ever had one importer come out byte for byte as they did.
+ */
+function sdkModuleFor(importer: string | undefined): string {
+  // Entry points and namespace imports need the whole barrel.
+  if (!importer || importer === '<stdin>') return ''
+  const imports: SdkImport[] = sdkImportsIn(importer)
+  // A CommonJS dependency `require`s the SDK: there are no import
+  // statements to read, so it gets the whole barrel rather than nothing.
+  if (imports.length === 0 && requiresSdk(importer)) return ''
+  if (imports.some((i) => i.namespace)) return ''
+  const names = [...new Set(imports.map((i) => i.imported))].sort()
+  return `?${names.join(',')}`
+}
+
 const sdkPlugin: Plugin = {
   name: 'morgana-sdk',
   setup(build) {
@@ -233,38 +253,24 @@ const sdkPlugin: Plugin = {
         const target = path.join(root, `${subpath}.ts`)
         if (fs.existsSync(target)) return { path: target }
       }
-      return { path: 'morgana-sdk', namespace: 'morgana-sdk', pluginData: { importer: args.importer } }
+      return { path: 'morgana-sdk', namespace: 'morgana-sdk', suffix: sdkModuleFor(args.importer) }
     })
     build.onLoad({ filter: /^morgana-sdk$/, namespace: 'morgana-sdk' }, (args) => {
       const entry = resolveSdkEntry()
-      const fallback = (): esbuild.OnLoadResult => ({
-        contents: `export * from ${JSON.stringify(entry)}`,
-        loader: 'ts',
-        resolveDir: path.dirname(entry),
-      })
-      const importer = (args.pluginData as { importer?: string } | undefined)?.importer
-      // Entry points and namespace imports need the whole barrel.
-      if (!importer || importer === '<stdin>') return fallback()
-      const imports: SdkImport[] = sdkImportsIn(importer)
-      // A CommonJS dependency `require`s the SDK: there are no import
-      // statements to read, so it gets the whole barrel rather than nothing.
-      if (imports.length === 0 && requiresSdk(importer)) return fallback()
-      if (imports.length === 0) return { contents: 'export {}', loader: 'js' }
-      if (imports.some((i) => i.namespace)) return fallback()
-
+      if (!args.suffix) {
+        return { contents: `export * from ${JSON.stringify(entry)}`, loader: 'ts', resolveDir: path.dirname(entry) }
+      }
+      const names = args.suffix.slice(1).split(',').filter(Boolean)
       const map = sdkModuleMap()
       const byModule = new Map<string, string[]>()
-      for (const { local, imported } of imports) {
-        const target = map.get(imported)
+      for (const name of names) {
+        const target = map.get(name)
         if (!target) continue
-        const names = byModule.get(target) ?? []
-        const spec = local === imported ? imported : `${imported} as ${local}`
-        if (!names.includes(spec)) names.push(spec)
-        byModule.set(target, names)
+        byModule.set(target, [...(byModule.get(target) ?? []), name])
       }
       if (byModule.size === 0) return { contents: 'export {}', loader: 'js' }
       const lines = [...byModule.entries()].map(
-        ([target, names]) => `export { ${names.join(', ')} } from ${JSON.stringify(target)};`,
+        ([target, list]) => `export { ${list.join(', ')} } from ${JSON.stringify(target)};`,
       )
       return { contents: lines.join('\n'), loader: 'js', resolveDir: path.dirname(entry) }
     })
