@@ -98,6 +98,33 @@ export const COMMANDS = {
     },
   },
 
+  artifacts: {
+    describe: "list or export what the project's plugins build (assets, …)",
+    usage: 'morgana artifacts <list|dump|push> [name…] [--out <dir>] [--remote] [--rebuild]',
+    flags: {
+      ...TARGET_FLAGS,
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      remote: { type: 'boolean', describe: 'list: what the live deploy serves, from the worker' },
+      out: { type: 'string', short: 'o', describe: 'dump: where to write the files (default ./exported)' },
+      rebuild: { type: 'boolean', describe: 'build every artifact again, ignoring the cache' },
+    },
+    async run(args, { str, bool, positional }) {
+      const { artifacts } = await import('./commands/artifacts.mjs')
+      await artifacts({
+        action: positional(args, 0, ''),
+        names: args.positionals.slice(1),
+        dir: str(args, 'dir') || process.cwd(),
+        out: str(args, 'out'),
+        force: bool(args, 'rebuild'),
+        remote: bool(args, 'remote'),
+        url: str(args, 'url'),
+        project: str(args, 'project'),
+        env: str(args, 'env'),
+        token: str(args, 'token'),
+      })
+    },
+  },
+
   types: {
     describe: 'generate .morgana/ types for actions and server objects',
     usage: 'morgana types [--dir <path>] [--watch]',

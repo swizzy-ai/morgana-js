@@ -1,6 +1,6 @@
 {
   "name": "@studiomorgana/helpers",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Morgana helpers: write UI in plain English — create, place, make, set, show, fill, when, go, theme — plus bricks (repeat, cells, segmented, rows, onlyWhile) so page code never writes a loop.",
   "license": "Apache-2.0",

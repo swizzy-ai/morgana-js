@@ -12,6 +12,7 @@
 packages:
   - packages/sdk
   - packages/helpers
+  - packages/assets
   - packages/sdk-compile
   - packages/morgana-eject
   - packages/hotsheet

@@ -12,6 +12,28 @@ importers:
         specifier: ^1.63.0
         version: 1.63.0
 
+  examples/asset-studio:
+    dependencies:
+      '@studiomorgana/assets':
+        specifier: workspace:^
+        version: link:../../packages/assets
+      '@studiomorgana/helpers':
+        specifier: workspace:^
+        version: link:../../packages/helpers
+      '@studiomorgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+    devDependencies:
+      '@studiomorgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+      '@studiomorgana/sdk-compile':
+        specifier: workspace:^
+        version: link:../../packages/sdk-compile
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
   examples/fullstack-e2e:
     dependencies:
       '@studiomorgana/sdk':
@@ -77,6 +99,22 @@ importers:
         specifier: ~5.8.2
         version: 5.8.3
 
+  packages/assets:
+    dependencies:
+      '@studiomorgana/sdk':
+        specifier: workspace:^
+        version: link:../sdk
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.27.7))
+
   packages/desktop-electron:
     dependencies:
       '@studiomorgana/cli':
@@ -100,7 +138,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: ^4.1.10
-        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.27.7))
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
 
   packages/helpers:
     devDependencies:

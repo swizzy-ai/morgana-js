@@ -30,6 +30,28 @@ dist/
   server/triggers.json    cron and store hooks
 ```
 
+### Plugins and artifacts
+
+When `morgana.config.ts` lists `plugins`, they run between scanning and the
+compile actions (`sdk-compile/src/plugins.ts`):
+
+1. **Load.** Each plugin is bundled and evaluated like a compile action, then ordered by `after`, so a plugin that reads another's outputs builds second.
+2. **Build.** Every definition in the plugin's folder is bundled; the bundle inlines all its imports, so its text plus the plugin's own bundle and the variant name hash to a key. A key already in `.morgana/artifacts/<key>/` is reused. Otherwise the plugin's pure `makes(definition, make)` runs, and its files are written to a temporary folder and moved into place.
+3. **Ship.** Files go to `dist/assets/_artifacts/<plugin>/<key>/` through the same path as downloaded fonts, with a manifest beside them.
+4. **Resolve.** After the compile actions, any object prop that is a reference (`asset:coin@half#clip:spin`) in a scheme a plugin answers to becomes the file's URL.
+
+A project without plugins never enters this path, so it builds byte-identically.
+
+At deploy, artifact files don't ride in the payload. The CLI hashes each file
+(SHA-256 of its bytes), asks the worker which it lacks (`POST
+/api/artifacts/check`), uploads only those (`PUT /api/artifacts/<sha>`, which
+the worker re-hashes and refuses on mismatch), and sends a path → sha map with
+the deploy. The worker refuses a map that names a missing file, stores the map
+with the release, and serves those paths from R2 with `cache-control:
+immutable`. Content addressing makes the store safe to share: identical files
+from any project are stored once, and nobody can plant bytes under another
+file's hash.
+
 ### One esbuild profile per lane
 
 `platform` and `format` are chosen per lane, and the choice is load-bearing:

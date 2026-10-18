@@ -526,3 +526,7 @@ export type * from './components'
 // Server objects (defineServerObject) and the typed ctx.objects surface.
 export { defineServerObject } from './objects'
 export type * from './objects'
+
+// Plugins — packages that add a kind of definition (assets, worlds, music…).
+export { definePlugin, defineWords } from './plugin'
+export type { PluginDefinition, Make, Artifact, Words, WordTable } from './plugin'

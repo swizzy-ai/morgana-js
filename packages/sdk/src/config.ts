@@ -249,6 +249,12 @@ export interface MorganaConfig {
    */
   libraries?: string[]
   /**
+   * Installed plugins — each adds a kind of definition (`'@studiomorgana/assets'`
+   * reads `src/assets/`). A package name loads its `/plugin` export; a path
+   * (`'./plugins/maps.ts'`) loads that file.
+   */
+  plugins?: string[]
+  /**
    * The desktop lane's project-level declaration — backend package plus the
    * OS capability list the app may use. Absent means no desktop lane.
    */

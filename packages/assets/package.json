@@ -1,0 +1,48 @@
+{
+  "name": "@studiomorgana/assets",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Morgana assets: 2D sprites and 3D models with animations, written in words and built into glTF, SVG and sprite sheets.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/assets"
+  },
+  "keywords": ["morgana", "assets", "3d", "gltf", "sprites", "plugin"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js",
+      "require": "./dist/plugin.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@studiomorgana/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

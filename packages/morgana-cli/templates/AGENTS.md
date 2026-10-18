@@ -39,7 +39,8 @@ npx morgana dev          # http://localhost:4317, recompiles on save
 npx morgana types        # regenerate .morgana/ types (dev and build do it too)
 npm run typecheck        # morgana types && tsc --noEmit — run before you finish
 npx morgana build
-npx morgana deploy
+npx morgana deploy           # --dry-run shows what would upload
+npx morgana artifacts list   # what plugins build (assets, …); dump <name> exports files
 ```
 
 ## Where things go
@@ -51,7 +52,13 @@ src/actions/client/    defineClientAction, on: '<id>.clicked' | 'loaded' | …  
 src/actions/server/    defineServerAction — http routes, cron, triggers, or called by name
 src/server-objects/    defineServerObject — durable state + methods, ctx.objects.<camelName>
 src/objects/           createCustomObject — your own UI kinds, ctx.ui.<camelName>
+src/assets/            defineAsset (with plugins: ['@studiomorgana/assets']) — 2D/3D assets; pages use src: 'asset:<name>'
 ```
+
+Plugins add folders like `src/assets/`. Their outputs are built at build time,
+cached by content, and referenced by name (`asset:coin`, `asset:heart@half`,
+`asset:coin#clip:spin`) — never by path. `morgana spec` and docs/12-plugins.md
+have the details.
 
 ## Patterns
 

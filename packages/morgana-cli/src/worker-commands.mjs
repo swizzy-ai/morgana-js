@@ -12,7 +12,7 @@ import { TARGET_FLAGS, MINIFY_FLAGS, minifyRequested } from './commands.mjs'
 export const WORKER_COMMANDS = {
   deploy: {
     describe: 'build and publish the project to a worker',
-    usage: 'morgana deploy [--url <worker>] [--no-minify] [--no-secrets]',
+    usage: 'morgana deploy [--url <worker>] [--no-minify] [--no-secrets] [--dry-run]',
     flags: {
       ...TARGET_FLAGS,
       ...MINIFY_FLAGS,
@@ -23,6 +23,7 @@ export const WORKER_COMMANDS = {
       // Secrets from morgana.secrets.json go up with every deploy, so the worker
       // holds the values this project's code reads. --no-secrets skips them.
       secrets: { type: 'boolean', describe: 'send morgana.secrets.json to the worker first (--no-secrets to skip)' },
+      'dry-run': { type: 'boolean', describe: 'build and show what would upload, without uploading or publishing' },
     },
     async run(args, { str }) {
       const path = await import('node:path')
@@ -40,6 +41,7 @@ export const WORKER_COMMANDS = {
         distDir: path.join(dir, 'dist'),
         noLogin: args.values.login === false,
         noSecrets: args.values.secrets === false,
+        dryRun: args.values['dry-run'] === true,
       })
     },
   },

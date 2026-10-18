@@ -36,6 +36,7 @@ import path from 'node:path'
 import { say, warn, row, bold, dim } from '../ui.mjs'
 import { SECRETS_FILE, hasLegacySecrets, legacySecretsPath, localSecretsPath } from '../lib/secrets.mjs'
 import { pushLocalSecrets } from '../lib/secrets-remote.mjs'
+import { ARTIFACT_DIR, artifactMap, collectArtifactFiles, formatBytes, planArtifacts, uploadArtifacts } from '../lib/artifacts-remote.mjs'
 
 /**
  * A deploy that landed but is not usable, so publishing stops here.
@@ -148,6 +149,7 @@ export async function deploy({
   distDir,
   noLogin = false,
   noSecrets = false,
+  dryRun = false,
 } = {}) {
   const { base, projectId, envName } = resolveTarget({ url, project, env })
   const dist = distDir || path.join(process.cwd(), 'dist')
@@ -288,10 +290,41 @@ function normalizeEvent(event) {
   return e
 }
 
-async function main({ base, projectId, envName, bearer, dist, projectDir, noSecrets }) {
+async function main({ base, projectId, envName, bearer, dist, projectDir, noSecrets, dryRun }) {
   const manifest = readJson(dist, 'manifest.json', null)
   if (!manifest) {
     throw new DeployFailed('dist/manifest.json missing — the build did not finish')
+  }
+
+  // Artifacts first: plan (which files the cloud lacks), then upload only those.
+  // They land before any code or page that points at them, and the worker
+  // refuses a deploy whose map names a file it doesn't have.
+  const artifactFiles = collectArtifactFiles(dist)
+  let artifacts = null
+  if (artifactFiles.length) {
+    const plan = await planArtifacts({ base, bearer, projectId, files: artifactFiles })
+    const missing = new Set(plan.missing)
+    const unique = [...new Map(artifactFiles.map((f) => [f.sha, f])).values()]
+    const newFiles = unique.filter((f) => missing.has(f.sha))
+    const newBytes = newFiles.reduce((n, f) => n + f.size, 0)
+    if (!plan.supported) {
+      warn(`this worker has no artifact store — sending ${artifactFiles.length} artifact file(s) inline. Update the worker to upload only what changed.`)
+    } else {
+      say(row('artifacts', `${artifactFiles.length} files · ${newFiles.length} new (${formatBytes(newBytes)}) · ${unique.length - newFiles.length} already in the cloud`))
+      if (!dryRun && newFiles.length) {
+        const up = await uploadArtifacts({ base, bearer, projectId, files: artifactFiles, missing: plan.missing })
+        say(row('', `uploaded ${up.uploaded} (${formatBytes(up.bytes)})`))
+      }
+      artifacts = artifactMap(artifactFiles)
+    }
+  }
+
+  if (dryRun) {
+    const inline = collectAssets(dist, { skipArtifacts: Boolean(artifacts) })
+    say(row('assets', `${inline.length} file(s) would ship inline`))
+    say(row('pages', (manifest.pages ?? []).map((p) => p.name).join(', ') || '(none)'))
+    say(dim('\ndry run — nothing was uploaded or published'))
+    return { dryRun: true, artifacts: artifactFiles.length }
   }
 
   // Secrets go up before the code, so a new action never runs without the secrets
@@ -400,7 +433,8 @@ async function main({ base, projectId, envName, bearer, dist, projectDir, noSecr
     manifest,
     serverObjects,
     serverObjectTriggers,
-    assets: collectAssets(dist),
+    assets: collectAssets(dist, { skipArtifacts: Boolean(artifacts) }),
+    ...(artifacts ? { artifacts } : {}),
   })
   say(`deploy   ${deployRes.success ? 'ok' : 'FAILED'}`)
   if (serverObjects.length) say(`  objects  ${(deployRes.serverObjects ?? []).join(', ') || '(none stored)'}`)
@@ -414,8 +448,15 @@ async function main({ base, projectId, envName, bearer, dist, projectDir, noSecr
   // references `/assets/<path>` and the worker rewrites those to the
   // env-scoped deployed-asset route at serve time — so a single payload is the
   // whole delivery path. Rejected assets are reported, never dropped silently.
-  const assetCount = collectAssets(dist).length
+  const assetCount = collectAssets(dist, { skipArtifacts: Boolean(artifacts) }).length
   say(`assets   ${deployRes.assets ?? 0}/${assetCount} stored`)
+  if (artifacts) {
+    const declared = Object.keys(artifacts).length
+    say(`  artifacts ${deployRes.artifacts ?? 0}/${declared} live`)
+    if ((deployRes.artifacts ?? 0) !== declared) {
+      throw new DeployFailed(`declared ${declared} artifact(s), worker made ${deployRes.artifacts ?? 0} live — is the worker up to date?`)
+    }
+  }
   for (const r of deployRes.rejectedAssets ?? []) say(`  REJECTED ${r}`)
 
   // Housekeeping the worker could not finish, plus any trigger the worker
@@ -523,9 +564,12 @@ function walk(dir_, baseDir, out = []) {
  * browser receives `PHN2ZyB4bWxucz0…` where the stylesheet should be. Text
  * assets are ~33% smaller on the wire too.
  */
-function collectAssets(dist) {
+function collectAssets(dist, { skipArtifacts = false } = {}) {
   const src = path.join(dist, 'assets')
-  return walk(src, src).map((a) => {
+  // With an artifact store, plugin outputs travel by hash instead; their
+  // manifest still ships inline because it changes with every build.
+  const inStore = (p) => skipArtifacts && p.startsWith(`${ARTIFACT_DIR}/`) && p !== `${ARTIFACT_DIR}/manifest.json`
+  return walk(src, src).filter((a) => !inStore(a.path)).map((a) => {
     const ext = path.extname(a.path).toLowerCase()
     const text = TEXT_ASSETS.has(ext)
     return {
@@ -552,5 +596,5 @@ const TEXT_ASSETS = new Set([
 // hard-exiting with one open makes Node abort inside libuv ("Assertion failed:
 // !(handle->flags & UV_HANDLE_CLOSING)"), which replaces the real diagnosis with
 // a crash. Setting `process.exitCode` drains the loop and still exits non-zero.
-return main({ base, projectId, envName, bearer, dist, projectDir: path.dirname(dist), noSecrets })
+return main({ base, projectId, envName, bearer, dist, projectDir: path.dirname(dist), noSecrets, dryRun })
 }

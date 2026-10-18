@@ -76,8 +76,9 @@ correctly from the first prompt.
 | `morgana dev` | compile, serve on :4317, recompile on change |
 | `morgana build` | compile to `dist/` |
 | `morgana types` | generate `.morgana/` types for actions, server objects and custom objects |
+| `morgana artifacts list\|dump\|push` | what the project's plugins build; export it; upload it ahead of a deploy |
 | `morgana spec [topic]` | print the API surface |
-| `morgana deploy` | build, publish, verify |
+| `morgana deploy` | build, upload new artifacts, publish, verify (`--dry-run` shows the plan) |
 | `morgana login` / `logout` | sign in via the browser / forget the token |
 | `morgana status` | what the cloud holds for this project |
 | `morgana secrets set\|list\|remove` | secrets server actions read with `ctx.vars.get()` |
@@ -91,6 +92,7 @@ correctly from the first prompt.
 | [`@studiomorgana/sdk`](packages/sdk) | the developer interface — contexts, objects, contracts, config |
 | [`@studiomorgana/helpers`](packages/helpers) | write UI as sentences — `create place make set fill when go theme animate`, plus compound **bricks** (repeat, cells, segmented, rows, onlyWhile) |
 | [`@studiomorgana/cli`](packages/morgana-cli) | the `morgana` command |
+| [`@studiomorgana/assets`](packages/assets) | the first plugin: 2D and 3D assets with animations, written in words |
 | [`@studiomorgana/sdk-compile`](packages/sdk-compile) | the compiler |
 | [`@studiomorgana/agents`](packages/morgana-agents) | the agent loop behind `ctx.agents` |
 | [`@studiomorgana/wizard`](packages/wizard) | durable multi-step AI workflows behind `ctx.ai` wizards |
@@ -98,7 +100,7 @@ correctly from the first prompt.
 
 ## Status
 
-Published as `0.5.0`. `init → dev → build → deploy` work end to end; the same
+Published as `0.7.0`. `init → dev → build → deploy` work end to end; the same
 full-stack scenarios run on `morgana dev` and a real worker in CI.
 
 ## Licence

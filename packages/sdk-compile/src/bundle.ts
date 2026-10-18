@@ -27,6 +27,7 @@ import esbuild from 'esbuild'
 import ts from 'typescript'
 import type { Plugin } from 'esbuild'
 import type { SdkActionMeta } from './extract'
+import { rememberBundle, withLocation } from './source-errors'
 
 /** Export name the generated entries use to hand a handler back to the compiler. */
 const HANDLER_EXPORT = '__morganaHandler'
@@ -214,6 +215,14 @@ function sdkImportsIn(file: string): SdkImport[] {
   return out
 }
 
+function requiresSdk(file: string): boolean {
+  try {
+    return /require\(\s*['"]@studiomorgana\/sdk['"]\s*\)/.test(fs.readFileSync(file, 'utf8'))
+  } catch {
+    return false
+  }
+}
+
 const sdkPlugin: Plugin = {
   name: 'morgana-sdk',
   setup(build) {
@@ -237,6 +246,9 @@ const sdkPlugin: Plugin = {
       // Entry points and namespace imports need the whole barrel.
       if (!importer || importer === '<stdin>') return fallback()
       const imports: SdkImport[] = sdkImportsIn(importer)
+      // A CommonJS dependency `require`s the SDK: there are no import
+      // statements to read, so it gets the whole barrel rather than nothing.
+      if (imports.length === 0 && requiresSdk(importer)) return fallback()
       if (imports.length === 0) return { contents: 'export {}', loader: 'js' }
       if (imports.some((i) => i.namespace)) return fallback()
 
@@ -339,6 +351,10 @@ export async function bundleCompileAction(opts: BundleOptions): Promise<(ctx: un
     },
     platform: 'node',
     format: 'cjs',
+    // So an error thrown by the action can be traced to the project file and
+    // line that threw it (source-errors.ts), not to a line of the bundle.
+    sourcemap: 'inline',
+    sourcesContent: false,
   })
 
   const module: { exports: Record<string, unknown> } = { exports: {} }
@@ -358,7 +374,11 @@ export async function bundleCompileAction(opts: BundleOptions): Promise<(ctx: un
     d: string,
   ) => void
 
-  evaluate(module, module.exports, require_, opts.file, path.dirname(opts.file))
+  try {
+    evaluate(module, module.exports, require_, opts.file, path.dirname(opts.file))
+  } catch (err) {
+    throw new Error(withLocation(`compile action "${opts.name}" failed while loading — ${err instanceof Error ? err.message : String(err)}`, err, code))
+  }
 
   const handler = module.exports[HANDLER_EXPORT]
   if (typeof handler !== 'function') {
@@ -366,6 +386,7 @@ export async function bundleCompileAction(opts: BundleOptions): Promise<(ctx: un
       `compile action "${opts.name}" exports no handler — use defineServerAction/defineClientAction, or export function handle(ctx)`,
     )
   }
+  rememberBundle(handler, code)
   return handler as (ctx: unknown) => unknown
 }
 // ── server lane ───────────────────────────────────────────────────────────
@@ -633,15 +654,32 @@ export async function loadCustomObjectDefinition(
  * functions themselves run later, on a host.
  */
 export async function loadModuleDefault(projectDir: string, file: string, label: string): Promise<unknown> {
+  return (await loadModuleWithSource(projectDir, file, label)).value
+}
+
+/**
+ * The same, plus the bundled source. The bundle inlines every import, so its
+ * text is a complete fingerprint of what the module depends on — a plugin
+ * definition's cache key.
+ */
+export async function loadModuleWithSource(
+  projectDir: string,
+  file: string,
+  label: string,
+  /** Resolve `file` as a package specifier from here (ES module conditions), rather than as a path. */
+  resolveFrom?: string,
+): Promise<{ value: unknown; code: string }> {
   const code = await run({ projectDir, file, name: label, factory: 'client' }, {
     stdin: {
       contents: [`import __morg_def from ${JSON.stringify(file)};`, `export const __morganaDefinition = __morg_def;`].join('\n'),
-      resolveDir: path.dirname(file),
+      resolveDir: resolveFrom ?? path.dirname(file),
       sourcefile: 'object.morgana-definition.ts',
       loader: 'ts',
     },
     platform: 'node',
     format: 'cjs',
+    sourcemap: 'inline',
+    sourcesContent: false,
   })
   const module: { exports: Record<string, unknown> } = { exports: {} }
   const require_ = createRequire(path.join(projectDir, 'noop.js'))
@@ -652,8 +690,14 @@ export async function loadModuleDefault(projectDir: string, file: string, label:
     f: string,
     d: string,
   ) => void
-  evaluate(module, module.exports, require_, file, path.dirname(file))
-  return module.exports['__morganaDefinition']
+  try {
+    evaluate(module, module.exports, require_, file, path.dirname(file))
+  } catch (err) {
+    throw new Error(withLocation(`${label} failed while loading — ${err instanceof Error ? err.message : String(err)}`, err, code))
+  }
+  const value = module.exports['__morganaDefinition']
+  rememberBundle(value, code)
+  return { value, code }
 }
 
 /**

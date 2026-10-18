@@ -10,7 +10,7 @@
 import { PARAM_SEGMENT_RE } from './server-host/routes'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { AppDefinition, CustomObjectDefinition, MorganaConfig } from '@studiomorgana/sdk'
+import type { AppDefinition, Artifact, CustomObjectDefinition, MorganaConfig } from '@studiomorgana/sdk'
 import { hookRunsFor, scanProject, type SdkActionMeta } from './extract'
 import {
   discoverCustomObjects,
@@ -38,6 +38,8 @@ import { renderStyleCss } from './style/sheet'
 import { ACCESS_ACTION, accessModuleWarnings, emitAccessModule } from './access'
 import { emitDist, type EmitResult } from './emit'
 import { minifyCss } from './style/minify'
+import { buildArtifacts, loadPlugins, resolveArtifactRefs } from './plugins'
+import { bundleOf, locateError } from './source-errors'
 
 export interface CompileOptions {
   dir: string
@@ -47,6 +49,8 @@ export interface CompileOptions {
   minify?: boolean
   /** Minify when neither the caller nor the config says: `morgana build` passes true, dev leaves it off. */
   defaultMinify?: boolean
+  /** Build every plugin artifact again, ignoring `.morgana/artifacts/`. */
+  rebuildArtifacts?: boolean
 }
 
 export interface CompileResult extends EmitResult {
@@ -67,6 +71,10 @@ export interface CompileResult extends EmitResult {
    * serialized. Additive — existing readers ignore it.
    */
   ir: ProjectIR
+  /** What the project's plugins built. Present only when it lists plugins. */
+  artifacts?: Artifact[]
+  /** How many of those were built now rather than taken from the cache. */
+  artifactsBuilt?: number
 }
 
 /**
@@ -220,6 +228,13 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const ir = createEmptyIR()
   seedFromConfig(ir, scan.config)
 
+  // Plugins build first, so compile actions can point at what they made
+  // (`src: 'asset:coin'`). A project that lists none skips this entirely.
+  const pluginSpecs = scan.config.plugins ?? []
+  const artifactBuild = pluginSpecs.length
+    ? await buildArtifacts({ dir, plugins: await loadPlugins(dir, pluginSpecs), warnings, force: opts.rebuildArtifacts })
+    : null
+
   // Custom objects are discovered and loaded BEFORE the compile lane runs, so a
   // component's creator exists on ctx.ui exactly like a built-in kind's does.
   // Discovery reads the serializable parts from source; loading evaluates the
@@ -270,9 +285,14 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     try {
       await fn(ctx)
     } catch (err) {
-      throw new Error(`compile action "${meta.name}" failed — ${err instanceof Error ? err.message : String(err)}`)
+      // Name the project file and line that threw: the message alone ("cannot
+      // read properties of undefined") rarely says where to look.
+      const where = locateError(err, bundleOf(fn))
+      throw new Error(`compile action "${meta.name}" failed${where ? ` at ${where}` : ''} — ${err instanceof Error ? err.message : String(err)}`)
     }
   }
+
+  if (artifactBuild) resolveArtifactRefs(ir, artifactBuild, warnings)
 
   // Page addresses are the URL space: required, normalized, unique, and never
   // colliding with reserved prefixes. Fail fast — a bad route ships a 404.
@@ -514,7 +534,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
         return null
       }
     })(),
-    extraAssets: fonts.files,
+    extraAssets: [...fonts.files, ...(artifactBuild?.files ?? [])],
     pages,
     clientJs,
     css,
@@ -548,10 +568,13 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     warnings,
     minify,
     ir,
+    ...(artifactBuild ? { artifacts: artifactBuild.artifacts, artifactsBuilt: artifactBuild.built } : {}),
   }
 }
 
 export { scanProject } from './extract'
+export { buildArtifacts, loadPlugins, resolveArtifactRefs } from './plugins'
+export type { ArtifactBuild, LoadedPlugin } from './plugins'
 export { generateTypes } from './types'
 export { buildSpec, renderAllSpecs, renderSpec, specTopics } from './spec'
 export type { SpecDoc, SpecMember, SpecSection } from './spec'

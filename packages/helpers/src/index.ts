@@ -15,6 +15,7 @@ import { Make } from './make'
 import { SetTo } from './set'
 import { Theme, theme } from './theme'
 import { makeAnimate, type Animate } from './animate'
+import { asset, SPRITE, type AssetPick } from './assets'
 
 export { Make, type Appearance, type Leaving } from './make'
 export { SetTo } from './set'
@@ -23,6 +24,7 @@ export { Animation, Move, type Animate, type Trigger } from './animate'
 export { Bricks, type CellLooks } from './bricks'
 export { duration, type Duration, type Speed } from './time'
 export type { Size, TextSize, Weight } from './words'
+export { asset, SPRITE, type AssetPick } from './assets'
 
 type Handle = ObjectHandle<any>
 type Target = Handle | string
@@ -46,6 +48,11 @@ export type Creators = { [K in Kind]: (id: string, main?: string) => Handle } & 
   page(name: string): PageSentence
   /** An app: `create.app('console').named('Swizzy')`. */
   app(name: string): AppSentence
+  /**
+   * An image of a built asset: `create.sprite('hero-coin', 'coin', { clip: 'spin', size: 'small' })`.
+   * Sized in pixels by word (tiny 32 … huge 256) or number; described by its name unless `alt` says otherwise.
+   */
+  sprite(id: string, name: string, opts?: AssetPick & { size?: keyof typeof SPRITE | number; alt?: string }): Handle
 }
 
 export class PageSentence {
@@ -211,6 +218,12 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
       }
       if (key === 'app') return (name: string) => new AppSentence(ctx, name)
       if (key === 'kind') return (kind: string, id: string, props?: Record<string, unknown>) => make1(kind, id, props)
+      if (key === 'sprite') return (id: string, name: string, opts: AssetPick & { size?: keyof typeof SPRITE | number; alt?: string } = {}) => {
+        const { size = 'medium', alt, ...pick } = opts
+        const px = typeof size === 'number' ? size : SPRITE[size]
+        if (px === undefined) throw new Error(`[helpers] create.sprite() — size "${String(size)}" is not one of ${Object.keys(SPRITE).join(', ')}`)
+        return make1('image', id, { src: asset(name, pick), alt: alt ?? name, width: `${px}px`, height: `${px}px` })
+      }
       return (id: string, main?: string) => {
         const props: Record<string, unknown> = {}
         const prop = MAIN[key as Kind]

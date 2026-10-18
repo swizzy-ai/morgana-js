@@ -1,0 +1,23 @@
+{
+  "name": "asset-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The first plugin in use: ten assets written in words, built by @studiomorgana/assets, shown on a gallery page.",
+  "scripts": {
+    "dev": "morgana dev",
+    "build": "morgana build",
+    "types": "morgana types",
+    "typecheck": "morgana types && tsc --noEmit"
+  },
+  "dependencies": {
+    "@studiomorgana/assets": "workspace:^",
+    "@studiomorgana/helpers": "workspace:^",
+    "@studiomorgana/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@studiomorgana/cli": "workspace:^",
+    "@studiomorgana/sdk-compile": "workspace:^",
+    "typescript": "~5.8.2"
+  }
+}
