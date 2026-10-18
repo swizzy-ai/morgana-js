@@ -35,7 +35,7 @@ const skipChecks = process.argv.includes('--skip-checks')
 const otp = process.argv.find((a) => a.startsWith('--otp='))?.slice(6) || process.env.NPM_OTP || ''
 
 /** Dependency order: each package publishes after everything it depends on. */
-const PACKAGES = ['sdk', 'helpers', 'assets', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
+const PACKAGES = ['points', 'sdk', 'helpers', 'assets', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
 
 const sh = (cmd, opts = {}) => execSync(cmd, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...opts }).trim()
 const run = (cmd, args, cwd = root) => {

@@ -24,7 +24,7 @@ export { Animation, Move, type Animate, type Trigger } from './animate'
 export { Bricks, type CellLooks } from './bricks'
 export { duration, type Duration, type Speed } from './time'
 // Points: one fixed, standard way to say an amount ('2 points', 'a little', '3 hairs').
-export { points, type Points, type PointKind, type PointBasis } from '@studiomorgana/sdk'
+export { points, type Points, type PointKind, type PointBasis } from '@studiomorgana/points'
 export type { Size, TextSize, Weight } from './words'
 export { asset, SPRITE, type AssetPick } from './assets'
 export { steps, sideOf, resolve, type Step, type StepsOptions, type StepsResult } from './steps'

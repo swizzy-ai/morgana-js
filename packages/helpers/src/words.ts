@@ -1,7 +1,7 @@
 // The plain words helpers accept, and the Morgana values they mean.
 // A raw value (a number, '#fe9920', a type-scale token) always passes through.
 // Points ('2 points', 'a little', '3 hairs') become px with the theme's basis.
-import { points, type Points } from '@studiomorgana/sdk'
+import { points, type Points } from '@studiomorgana/points'
 
 /** The standard point reader, for sentences without a theme basis. */
 export const STANDARD_POINTS: Points = points()

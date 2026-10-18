@@ -59,6 +59,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
+    "@studiomorgana/points": "workspace:^",
     "@studiomorgana/sdk": "workspace:^",
     "esbuild": "^0.28.2",
     "typescript": "~5.8.2"

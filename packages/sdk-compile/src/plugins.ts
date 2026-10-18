@@ -15,7 +15,8 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
-import { points, type Artifact, type Make, type MorganaConfig, type PluginDefinition } from '@studiomorgana/sdk'
+import type { Artifact, Make, MorganaConfig, PluginDefinition } from '@studiomorgana/sdk'
+import { points } from '@studiomorgana/points'
 
 import { loadModuleWithSource } from './bundle'
 import { locateError } from './source-errors'

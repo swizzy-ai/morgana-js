@@ -1,0 +1,41 @@
+{
+  "name": "@studiomorgana/points",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Points: one fixed, standard way to say an amount — '2 points', 'a little', '3 hairs', '14px'. No dependencies; used by Morgana, its helpers and Godtongue.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/points"
+  },
+  "keywords": ["points", "units", "amounts", "measurement", "english", "godtongue", "morgana"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

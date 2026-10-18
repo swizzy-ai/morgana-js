@@ -142,10 +142,13 @@ importers:
 
   packages/helpers:
     dependencies:
+      '@studiomorgana/points':
+        specifier: workspace:^
+        version: link:../points
+    devDependencies:
       '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
-    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
@@ -243,8 +246,23 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
 
+  packages/points:
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
+
   packages/sdk:
     dependencies:
+      '@studiomorgana/points':
+        specifier: workspace:^
+        version: link:../points
       typescript:
         specifier: ~5.8.2
         version: 5.8.3
@@ -261,6 +279,9 @@ importers:
 
   packages/sdk-compile:
     dependencies:
+      '@studiomorgana/points':
+        specifier: workspace:^
+        version: link:../points
       '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk

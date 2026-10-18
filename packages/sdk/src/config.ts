@@ -16,7 +16,7 @@
  * sandbox-executed.
  */
 
-import type { PointBasis } from './points'
+import type { PointBasis } from '@studiomorgana/points'
 
 export type ServerApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -261,7 +261,7 @@ export interface MorganaConfig {
    * — and, under `words`, what the amount words mean (`{ 'a little': 3 }`).
    * Unset kinds keep the standard basis (1 point = 8px, 1 degree, 0.1s, …).
    * Plugins read amounts with it (`make.points`); Godtongue uses it as the
-   * project's basis. See `points()` in the SDK.
+   * project's basis. See `@studiomorgana/points`.
    */
   points?: PointBasis & { words?: Record<string, number | string> }
   /**

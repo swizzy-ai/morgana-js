@@ -25,7 +25,7 @@ const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const level = args.find((a) => ['patch', 'minor', 'major'].includes(a)) ?? 'patch'
 
-const PACKAGES =['sdk', 'helpers', 'assets', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
+const PACKAGES =['points', 'sdk', 'helpers', 'assets', 'wizard', 'morgana-agents', 'sdk-compile', 'morgana-cli', 'morgana-eject']
 
 const git = (cmd) => execSync(`git ${cmd}`, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
 const tagExists = (t) => {

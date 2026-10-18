@@ -11,7 +11,7 @@
 //
 // Roles compile to a Morgana theme (CSS variables), so the whole page —
 // <body> included — follows light and dark. Named colours stay fixed.
-import { points, type PointBasis, type Points } from '@studiomorgana/sdk'
+import { points, type PointBasis, type Points } from '@studiomorgana/points'
 import { STANDARD_POINTS } from './words'
 import type { Make } from './make'
 

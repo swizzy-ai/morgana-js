@@ -8,7 +8,8 @@
 // An animation is: what moves, how (the preset), adjustments (slowly,
 // forever, after…), then when it happens — now, when something is clicked,
 // or as the page appears. Runs on Morgana's `handle.animate`.
-import type { ObjectHandle, Points } from '@studiomorgana/sdk'
+import type { ObjectHandle } from '@studiomorgana/sdk'
+import type { Points } from '@studiomorgana/points'
 import type { Size } from './words'
 import { duration, type Duration } from './time'
 import { STANDARD_POINTS } from './words'

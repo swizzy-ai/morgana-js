@@ -10,6 +10,7 @@
 # Naming each published package makes the boundary explicit and keeps it from
 # eroding. ci.yml fails if the worker is ever committed or referenced.
 packages:
+  - packages/points
   - packages/sdk
   - packages/helpers
   - packages/assets

@@ -5,7 +5,7 @@
 //   words      'half a second'  'a second'  'a quarter second'
 //   numbers    400  (milliseconds)
 //   points     '4 points' (0.4s with the standard basis)  'a little'  '3 hairs'
-import type { Points } from '@studiomorgana/sdk'
+import type { Points } from '@studiomorgana/points'
 import { STANDARD_POINTS } from './words'
 
 export type Speed = 'instant' | 'quick' | 'normal' | 'slow' | 'very slow'

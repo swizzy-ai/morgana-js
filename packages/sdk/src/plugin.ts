@@ -28,7 +28,7 @@
  * })
  */
 
-import type { Points } from './points'
+import type { Points } from '@studiomorgana/points'
 
 // ── words ───────────────────────────────────────────────────────────────────
 

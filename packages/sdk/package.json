@@ -62,6 +62,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@studiomorgana/points": "workspace:^",
     "typescript": "~5.8.2"
   }
 }

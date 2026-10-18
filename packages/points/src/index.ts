@@ -1,5 +1,6 @@
 /**
- * Points — one fixed, standard way to say an amount, everywhere in Morgana.
+ * Points — one fixed, standard way to say an amount. No dependencies: Morgana,
+ * its helpers and Godtongue all read amounts with it, and so can anything else.
  *
  * A point is a counting unit with a fixed size per kind of amount:
  *

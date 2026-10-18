@@ -4,6 +4,11 @@ A point is one fixed, standard way to say an amount, anywhere in Morgana:
 pages, plugins, Godtongue, and later motion, 3D and sound. Say `'2 points'`
 and it means the same thing in every project, every version and every format.
 
+Points are their own package, `@studiomorgana/points`, with no dependencies.
+The SDK names its types, while helpers, the compiler and Godtongue read amounts
+with it. None of them depend on each other for it, so Godtongue can stand
+alone and any other engine can use the same measurements.
+
 ## What a point is
 
 | Kind | 1 point = | Example |
@@ -75,7 +80,7 @@ pixels, for pixel art.
 ## In code
 
 ```ts
-import { points } from '@studiomorgana/sdk'
+import { points } from '@studiomorgana/points'   // also re-exported by helpers
 
 const p = points({ basis: { distance: '4px' } })
 p.read('a little', 'distance')            // 8

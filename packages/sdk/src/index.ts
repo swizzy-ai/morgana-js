@@ -531,6 +531,5 @@ export type * from './objects'
 export { definePlugin, defineWords } from './plugin'
 export type { PluginDefinition, Make, Artifact, Words, WordTable } from './plugin'
 
-// Points — one fixed, standard way to say an amount ('2 points', 'a little', '14px').
-export { points, POINT_BASIS, POINT_WORDS, POINT_UNITS, POINT_KINDS } from './points'
-export type { Points, PointKind, PointBasis, PointsOptions, PointReading, Comparative } from './points'
+// Points live in @studiomorgana/points; the SDK only names their types.
+export type { Points, PointKind, PointBasis } from '@studiomorgana/points'
