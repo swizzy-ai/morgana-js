@@ -49,6 +49,13 @@ in ordinary Morgana calls, so helpers and hand-written code mix freely.
 Sizes are words — `none tiny small medium large huge` — and colours and fonts
 are names from your theme. Raw values still work.
 
+Amounts can also be points, one fixed standard
+([docs/13-points.md](../../docs/13-points.md)): `make(card).padding('2 points').spaced('a little')`,
+`make(title).size('3 points')`, `animate.move(box).left('1.5 points').for('4 points')`.
+A point is 8px (0.1s for time) unless the theme says otherwise:
+`theme('tight').points({ distance: '4px', words: { 'a little': 3 } })`. The size
+words above keep the values they always had.
+
 `onHover()`, `onFocus()`, `onPress()`, `whenDisabled()`, `onPhone()`,
 `onTablet()`, `onDesktop()` apply to the rest of their sentence:
 `make(tile).bordered().onHover().border('orange')`.

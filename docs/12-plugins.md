@@ -99,6 +99,7 @@ export default definePlugin({
 - `make.random()`, `between`, `pick` are seeded and are the only randomness allowed.
 - `make.use('asset:chest')` reads another plugin's output. List that plugin in `after` and it builds first.
 - `make.warn` and `make.fail` take plain sentences and show the definition's file.
+- `make.points` reads amounts with the project's point basis: `make.points.read('2 points', 'distance')` → 16, `make.points.read('a little', 'turns')` → 2. For pixels on an output frame, `make.points.with({ frame: { width: 3840, height: 2160 } })` scales px by the frame's shorter side ÷ 1080. The basis is part of every output's hash, so changing `points` in the config rebuilds what it affects. See [Points](13-points.md).
 - `words` declares the plugin's vocabulary as data (`size: { means: 'metres', small: 0.5, … }`) for tools and, later, the language layer.
 
 A package plugin exports it as `<package>/plugin`. A local one is a path in the config: `plugins: ['./plugins/badges.ts']`.

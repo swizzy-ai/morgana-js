@@ -530,3 +530,7 @@ export type * from './objects'
 // Plugins — packages that add a kind of definition (assets, worlds, music…).
 export { definePlugin, defineWords } from './plugin'
 export type { PluginDefinition, Make, Artifact, Words, WordTable } from './plugin'
+
+// Points — one fixed, standard way to say an amount ('2 points', 'a little', '14px').
+export { points, POINT_BASIS, POINT_WORDS, POINT_UNITS, POINT_KINDS } from './points'
+export type { Points, PointKind, PointBasis, PointsOptions, PointReading, Comparative } from './points'

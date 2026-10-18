@@ -43,8 +43,10 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
+  "dependencies": {
+    "@studiomorgana/sdk": "workspace:^"
+  },
   "devDependencies": {
-    "@studiomorgana/sdk": "workspace:^",
     "tsup": "^8.4.0",
     "typescript": "~5.8.2",
     "vitest": "^4.1.10"

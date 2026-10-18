@@ -23,6 +23,7 @@ and typechecks — so the snippets compile.
 | 10 | [Fonts and assets](10-fonts-and-assets.md) | Google and self-hosted fonts, the type scale, weights, tracking, outlines; the `assets/` folder |
 | 11 | [Designing an app](11-designing-an-app.md) | The order to plan in: actions, events, UI objects, server, then server objects |
 | 12 | [Plugins and artifacts](12-plugins.md) | `@studiomorgana/assets`, references like `asset:coin`, `morgana artifacts`, step-by-step deploy, writing a plugin |
+| 13 | [Points](13-points.md) | one standard way to say an amount: `'2 points'`, `a little`, `3 hairs`, the point basis, `make.points` |
 
 ## The docs explain; `morgana spec` lists
 

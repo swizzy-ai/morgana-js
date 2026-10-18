@@ -16,6 +16,8 @@
  * sandbox-executed.
  */
 
+import type { PointBasis } from './points'
+
 export type ServerApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** CORS policy for a public API route (server actions as HTTP APIs). */
@@ -254,6 +256,14 @@ export interface MorganaConfig {
    * (`'./plugins/maps.ts'`) loads that file.
    */
   plugins?: string[]
+  /**
+   * What a point is, for the whole project — `{ distance: '4px', turns: '5 degrees' }`
+   * — and, under `words`, what the amount words mean (`{ 'a little': 3 }`).
+   * Unset kinds keep the standard basis (1 point = 8px, 1 degree, 0.1s, …).
+   * Plugins read amounts with it (`make.points`); Godtongue uses it as the
+   * project's basis. See `points()` in the SDK.
+   */
+  points?: PointBasis & { words?: Record<string, number | string> }
   /**
    * The desktop lane's project-level declaration — backend package plus the
    * OS capability list the app may use. Absent means no desktop lane.

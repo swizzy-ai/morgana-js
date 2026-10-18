@@ -141,10 +141,11 @@ importers:
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
 
   packages/helpers:
-    devDependencies:
+    dependencies:
       '@studiomorgana/sdk':
         specifier: workspace:^
         version: link:../sdk
+    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)

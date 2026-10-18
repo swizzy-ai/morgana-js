@@ -15,7 +15,7 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
-import type { Artifact, Make, PluginDefinition } from '@studiomorgana/sdk'
+import { points, type Artifact, type Make, type MorganaConfig, type PluginDefinition } from '@studiomorgana/sdk'
 
 import { loadModuleWithSource } from './bundle'
 import { locateError } from './source-errors'
@@ -154,6 +154,8 @@ export interface BuildArtifactsOptions {
   warnings: string[]
   /** Ignore the cache and build everything. */
   force?: boolean
+  /** The project's point basis (`config.points`), read through `make.points`. */
+  points?: MorganaConfig['points']
 }
 
 export async function buildArtifacts(opts: BuildArtifactsOptions): Promise<ArtifactBuild> {
@@ -163,6 +165,17 @@ export async function buildArtifacts(opts: BuildArtifactsOptions): Promise<Artif
   const files: ArtifactBuild['files'] = []
   const schemeOf = new Map(plugins.filter((p) => p.def.refers).map((p) => [p.def.refers!, p.def.name]))
   let built = 0
+  const { words: pointWords, ...pointBasis } = opts.points ?? {}
+  let reader: ReturnType<typeof points>
+  try {
+    reader = points({ basis: pointBasis, words: pointWords })
+    for (const kind of Object.keys(pointBasis)) reader.basis(kind as keyof typeof pointBasis)
+  } catch (err) {
+    throw new Error(`morgana.config.ts points: ${(err as Error).message}`)
+  }
+  // A set basis changes what amounts mean, so it is part of every output's
+  // key. Projects that set none keep the keys they always had.
+  const pointsKey = opts.points ? [JSON.stringify(opts.points)] : []
 
   const find = (ref: string): { artifact: Artifact; role: string } | undefined => {
     const m = /^([a-z][a-z0-9-]*):([^@#\s]+)(?:@([^#\s]+))?(?:#(\S+))?$/.exec(ref)
@@ -202,7 +215,7 @@ export async function buildArtifacts(opts: BuildArtifactsOptions): Promise<Artif
         if (claimed.has(id)) throw new Error(`${source}: "${name}" (${variant}) is already defined in ${claimed.get(id)}`)
         claimed.set(id, source)
 
-        const hash = sha(JSON.stringify([def.name, plugin.fingerprint, def.version ?? '', variant, code])).slice(0, 16)
+        const hash = sha(JSON.stringify([def.name, plugin.fingerprint, def.version ?? '', variant, code, ...pointsKey])).slice(0, 16)
         const cacheDir = path.join(cacheRoot, hash)
         const metaFile = path.join(cacheDir, 'meta.json')
         let meta: CachedMeta
@@ -237,6 +250,7 @@ export async function buildArtifacts(opts: BuildArtifactsOptions): Promise<Artif
             },
             warn(text) { warnings.push(`${source}: ${text}`) },
             fail(text): never { throw new PluginFailure(`${source}: ${text}`) },
+            points: reader,
           }
           try {
             await def.makes(definition, make)

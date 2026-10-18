@@ -28,6 +28,8 @@
  * })
  */
 
+import type { Points } from './points'
+
 // ── words ───────────────────────────────────────────────────────────────────
 
 /**
@@ -93,6 +95,12 @@ export interface Make {
   warn(text: string): void
   /** Stop the build with a plain-English reason. */
   fail(text: string): never
+  /**
+   * Amounts read with the project's point basis (`config.points`):
+   * `make.points.read('2 points', 'distance')` → 16. Give a frame for px on
+   * a 1080 frame: `make.points.with({ frame: { width: 3840, height: 2160 } })`.
+   */
+  readonly points: Points
 }
 
 // ── the plugin ─────────────────────────────────────────────────────────────

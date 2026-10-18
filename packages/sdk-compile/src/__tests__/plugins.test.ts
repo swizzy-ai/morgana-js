@@ -186,6 +186,43 @@ describe('plugins', () => {
     expect(result.warnings).toContain('hello-badge.src: "badge:nobody" names nothing that was built')
   })
 
+  it('reads amounts with the project point basis, and rebuilds when the basis changes', async () => {
+    const RULER = `
+import { definePlugin } from '@studiomorgana/sdk'
+export default definePlugin({
+  name: 'rulers', about: 'Lines of a length.', reads: 'src/rulers', defines: ['defineRuler'],
+  makes: (r, make) => {
+    const px = make.points.read(r.length, 'distance')
+    const uhd = make.points.with({ frame: { width: 3840, height: 2160 } }).read(r.length, 'distance')
+    make.file('data', r.name + '.json', JSON.stringify({ px, uhd, how: make.points.explain(r.length, 'distance').how }))
+  },
+})
+`
+    const withPoints = (basis: string) => [
+      "import { defineConfig } from '@studiomorgana/sdk'",
+      `export default defineConfig({ name: 'p', entry: 'home', plugins: ['./plugins/rulers.ts']${basis} })`,
+    ].join('\n')
+    const dir = project({
+      'morgana.config.ts': withPoints(''),
+      'plugins/rulers.ts': RULER,
+      'src/rulers/short.ts': `export default { name: 'short', length: 'a little' }`,
+    })
+    const read = (r: Awaited<ReturnType<typeof compileProject>>) =>
+      JSON.parse(fs.readFileSync(path.join(r.outDir, r.artifacts![0].files.data.replace(/^\//, '')), 'utf8'))
+
+    const standard = await compileProject({ dir })
+    expect(read(standard)).toEqual({ px: 16, uhd: 32, how: '"a little" = 2 points = 16px' })
+
+    fs.writeFileSync(path.join(dir, 'morgana.config.ts'), withPoints(", points: { distance: '4px' }"))
+    const set = await compileProject({ dir })
+    expect(set.artifactsBuilt).toBe(1)
+    expect(set.artifacts![0].hash).not.toBe(standard.artifacts![0].hash)
+    expect(read(set)).toEqual({ px: 8, uhd: 16, how: '"a little" = 2 points = 8px' })
+
+    fs.writeFileSync(path.join(dir, 'morgana.config.ts'), withPoints(", points: { turns: '4px' }"))
+    await expect(compileProject({ dir })).rejects.toThrow(/morgana.config.ts points: .*measured in degrees/)
+  })
+
   it('leaves a project with no plugins exactly as it was', async () => {
     const dir = project({
       'morgana.config.ts': config([]),

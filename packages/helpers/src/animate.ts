@@ -8,9 +8,10 @@
 // An animation is: what moves, how (the preset), adjustments (slowly,
 // forever, after…), then when it happens — now, when something is clicked,
 // or as the page appears. Runs on Morgana's `handle.animate`.
-import type { ObjectHandle } from '@studiomorgana/sdk'
+import type { ObjectHandle, Points } from '@studiomorgana/sdk'
 import type { Size } from './words'
 import { duration, type Duration } from './time'
+import { STANDARD_POINTS } from './words'
 
 type Handle = ObjectHandle<any>
 type Target = Handle | string
@@ -26,6 +27,8 @@ const PRESETS = {
 type Preset = keyof typeof PRESETS
 
 type Direction = 'left' | 'right' | 'up' | 'down'
+/** How far: a size word, pixels, points ('2 points', 'a little', '3 hairs') or '14px'. */
+type Distance = Exclude<Size, 'none'> | number | (string & {})
 
 /** How far `move` travels, in pixels. */
 const TRAVEL: Record<Exclude<Size, 'none'>, number> = { tiny: 4, small: 8, medium: 16, large: 32, huge: 64 }
@@ -53,6 +56,8 @@ interface Options {
 interface Env {
   find(thing: Target): Handle
   inBrowser(): boolean
+  /** The theme's point reader: '2 points', 'a little', '4 points' of time. */
+  points?: Points
 }
 
 export class Animation {
@@ -70,15 +75,15 @@ export class Animation {
   // ---- timing: every duration reads as English — 'quick', 'slow', '2s', '300ms', 'half a second' ----
 
   /** How long one run lasts: `.for('2s')`, `.for('slow')`, `.for(400)`. */
-  for(length: Duration): this { this.opts.duration = duration(length); return this }
+  for(length: Duration): this { this.opts.duration = duration(length, this.env.points); return this }
   /** Shorthand for `.for('slow')`. */
   slowly(): this { return this.for('slow') }
   /** Shorthand for `.for('quick')`. */
   quickly(): this { return this.for('quick') }
   /** Waits before starting: `.after('1s')`. */
-  after(wait: Duration): this { this.opts.delay = duration(wait); return this }
+  after(wait: Duration): this { this.opts.delay = duration(wait, this.env.points); return this }
   /** Plays again on a rhythm, with a rest between: `.every('5s')`. Browser only. */
-  every(interval: Duration): this { this.gap = duration(interval); return this }
+  every(interval: Duration): this { this.gap = duration(interval, this.env.points); return this }
   /** Repeats back to back until the page changes. */
   forever(): this { this.opts.loop = true; return this }
   /** Repeats this many times. */
@@ -155,8 +160,11 @@ export class Move extends Animation {
   private dx = 0
   private dy = 0
 
-  private go(dir: Direction, distance: Exclude<Size, 'none'> | number): this {
-    const px = typeof distance === 'number' ? distance : TRAVEL[distance]
+  private go(dir: Direction, distance: Distance): this {
+    // A size word keeps its travel; points and px read with the theme's basis.
+    const px = typeof distance === 'number' ? distance
+      : Object.hasOwn(TRAVEL, distance) ? TRAVEL[distance as Exclude<Size, 'none'>]
+        : (this.env.points ?? STANDARD_POINTS).read(distance, 'distance')
     if (dir === 'left') this.dx -= px
     if (dir === 'right') this.dx += px
     if (dir === 'up') this.dy -= px
@@ -165,10 +173,10 @@ export class Move extends Animation {
     return this
   }
 
-  left(distance: Exclude<Size, 'none'> | number = 'medium'): this { return this.go('left', distance) }
-  right(distance: Exclude<Size, 'none'> | number = 'medium'): this { return this.go('right', distance) }
-  up(distance: Exclude<Size, 'none'> | number = 'medium'): this { return this.go('up', distance) }
-  down(distance: Exclude<Size, 'none'> | number = 'medium'): this { return this.go('down', distance) }
+  left(distance: Distance = 'medium'): this { return this.go('left', distance) }
+  right(distance: Distance = 'medium'): this { return this.go('right', distance) }
+  up(distance: Distance = 'medium'): this { return this.go('up', distance) }
+  down(distance: Distance = 'medium'): this { return this.go('down', distance) }
   /** Back where it started. */
   home(): this {
     this.keyframes = [{ transform: `translate(${this.dx}px, ${this.dy}px)` }, { transform: 'translate(0, 0)' }]

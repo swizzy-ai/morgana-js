@@ -1,5 +1,10 @@
 // The plain words helpers accept, and the Morgana values they mean.
 // A raw value (a number, '#fe9920', a type-scale token) always passes through.
+// Points ('2 points', 'a little', '3 hairs') become px with the theme's basis.
+import { points, type Points } from '@studiomorgana/sdk'
+
+/** The standard point reader, for sentences without a theme basis. */
+export const STANDARD_POINTS: Points = points()
 
 export type Size = 'none' | 'tiny' | 'small' | 'medium' | 'large' | 'huge'
 
@@ -23,21 +28,27 @@ export const TEXT: Record<TextSize, string> = {
 export type Weight = 'light' | 'normal' | 'medium' | 'semibold' | 'bold'
 export const WEIGHT: Record<Weight, number> = { light: 300, normal: 400, medium: 500, semibold: 600, bold: 700 }
 
-export function space(v: Size | number | (string & {})): number | string {
+export function space(v: Size | number | (string & {}), pts: Points = STANDARD_POINTS): number | string {
   if (typeof v === 'number') return v
-  return (SPACE as Record<string, number>)[v] ?? v   // an exact CSS value passes through
+  if (Object.hasOwn(SPACE, v)) return SPACE[v as Size]
+  if (pts.isPoints(v)) return pts.css(v, 'distance')
+  return v   // an exact CSS value passes through
 }
 
-export function length(v: Exclude<Size, 'none'> | 'full' | 'fit' | number | (string & {})): string | number {
+export function length(v: Exclude<Size, 'none'> | 'full' | 'fit' | number | (string & {}), pts: Points = STANDARD_POINTS): string | number {
   if (typeof v === 'number') return v
+  if (!Object.hasOwn(LENGTH, v) && pts.isPoints(v)) return pts.css(v, 'distance')
   // 'stretch' is 100% wide without flex-grow; 'fill' also grows along a column (GAPS.md #20).
   if (v === 'full') return 'stretch'
   if (v === 'fit') return 'hug'
   return (LENGTH as Record<string, number>)[v] ?? v
 }
 
-export function radius(v: Size | number): string | number {
-  return typeof v === 'number' ? v : RADIUS[v]
+export function radius(v: Size | number | (string & {}), pts: Points = STANDARD_POINTS): string | number {
+  if (typeof v === 'number') return v
+  if (Object.hasOwn(RADIUS, v)) return RADIUS[v as Size]
+  if (pts.isPoints(v)) return pts.css(v, 'distance')
+  return v
 }
 
 export function textSize(v: TextSize | (string & {})): string {

@@ -102,16 +102,16 @@ export class Make {
   /** Takes the spare room in its row or column. */
   grow(): this { return this.put({ grow: 1 }) }
   /** Space between children. */
-  spaced(size: Size | number): this { return this.put({ gap: space(size) }) }
+  spaced(size: Size | number | (string & {})): this { return this.put({ gap: space(size, this.t.pointsReader) }) }
 
   // ---- size ----
 
-  width(size: Length): this { return this.put({ width: length(size) }) }
-  height(size: Length): this { return this.put({ height: length(size) }) }
-  minWidth(size: Length): this { return this.put({ minW: length(size) }) }
-  maxWidth(size: Length): this { return this.put({ maxW: length(size) }) }
-  minHeight(size: Length): this { return this.put({ minH: length(size) }) }
-  maxHeight(size: Length): this { return this.put({ maxH: length(size) }) }
+  width(size: Length): this { return this.put({ width: length(size, this.t.pointsReader) }) }
+  height(size: Length): this { return this.put({ height: length(size, this.t.pointsReader) }) }
+  minWidth(size: Length): this { return this.put({ minW: length(size, this.t.pointsReader) }) }
+  maxWidth(size: Length): this { return this.put({ maxW: length(size, this.t.pointsReader) }) }
+  minHeight(size: Length): this { return this.put({ minH: length(size, this.t.pointsReader) }) }
+  maxHeight(size: Length): this { return this.put({ maxH: length(size, this.t.pointsReader) }) }
   /** As wide as its parent. */
   full(): this { return this.put({ width: 'stretch' }) }
   /** As wide as its content. */
@@ -120,7 +120,7 @@ export class Make {
   // ---- spacing ----
 
   /** Space inside, on every side. */
-  padding(size: Size | number | (string & {})): this { return this.put({ pad: space(size) }) }
+  padding(size: Size | number | (string & {})): this { return this.put({ pad: space(size, this.t.pointsReader) }) }
 
   // ---- colour ----
 
@@ -138,11 +138,11 @@ export class Make {
   borderBottom(color?: string): this { return this.put(color ? { borderBottom: true, borderColor: this.color(color) } : { borderBottom: true }) }
   borderLeft(color?: string): this { return this.put(color ? { borderLeft: true, borderColor: this.color(color) } : { borderLeft: true }) }
   borderRight(color?: string): this { return this.put(color ? { borderRight: true, borderColor: this.color(color) } : { borderRight: true }) }
-  borderWidth(size: Size | number): this { return this.put({ borderWidth: typeof size === 'number' ? size : space(size) }) }
+  borderWidth(size: Size | number | (string & {})): this { return this.put({ borderWidth: typeof size === 'number' ? size : space(size, this.t.pointsReader) }) }
 
   // ---- shape ----
 
-  rounded(size: Size | number = 'medium'): this { return this.put({ radius: radius(size) }) }
+  rounded(size: Size | number | (string & {}) = 'medium'): this { return this.put({ radius: radius(size, this.t.pointsReader) }) }
   square(): this { return this.put({ radius: 'none' }) }
   pill(): this { return this.put({ radius: 'full' }) }
   circle(): this { return this.put({ radius: 'full' }) }
@@ -153,6 +153,8 @@ export class Make {
   size(size: TextSize | number | (string & {})): this {
     // A number is an exact size in pixels: `.size(44)`.
     if (typeof size === 'number') return this.put({ fontSize: `${size}px` })
+    // Points are text points: `.size('3 points')` with the theme's basis.
+    if (this.t.pointsReader.isPoints(size)) return this.put({ fontSize: this.t.pointsReader.css(size, 'text') })
     return this.put({ font: textSize(size) })
   }
   bold(): this { return this.put({ fontWeight: WEIGHT.bold }) }

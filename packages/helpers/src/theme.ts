@@ -11,6 +11,8 @@
 //
 // Roles compile to a Morgana theme (CSS variables), so the whole page —
 // <body> included — follows light and dark. Named colours stay fixed.
+import { points, type PointBasis, type Points } from '@studiomorgana/sdk'
+import { STANDARD_POINTS } from './words'
 import type { Make } from './make'
 
 export type Appearance = (make: Make) => unknown
@@ -53,7 +55,27 @@ export class Theme {
   private bars: { width: number; thumb: string; hover: string } | undefined
   private readonly tokens: Record<string, ModeValue> = {}
 
+  private pointReader: Points = STANDARD_POINTS
+
   constructor(readonly name: string) {}
+
+  /**
+   * What a point is for pages using this theme, and what the amount words
+   * mean: `.points({ distance: '4px', words: { 'a little': 3 } })`. Unset
+   * kinds keep the standard basis (1 point = 8px, 1 degree, 0.1 second).
+   */
+  points(settings: PointBasis & { words?: Record<string, number | string> }): this {
+    const { words, ...basis } = settings
+    const reader = points({ basis, words })
+    for (const kind of Object.keys(basis)) reader.basis(kind as keyof PointBasis)   // a wrong unit says so here
+    this.pointReader = reader
+    return this
+  }
+
+  /** The point reader for this theme's amounts. */
+  get pointsReader(): Points {
+    return this.pointReader
+  }
 
   private role(role: Role, value: ModeValue): this {
     this.roles[role] = value

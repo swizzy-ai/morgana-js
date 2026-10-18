@@ -232,7 +232,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // (`src: 'asset:coin'`). A project that lists none skips this entirely.
   const pluginSpecs = scan.config.plugins ?? []
   const artifactBuild = pluginSpecs.length
-    ? await buildArtifacts({ dir, plugins: await loadPlugins(dir, pluginSpecs), warnings, force: opts.rebuildArtifacts })
+    ? await buildArtifacts({ dir, plugins: await loadPlugins(dir, pluginSpecs), warnings, force: opts.rebuildArtifacts, points: scan.config.points })
     : null
 
   // Custom objects are discovered and loaded BEFORE the compile lane runs, so a
