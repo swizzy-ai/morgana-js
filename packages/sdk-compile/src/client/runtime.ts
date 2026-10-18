@@ -732,8 +732,12 @@ export function makeUi(deps: RuntimeDeps): Record<string, unknown> {
       // SPA navigation: use router's navigate with address, not /pages/*.html
       deps.navigate(pageInfo.address, opts)
     } else {
-      // Static page navigation: full page load
-      deps.navigate(`/pages/${escapeId(name)}.html`)
+      // Static page navigation: a full page load, because the target is a
+      // separate document. `deps.navigate` is the SPA router's pushState when a
+      // router is present, which changed the address without loading anything.
+      const url = `/pages/${escapeId(name)}.html`
+      if (typeof location !== 'undefined' && typeof location.assign === 'function') location.assign(url)
+      else deps.navigate(url)
     }
   }
   ui['pages'] = pages

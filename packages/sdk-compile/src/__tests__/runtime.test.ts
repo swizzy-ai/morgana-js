@@ -453,10 +453,11 @@ describe('live object handles', () => {
         'ctx.ui.pages.navigate("home")',
       ].join('\n'),
       (h) => {
-        // Either navigateSpa was called (empty array) or location.assign was called
-        // In the bundled runtime, navigateSpa exists but we're testing pages.navigate logic
         const errMsg = String(h.win['__err'] ?? '')
         expect(errMsg).toContain('no page "nope"')
+        // A static page is its own document: it must actually load, not just
+        // change the address bar through the SPA router.
+        expect(urls).toEqual(['/pages/home.html'])
       },
     )
     delete g['location']
