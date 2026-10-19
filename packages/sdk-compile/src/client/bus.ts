@@ -18,7 +18,36 @@ interface ClientBinding {
   prop?: string
 }
 
-export function busPart(bindingsJson: string): string[] {
+/** Per-action timing from `config.debounce` / `config.throttle`, in milliseconds. */
+export type ActionTiming = Record<string, { debounce?: number; throttle?: number }>
+
+/**
+ * How an action fires. Without timing it runs on every event. With
+ * `debounce`, it runs once events stop for that long (the last event wins).
+ * With `throttle`, it runs at once, then at most once per window — and the
+ * last event of a window still runs when the window ends, so the final
+ * keystroke is never dropped.
+ */
+function firePart(timing: ActionTiming): string {
+  const timed = Object.entries(timing).filter(([, t]) => (t.debounce ?? 0) > 0 || (t.throttle ?? 0) > 0)
+  if (!timed.length) return 'function __morgana_fire(a,ev){window.__morgana_run(a,{},ev);}'
+  const table = JSON.stringify(Object.fromEntries(timed.sort(([a], [b]) => a.localeCompare(b))))
+  return [
+    `var __morgana_timing=${table},__morgana_timers={};`,
+    'function __morgana_fire(a,ev){',
+    '  var t=__morgana_timing[a];',
+    '  if(!t){window.__morgana_run(a,{},ev);return;}',
+    '  var s=__morgana_timers[a]||(__morgana_timers[a]={});',
+    '  if(t.debounce>0){clearTimeout(s.d);s.d=setTimeout(function(){window.__morgana_run(a,{},ev);},t.debounce);return;}',
+    '  var now=Date.now();',
+    '  if(!s.until||now>=s.until){s.until=now+t.throttle;window.__morgana_run(a,{},ev);return;}',
+    '  s.ev=ev;',
+    '  if(!s.p){s.p=setTimeout(function(){s.p=null;var e=s.ev;s.ev=null;s.until=Date.now()+t.throttle;window.__morgana_run(a,{},e);},s.until-now);}',
+    '}',
+  ].join('')
+}
+
+export function busPart(bindingsJson: string, timing: ActionTiming = {}): string[] {
   const bindings = JSON.parse(bindingsJson) as ClientBinding[]
   const isState = (b: ClientBinding): boolean => Boolean(b && b.event && b.event.indexOf('state:') === 0)
   const page = bindings.filter((b) => !isState(b))
@@ -59,7 +88,7 @@ export function busPart(bindingsJson: string): string[] {
   return [
     '// Page bindings, compiled to one dispatch function per event. Dispatch',
     '// is a key lookup — the runtime never scans bindings to find a match.',
-    'function __morgana_fire(a,ev){window.__morgana_run(a,{},ev);}',
+    firePart(timing),
     `var __handlers=new Map([${entries}]);`,
     `var __stateHandlers = ${JSON.stringify(state)};`,
     `var __bindingDefs = ${JSON.stringify(defs)};`,

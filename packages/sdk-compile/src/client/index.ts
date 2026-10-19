@@ -4,7 +4,7 @@
 import { bundleBrowserActions, bundleClientRuntime, type BundleOptions } from '../bundle';
 import { actionsPart } from './actions';
 import { behaviorsPart } from './behaviors';
-import { busPart } from './bus';
+import { busPart, type ActionTiming } from './bus';
 import { debugPart } from './debug';
 import { clickPart, formPart, pointerPart, windowPart } from './dom-events';
 import { lifecyclePart } from './lifecycle';
@@ -20,6 +20,8 @@ export async function renderClientJs(
   customObjectsJs: string | null = null,
   /** The kinds the project uses: only their runtime code ships. All when absent. */
   kinds?: Set<string>,
+  /** Browser actions' `debounce` / `throttle`, by action name. */
+  timing: ActionTiming = {},
 ): Promise<string> {
   // The runtime must exist before makeCtx is called, and author code must be
   // registered before the first dispatch — so: runtime, helpers, actions,
@@ -44,7 +46,7 @@ export async function renderClientJs(
     // bus before transport: `transportPart` dispatches onto the page bus, so the
     // bus has to exist first. After bus, before the listeners below, so a frame
     // arriving during first paint still finds its subscriber.
-    ...busPart(bindingsJson),
+    ...busPart(bindingsJson, timing),
     ...transportPart(),
     ...formPart(),
     ...pointerPart(),

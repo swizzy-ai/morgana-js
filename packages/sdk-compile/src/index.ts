@@ -453,6 +453,10 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     // Every kind the project creates (row templates and components included):
     // the browser gets those kinds' code and no other.
     new Set([...ir.objects.values()].map((n) => n.kind)),
+    // `config.debounce` / `config.throttle` on browser actions.
+    Object.fromEntries(clientActions
+      .filter((a) => a.debounce !== undefined || a.throttle !== undefined)
+      .map((a) => [a.name, { ...(a.debounce !== undefined ? { debounce: a.debounce } : {}), ...(a.throttle !== undefined ? { throttle: a.throttle } : {}) }])),
   )
   const fonts = await resolveFonts({ dir, config: scan.config, warnings })
   ir.fontCss = fonts.css

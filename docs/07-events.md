@@ -36,6 +36,15 @@ config: { on: ['save.clicked', 'form.submitted'] }
 `config` also takes `auth` (`'member'` for HTTP routes), `when` (a filter on
 the event), `debounce` / `throttle` (ms), and `enabled`.
 
+On browser actions, `debounce` and `throttle` decide how often the action runs:
+
+```ts
+config: { on: 'notes.changed', debounce: 300 }   // once typing stops for 300ms, with the last event
+config: { on: 'notes.changed', throttle: 400 }   // at once, then at most every 400ms; the last event still runs
+```
+
+`changed` fires on every keystroke in a field, so a live preview wants one of these.
+
 ## Full surface
 
 ```bash
