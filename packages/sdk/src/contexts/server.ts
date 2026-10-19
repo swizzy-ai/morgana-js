@@ -208,6 +208,90 @@ export interface EmailResult {
   provider: string
 }
 
+/**
+ * A sandbox: a working folder where a server action writes files, installs
+ * packages and runs programs — `npm install`, a compiler, `morgana dev` —
+ * and gets a URL for what it serves. One sandbox per name; it keeps its files
+ * and its running programs between calls until it is stopped or destroyed.
+ *
+ * Commands are argument lists, never a shell line: `['npm', 'install']`.
+ *
+ * Hosts: `morgana dev` gives each sandbox a plain folder under
+ * `.data/sandboxes/<name>/` — fast, and not isolated, so it is for your own
+ * code. The cloud host gives each one an isolated container.
+ */
+export interface SandboxApi {
+  /** Open a sandbox by name, making it if it doesn't exist: `ctx.server.sandbox.open('session-42')`. */
+  open(name: string): Promise<SandboxHandle>
+  /** The names of the sandboxes that exist. */
+  list(): Promise<string[]>
+}
+
+export interface SandboxHandle {
+  readonly name: string
+  /** Write one file (folders are made as needed). Paths are relative to the sandbox. */
+  write(path: string, data: string | Uint8Array): Promise<void>
+  /** Write many files at once: `{ 'src/home.ts': '…', 'package.json': '…' }`. */
+  writeMany(files: Record<string, string | Uint8Array>): Promise<void>
+  /** A file's text, or null if it isn't there. */
+  read(path: string): Promise<string | null>
+  /** Every file under a folder (default: the whole sandbox), as relative paths. */
+  list(folder?: string): Promise<string[]>
+  /** Remove a file or folder. */
+  remove(path: string): Promise<void>
+  /** Run a program to the end: `run(['npm', 'test'])`. Never throws for a failing program — read `ok`. */
+  run(command: string[], opts?: SandboxRunOptions): Promise<SandboxResult>
+  /** `npm install`, or `npm install <packages>`. */
+  install(packages?: string[], opts?: SandboxRunOptions): Promise<SandboxResult>
+  /**
+   * Start a program that keeps running (a dev server). With `port`, the host
+   * picks a free port (or uses the number given), puts it in `PORT` and in
+   * any `{port}` in the command, waits until it answers, and returns its URL.
+   */
+  start(command: string[], opts?: SandboxStartOptions): Promise<SandboxProcess>
+  /** The programs started in this sandbox. */
+  processes(): Promise<SandboxProcess[]>
+  /** Stop one started program, or all of them. */
+  stop(id?: string): Promise<void>
+  /** Stop everything and delete the sandbox's files. */
+  destroy(): Promise<void>
+}
+
+export interface SandboxRunOptions {
+  /** Folder to run in, relative to the sandbox. */
+  cwd?: string
+  /** Extra environment variables. */
+  env?: Record<string, string>
+  /** Give up after this many milliseconds (default 120000). */
+  timeout?: number
+}
+
+export interface SandboxStartOptions extends Omit<SandboxRunOptions, 'timeout'> {
+  /** `true` or `'auto'` for any free port, or a number. */
+  port?: true | 'auto' | number
+  /** How long to wait for the port to answer, in milliseconds (default 60000). */
+  wait?: number
+}
+
+export interface SandboxResult {
+  ok: boolean
+  exitCode: number | null
+  stdout: string
+  stderr: string
+  /** True when it was stopped for running past its timeout. */
+  timedOut: boolean
+}
+
+export interface SandboxProcess {
+  id: string
+  command: string[]
+  running: boolean
+  port?: number
+  url?: string
+  /** The last of what it printed (stdout and stderr together). */
+  output(): Promise<string>
+}
+
 export interface EmailHandle {
   send(message: EmailMessage): Promise<EmailResult>
 }
@@ -414,6 +498,11 @@ export interface ServerApi {
    * prints instead of sending.
    */
   email: EmailHandle
+  /**
+   * Sandboxes: a folder to write files into, install packages and run
+   * programs in, with a URL for what they serve. See `SandboxApi`.
+   */
+  sandbox: SandboxApi
 }
 
 /**

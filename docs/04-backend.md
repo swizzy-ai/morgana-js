@@ -241,6 +241,37 @@ morgana spec server-object
 prints every definition key, everything on `self`, the access rules, and the
 `ctx.objects` API — generated from the SDK you have installed.
 
+## Sandboxes
+
+`ctx.server.sandbox` gives a server action a working folder. It can write files
+into it, install packages, run programs, and start a server that keeps running,
+with a URL. Godverse uses one to build and serve the page its editor describes.
+
+```ts
+export const preview = defineServerAction({
+  handler: async (ctx) => {
+    const box = await ctx.server.sandbox.open('session-42')     // made if new, kept if not
+    await box.writeMany({ 'package.json': '{"type":"module"}', 'server.js': code })
+    const installed = await box.install(['marked'])             // npm install marked
+    if (!installed.ok) return { problems: installed.stderr }
+    const result = await box.run(['node', 'check.js'])          // { ok, exitCode, stdout, stderr, timedOut }
+    const server = (await box.processes()).find((p) => p.running)
+      ?? await box.start(['node', 'server.js'], { port: 'auto' }) // PORT is set; waits until it answers
+    return { url: server.url }
+  },
+})
+```
+
+- **Commands are lists of words** (`['npm', 'install']`), never a shell line. `node`, `npm` and `npx` run on the host's Node, so they behave the same on every OS.
+- **A started program outlives the call.** The next action that opens the same sandbox sees it in `processes()`. `stop()` ends it, and `destroy()` also deletes the files.
+- **Paths stay inside.** `../` and absolute paths are refused, and so is a link that leads out.
+- **A failing program is a result, not an error.** Read `ok`. `start` throws, with the program's output, if it stops before it serves.
+
+| Host | A sandbox is |
+|---|---|
+| `morgana dev` | a plain folder, `.data/sandboxes/<name>/`. No overhead and no isolation: programs run as you, so it's for your own code. Started programs stop when dev stops. |
+| cloud | not available yet; it says so when an action asks. The plan is an isolated container (Cloudflare Sandbox) behind the same API. |
+
 ## Auth
 
 The page signs people in — `ctx.auth.signUp`, `ctx.auth.signIn`,

@@ -179,7 +179,9 @@ export const COMMANDS = {
         const rel = String(filename).split(/[\\/]/).join('/')
         // Never watch our own output, or every build triggers the next one.
         // `.morgana/` too: every compile refreshes the generated types there.
-        if (/^(dist|node_modules|\.data|\.morgana|\.git)\//.test(rel)) return
+        // The folder itself counts as well as what's in it — sandboxes write
+        // under .data, and some platforms report the folder, not the file.
+        if (/^(dist|node_modules|\.data|\.morgana|\.git)(\/|$)/.test(rel)) return
         if (timer) clearTimeout(timer)
         timer = setTimeout(async () => {
           timer = null

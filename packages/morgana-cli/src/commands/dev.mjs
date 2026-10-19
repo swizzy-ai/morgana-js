@@ -28,6 +28,7 @@ import { acceptWebSocket } from '../lib/ws.mjs'
 import { handleSessionRoute, serializeSessionCookie, clearSessionCookie, findPageByPath, isParamAddress } from '@studiomorgana/sdk-compile/server-host'
 import { isPageResult } from '@studiomorgana/sdk-compile'
 import { say, warn } from '../ui.mjs'
+import { SandboxHost } from '../lib/sandbox.mjs'
 
 /**
  * Serve a compiled `dist/` and run its compiled server actions.
@@ -138,6 +139,7 @@ const objectsHost = await createObjectsHost({
         dist,
         graphCache,
         channels,
+        sandboxes,
       })
     ).ctx,
 })
@@ -180,6 +182,9 @@ function logEvent(entry) {
  * it, so a channel behaves the same in development as it does deployed.
  */
 const channels = new ChannelHub()
+// Sandboxes (ctx.server.sandbox): plain folders under .data/sandboxes, one host
+// for the whole session so the programs they start keep running between calls.
+const sandboxes = new SandboxHost(path.join(dataDir, 'sandboxes'))
 // A page's message on a channel reaches the server objects that declare it
 // (`channel` in defineServerObject), as a call to their `receive` method.
 channels.on('published', ({ channel, payload, from }) => {
@@ -286,6 +291,8 @@ async function runAction(name, params, reqCtx = {}) {
     // The same hub the SSE route reads, so a publish from an action reaches
     // the pages holding that channel open.
     channels,
+    // One sandbox host for the session: started programs outlive this call.
+    sandboxes,
   })
   const t0 = Date.now()
   logEvent({ lane: 'server-action', name: 'action:start', origin: name })
@@ -763,6 +770,7 @@ say(`  stores:  ${stores.map((s) => s.name).join(', ') || '(none)'}`)
 // clean one, because the next run silently attaches to the old process.
 const shutdown = () => {
   channels.closeAll()
+  void sandboxes.closeAll()
   objectsHost.close()
   server.close(() => process.exit(0))
   // Do not wait forever on a socket that is not closing politely.

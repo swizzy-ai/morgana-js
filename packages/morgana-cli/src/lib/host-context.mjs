@@ -12,6 +12,7 @@ import { StoreEngine } from './store.mjs'
 import { ChannelHub } from './channels.mjs'
 import { buildAi } from './ai.mjs'
 import { buildVarsHandle } from './secrets.mjs'
+import { SandboxHost } from './sandbox.mjs'
 import { createServerUi } from '@studiomorgana/sdk-compile'
 import { assertDeclaredFields, buildServerAuth, createEmailHandle } from '@studiomorgana/sdk-compile/server-host'
 
@@ -463,6 +464,9 @@ export async function makeHostContext(opts) {
         getVar: (name) => ctx.vars.get(name),
         log: (line) => console.log(line),
       }),
+      // Plain folders under .data/sandboxes. The host passes one SandboxHost
+      // for its whole life, so programs a sandbox starts outlive this call.
+      sandbox: (opts.sandboxes ?? new SandboxHost(path.join(path.dirname(path.resolve(filesDir)), 'sandboxes'))).api(),
     },
   }
 
