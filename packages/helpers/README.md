@@ -62,6 +62,12 @@ words above keep the values they always had.
 
 Type `make(x).` or `set(x).` and your editor lists every word.
 
+Every word is also listed in `vocabulary.json` (`@studiomorgana/helpers/vocabulary.json`):
+how it is said and what value it takes. It is generated from these methods by
+`node scripts/vocabulary.mjs` (part of the build; a test fails when it is out of
+date), and other ways to say a word live in `src/say.ts`. Godtongue reads it, so
+a new word here is a new Godtongue word.
+
 ## Themes, light and dark
 
 A theme's **roles** switch with light and dark; **named colours** stay fixed.

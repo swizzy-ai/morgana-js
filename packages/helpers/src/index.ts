@@ -80,6 +80,12 @@ export class PageSentence {
   otherwise(page: string): this { this.handle.setProps({ redirect: page }); return this }
   /** The browser tab's title. */
   titled(title: string): this { this.handle.setProps({ title }); return this }
+  /** The page's background: any CSS colour (`'#e5484d'`, `'tomato'`). Painted on <body>, after the theme's. */
+  background(color: string): this {
+    const before = String(this.handle.get('headCSS' as never) ?? '')
+    this.handle.setProps({ headCSS: `${before}body{background:${color}}` } as never)
+    return this
+  }
   /** Filled per request by its route action, then sent finished. */
   renderedOnServer(): this { this.handle.setProps({ render: 'server' }); return this }
   /** The tab icon. */

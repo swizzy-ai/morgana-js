@@ -30,14 +30,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./vocabulary.json": "./vocabulary.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "vocabulary.json"
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "node scripts/vocabulary.mjs && tsup",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
