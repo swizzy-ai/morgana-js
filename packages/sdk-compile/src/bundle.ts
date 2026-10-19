@@ -184,8 +184,25 @@ interface SdkImport {
   namespace?: boolean
 }
 
+/** What each importer took from the SDK, kept while the file is unchanged (rebuilds re-read big bundles). */
+const sdkImportsCache = new Map<string, { mtimeMs: number; size: number; imports: SdkImport[] }>()
+
 /** Read the value bindings a file takes from `@studiomorgana/sdk`. */
 function sdkImportsIn(file: string): SdkImport[] {
+  let stat: fs.Stats
+  try {
+    stat = fs.statSync(file)
+  } catch {
+    return []
+  }
+  const cached = sdkImportsCache.get(file)
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) return cached.imports
+  const imports = readSdkImports(file)
+  sdkImportsCache.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, imports })
+  return imports
+}
+
+function readSdkImports(file: string): SdkImport[] {
   let text: string
   try {
     text = fs.readFileSync(file, 'utf8')

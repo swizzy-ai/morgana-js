@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
 import type { Hook, MorganaConfig } from '@studiomorgana/sdk'
+import { contractProgram, exportsContract } from '@studiomorgana/sdk/generator'
 
 export type ActionLane = 'server' | 'client' | 'compile' | 'desktop'
 export type FactoryKind = 'server' | 'client' | 'desktop' | 'plain-handle' | 'plain-run'
@@ -257,6 +258,16 @@ function extractContract(sf: ts.SourceFile, checker: ts.TypeChecker): { input?: 
   return out
 }
 
+const CONTRACT_OPTIONS: ts.CompilerOptions = {
+  target: ts.ScriptTarget.ES2022,
+  module: ts.ModuleKind.ESNext,
+  moduleResolution: ts.ModuleResolutionKind.Bundler,
+  strict: true,
+  noEmit: true,
+  skipLibCheck: true,
+  types: [],
+}
+
 function laneOfFile(file: string, factoryKind: 'server' | 'client' | 'desktop' | null): ActionLane {
   const parts = file.split(/[\\/]/)
   if (parts.includes('compile')) return 'compile'
@@ -386,19 +397,15 @@ export function scanProject(opts: { dir: string; actionsDirs?: string[] }): Proj
   const actions: SdkActionMeta[] = []
   const seen = new Map<string, string>()
 
+  // Every action file, parsed once. The type checker is needed only to read
+  // an exported `Contract`, so the full TypeScript program (which loads the
+  // SDK's whole type tree) is built only when some action has one.
+  const parsed = new Map(files.map((f) => [f, ts.createSourceFile(f, fs.readFileSync(f, 'utf8'), ts.ScriptTarget.ES2022, true)]))
   let checker: ts.TypeChecker | null = null
   let program: ts.Program | null = null
-  if (files.length) {
+  if (files.some((f) => exportsContract(parsed.get(f)!))) {
     try {
-      program = ts.createProgram(files, {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.ESNext,
-        moduleResolution: ts.ModuleResolutionKind.Bundler,
-        strict: true,
-        noEmit: true,
-        skipLibCheck: true,
-        types: [],
-      })
+      program = contractProgram(dir, files, CONTRACT_OPTIONS)
       checker = program.getTypeChecker()
     } catch {
       checker = null
@@ -408,7 +415,7 @@ export function scanProject(opts: { dir: string; actionsDirs?: string[] }): Proj
   for (const file of files) {
     const fallbackName = path.basename(file).replace(/\.tsx?$/, '')
     const text = fs.readFileSync(file, 'utf8')
-    const sf = program?.getSourceFile(file) ?? ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true)
+    const sf = program?.getSourceFile(file) ?? parsed.get(file)!
     const factories = findFactories(sf)
     const plain = factories.length ? null : findPlainHandler(sf)
     if (!factories.length && !plain) {

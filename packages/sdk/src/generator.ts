@@ -103,6 +103,42 @@ function isExported(st: ts.Statement): boolean {
   return ts.canHaveModifiers(st) && ts.getModifiers(st)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) === true
 }
 
+/** Whether a file exports an interface or type alias named `Contract` — the only thing a checker is needed for. */
+export function exportsContract(sf: ts.SourceFile): boolean {
+  return sf.statements.some((st) =>
+    isExported(st) && (ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)) && st.name.text === 'Contract',
+  )
+}
+
+/**
+ * Parsed source files kept between builds in one process (`morgana dev`
+ * rebuilds), keyed by path and reused while their text is unchanged — so the
+ * SDK's types are read and parsed once, not on every rebuild.
+ */
+const sourceCache = new Map<string, { text: string; sf: ts.SourceFile }>()
+/** The last program per project and options, handed to the next as its old program. */
+const lastPrograms = new Map<string, ts.Program>()
+
+/** A TypeScript program for reading contracts, reusing what the last one for this project parsed. */
+export function contractProgram(dir: string, files: string[], options: ts.CompilerOptions): ts.Program {
+  const host = ts.createCompilerHost(options)
+  const read = host.getSourceFile.bind(host)
+  host.getSourceFile = (fileName, languageVersion, onError, shouldCreate) => {
+    const text = host.readFile(fileName)
+    if (text === undefined) return read(fileName, languageVersion, onError, shouldCreate)
+    const key = `${fileName}|${JSON.stringify(languageVersion)}`
+    const hit = sourceCache.get(key)
+    if (hit && hit.text === text) return hit.sf
+    const sf = ts.createSourceFile(fileName, text, languageVersion)
+    sourceCache.set(key, { text, sf })
+    return sf
+  }
+  const key = `${path.resolve(dir)}|${JSON.stringify(options)}`
+  const program = ts.createProgram(files, options, host, lastPrograms.get(key))
+  lastPrograms.set(key, program)
+  return program
+}
+
 interface Extracted {
   input?: string
   output?: string
@@ -197,25 +233,31 @@ export function generateRegistry(opts: GenerateRegistryOptions): GeneratedRegist
   const entries: RegistryEntry[] = []
   const bodies = new Map<string, Extracted>()
 
+  // A checker is needed only to read an exported `Contract`; without one in
+  // any file, the full TypeScript program (the SDK's whole type tree) is skipped.
+  const parsed = new Map(files.map((f) => [f, ts.createSourceFile(f, fs.readFileSync(f, 'utf8'), ts.ScriptTarget.ES2022)]))
+  const typed = files.some((f) => exportsContract(parsed.get(f)!))
   if (files.length) {
-    const program = ts.createProgram(files, {
-      target: ts.ScriptTarget.ES2022,
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      strict: true,
-      noEmit: true,
-      skipLibCheck: true,
-    })
-    const checker = program.getTypeChecker()
+    const program = typed
+      ? contractProgram(opts.dir, files, {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+      })
+      : null
+    const checker = program?.getTypeChecker()
 
     for (const file of files) {
-      const sf = program.getSourceFile(file)
+      const sf = program ? program.getSourceFile(file) : parsed.get(file)
       const name = sf ? contractTarget(sf, file) : path.basename(file, '.ts')
       if (!sf || !name) {
         untyped.push(path.basename(file, '.ts'))
         continue
       }
-      const contract = extractContract(sf, checker)
+      const contract = checker ? extractContract(sf, checker) : undefined
       if (!contract || (!contract.input && !contract.output)) {
         untyped.push(name)
         continue
