@@ -503,6 +503,20 @@ export interface ServerApi {
    * programs in, with a URL for what they serve. See `SandboxApi`.
    */
   sandbox: SandboxApi
+  /**
+   * Print an HTML page to a PDF, exactly as a browser shows it, with real,
+   * selectable text: `await ctx.server.pdf(html)`. The page sets its own paper
+   * and margins with CSS (`@page { size: A4; margin: 0 }`). `morgana dev`
+   * prints with the machine's Chrome, Edge or Chromium.
+   */
+  pdf(html: string, opts?: PdfOptions): Promise<Uint8Array>
+}
+
+export interface PdfOptions {
+  /** Time the page gets to load fonts and images before it is printed, in milliseconds (default 2000). */
+  wait?: number
+  /** Give up after this many milliseconds (default 60000). */
+  timeout?: number
 }
 
 /**

@@ -364,6 +364,7 @@ export type {
   FilesHandle,
   EmailHandle,
   SandboxApi,
+  PdfOptions,
   SandboxHandle,
   SandboxRunOptions,
   SandboxStartOptions,
