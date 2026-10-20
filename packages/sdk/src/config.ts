@@ -236,6 +236,14 @@ export interface MorganaConfig {
   minify?: boolean
   /** Public + private vars — exposed on the server via `ctx.vars`. */
   vars?: ConfigVars
+  /**
+   * Hostnames this project is served at, e.g. `['patternlock.com',
+   * 'www.patternlock.com']`. `morgana deploy` attaches each to the worker and
+   * routes it here; a name removed from the list is detached on the next
+   * deploy. Each name's zone must be on the worker's Cloudflare account (point
+   * the domain's nameservers at Cloudflare once).
+   */
+  domains?: string[]
   /** Server bindings (collections/assets) — wired onto `ctx.server`. */
   bindings?: {
     collections?: string[]

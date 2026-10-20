@@ -34,6 +34,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { say, warn, row, bold, dim } from '../ui.mjs'
+import { readCredentials } from './login.mjs'
 import { SECRETS_FILE, hasLegacySecrets, legacySecretsPath, localSecretsPath } from '../lib/secrets.mjs'
 import { pushLocalSecrets } from '../lib/secrets-remote.mjs'
 import { ARTIFACT_DIR, artifactMap, collectArtifactFiles, formatBytes, planArtifacts, uploadArtifacts } from '../lib/artifacts-remote.mjs'
@@ -84,9 +85,17 @@ export const DEFAULT_BACKEND = 'https://morgana-server.hello-ad4.workers.dev'
  * reading a different project than `deploy` just wrote.
  */
 export function resolveTarget({ url, project, env } = {}) {
+  const base = String(url || process.env.MORGANA_URL || DEFAULT_BACKEND).replace(/\/+$/, '')
+  // With no --project, the project `morgana login` signed in to on this worker.
+  let stored
+  try {
+    stored = readCredentials()[base]?.projectId
+  } catch {
+    stored = undefined
+  }
   return {
-    base: String(url || process.env.MORGANA_URL || DEFAULT_BACKEND).replace(/\/+$/, ''),
-    projectId: project || process.env.MORGANA_PROJECT || '__default',
+    base,
+    projectId: project || process.env.MORGANA_PROJECT || stored || '__default',
     envName: env || process.env.MORGANA_ENV || 'production',
   }
 }
@@ -165,6 +174,33 @@ export async function deploy({
   if (source === 'stored') {
     say(row('auth', `using the token stored for ${base}`))
   }
+
+/**
+ * Make the worker serve this project at exactly these hostnames. Each is
+ * attached to the worker on Cloudflare and routed to the project; names the
+ * config dropped are detached. Returns the live URLs.
+ */
+async function syncDomains({ base, bearer, projectId, envName, hostnames }) {
+  const res = await fetch(`${base}/api/v1/projects/${encodeURIComponent(projectId)}/domains:sync?env=${encodeURIComponent(envName)}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ hostnames }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok || !body.success) {
+    warn(`domains not set: ${body.message ?? res.status}`)
+    return []
+  }
+  const urls = []
+  for (const d of body.data.domains ?? []) {
+    if (d.status === 'active') {
+      say(row('domain', `${d.hostname} live`))
+      urls.push(`https://${d.hostname}/`)
+    } else warn(`${d.hostname}: ${d.message}`)
+  }
+  for (const h of body.data.detached ?? []) say(row('domain', `${h} detached`))
+  return urls
+}
 
 const readJson = (dist, rel, fallback) => {
   try {
@@ -499,7 +535,13 @@ async function main({ base, projectId, envName, bearer, dist, projectDir, noSecr
   }
   say(`verify   ok — page loads, ${check.assets} referenced asset(s) all 200`)
 
+  // The config's `domains`: the worker attaches each to itself and routes it
+  // here, and detaches names the config no longer lists.
+  const manifestDomains = readJson(dist, 'manifest.json', {}).domains
+  const domainUrls = Array.isArray(manifestDomains) ? await syncDomains({ base, bearer, projectId, envName, hostnames: manifestDomains }) : []
+
   say(`\ndeployed ${projectId} (${envName})`)
+  for (const u of domainUrls) say(`  ${u}`)
   // The project's own origin is where sign-in works; the /apps/ URL is a
   // shared-origin preview that serves pages but refuses sessions.
   if (deployRes.hostUrl) {

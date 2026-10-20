@@ -71,6 +71,8 @@ export interface EmitInputs {
   minify?: boolean
   /** Public vars from morgana.config.ts, shipped for ctx.vars. */
   vars?: Record<string, unknown>
+  /** The config's `domains`, for `morgana deploy`. Written only when the config has `domains`, so other projects' manifests are unchanged. */
+  domains?: string[]
   /** Custom object components this project ships, for tooling to read. */
   customObjects?: Array<{
     name: string
@@ -274,6 +276,7 @@ export function emitDist(outDir: string, inputs: EmitInputs): EmitResult {
           description: c.description,
         })),
         vars: inputs.vars ?? {},
+        ...(inputs.domains ? { domains: inputs.domains } : {}),
         hash,
         warnings: inputs.warnings,
         logs: inputs.ir.logs,

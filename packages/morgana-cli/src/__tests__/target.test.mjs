@@ -10,6 +10,9 @@
  *   - `deploy` never read the stored credential, so `login` followed by `deploy`
  *     ignored the token that had just been minted and the worker answered 401.
  */
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { DEFAULT_BACKEND, resolveTarget, resolveCredential } from '../commands/deploy.mjs'
@@ -57,7 +60,17 @@ describe('resolveTarget', () => {
   })
 
   it('defaults the project and the environment', () => {
+    // No login on this "machine": an empty home.
+    process.env.MORGANA_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'morgana-home-'))
     expect(resolveTarget()).toMatchObject({ projectId: '__default', envName: 'production' })
+  })
+
+  it('uses the project `morgana login` signed in to on this worker when no --project is given', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'morgana-home-'))
+    fs.writeFileSync(path.join(home, 'credentials.json'), JSON.stringify({ [DEFAULT_BACKEND]: { token: 't', projectId: 'prj_mine' } }))
+    process.env.MORGANA_HOME = home
+    expect(resolveTarget().projectId).toBe('prj_mine')
+    expect(resolveTarget({ project: 'prj_other' }).projectId).toBe('prj_other')
   })
 })
 

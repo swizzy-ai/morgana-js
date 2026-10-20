@@ -118,6 +118,41 @@ export const WORKER_COMMANDS = {
     },
   },
 
+  data: {
+    describe: "read the deployed project's stores: list them, query rows, show one",
+    usage: 'morgana data [store] [id] [--where field=value,…] [--search text] [--fields a,b] [--limit 20] [--sort field] [--asc] [--json|--csv]',
+    flags: {
+      ...TARGET_FLAGS,
+      where: { type: 'string', describe: 'only rows whose fields equal these values: source=image,stance=supported' },
+      search: { type: 'string', describe: 'only rows whose text contains this' },
+      fields: { type: 'string', describe: 'the columns to show, comma-separated' },
+      limit: { type: 'string', describe: 'how many rows (default 20)' },
+      sort: { type: 'string', describe: 'the field to sort by (default createdAt, newest first)' },
+      asc: { type: 'boolean', describe: 'oldest first' },
+      json: { type: 'boolean', describe: 'print JSON' },
+      csv: { type: 'boolean', describe: 'print CSV' },
+    },
+    async run(args, { str, bool, positional }) {
+      const { data } = await import('./commands/data.mjs')
+      await data({
+        store: positional(args, 0, ''),
+        id: positional(args, 1, ''),
+        where: str(args, 'where'),
+        search: str(args, 'search'),
+        fields: str(args, 'fields', ''),
+        limit: Number(str(args, 'limit', '20')),
+        sort: str(args, 'sort'),
+        asc: bool(args, 'asc'),
+        json: bool(args, 'json'),
+        asCsv: bool(args, 'csv'),
+        url: str(args, 'url'),
+        project: str(args, 'project'),
+        env: str(args, 'env'),
+        token: str(args, 'token'),
+      })
+    },
+  },
+
   status: {
     describe: 'what the worker currently holds for this project',
     usage: 'morgana status --url <worker>',

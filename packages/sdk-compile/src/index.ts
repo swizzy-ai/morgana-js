@@ -549,6 +549,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
     minify,
     customObjects: discovered,
     vars: (scan.config.vars?.public ?? {}) as Record<string, unknown>,
+    domains: Array.isArray(scan.config.domains) ? scan.config.domains.map(String) : undefined,
     // Channels declared during the compile lane, with their access rules. This
     // is `ir.channels` rather than anything in the config: a channel is declared
     // where it is created, the same place its shape and scope are.
