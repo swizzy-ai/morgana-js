@@ -164,6 +164,29 @@ const WIZARD_NOT_BUILT =
   '@studiomorgana/wizard is not built. Run: pnpm --filter @studiomorgana/wizard run build'
 
 /**
+ * Images as the chat parts the route passes to the vision model. Each becomes a
+ * data URI here, so the route never has to fetch on our behalf: a data URI
+ * stays as it is, an https URL is downloaded, and plain base64 takes its type.
+ */
+export async function imageParts(images = []) {
+  return Promise.all(images.map(async (img) => {
+    const data = typeof img === 'string' ? img : img?.data
+    const mimeType = typeof img === 'string' ? undefined : img?.mimeType
+    if (typeof data !== 'string' || !data) throw new Error('ctx.ai: each image needs data (a data URI, an https URL, or base64)')
+    let url = data
+    if (/^https?:\/\//.test(data)) {
+      const res = await fetch(data)
+      if (!res.ok) throw new Error(`ctx.ai: couldn't fetch image ${data}: HTTP ${res.status}`)
+      const type = res.headers.get('content-type') || mimeType || 'image/png'
+      url = `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`
+    } else if (!/^data:/.test(data)) {
+      url = `data:${mimeType?.startsWith('image/') ? mimeType : 'image/png'};base64,${data}`
+    }
+    return { type: 'image_url', image_url: { url } }
+  }))
+}
+
+/**
  * POST a chat request to the Morgana route and read the text back.
  *
  * The plain generation path goes to the route directly rather than through the
@@ -171,8 +194,13 @@ const WIZARD_NOT_BUILT =
  * wrapping it in a tool loop would add a second model call to answer a question
  * that needs one.
  */
-async function generate({ baseUrl, token }, { instructions, system, model, maxTokens }) {
+async function generate({ baseUrl, token }, { instructions, system, model, maxTokens, images }) {
   if (!baseUrl) throw new Error(NO_PROVIDER)
+  // With images, the user turn carries them beside the text, and the vision
+  // model answers unless the caller named another.
+  const pictures = Array.isArray(images) && images.length ? await imageParts(images) : null
+  const user = pictures ? { role: 'user', content: [{ type: 'text', text: instructions }, ...pictures] } : { role: 'user', content: instructions }
+  const messages = system || pictures ? [...(system ? [{ role: 'system', content: system }] : []), user] : null
   const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/v1/llm/generate`, {
     method: 'POST',
     headers: {
@@ -181,16 +209,9 @@ async function generate({ baseUrl, token }, { instructions, system, model, maxTo
     },
     body: JSON.stringify({
       instructions,
-      ...(system
-        ? {
-            messages: [
-              { role: 'system', content: system },
-              { role: 'user', content: instructions },
-            ],
-          }
-        : {}),
+      ...(messages ? { messages } : {}),
       stream: false,
-      ...(model ? { model } : {}),
+      ...(model ? { model } : pictures ? { model: DEFAULT_VISION_MODEL } : {}),
       ...(typeof maxTokens === 'number' && maxTokens > 0 ? { max_tokens : maxTokens } : {}),
     }),
   })

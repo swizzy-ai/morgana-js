@@ -361,9 +361,20 @@ export type AuthHandle = ServerAuthHandle
  * `agents` and `tools` are async for the same reason `collections` is: both read
  * durable declarations, and storage is not memory.
  */
+/**
+ * An image for the model to look at: a data URI (`data:image/png;base64,…`), a
+ * public https URL, or plain base64 with its type.
+ */
+export type AiImage = string | { data: string; mimeType?: string }
+
 export interface AiHandle {
-  generateText(opts: { instructions: string; model?: string; maxTokens?: number }): Promise<string>
-  generateObject<T = unknown>(opts: { instructions: string; structure?: unknown; model?: string; maxTokens?: number }): Promise<T>
+  /**
+   * One model call. With `images`, the model sees them with the instructions,
+   * and the vision model answers unless `model` names another.
+   */
+  generateText(opts: { instructions: string; images?: AiImage[]; model?: string; maxTokens?: number }): Promise<string>
+  /** Like `generateText`, but the answer is parsed as JSON (shaped like `structure`, when given). */
+  generateObject<T = unknown>(opts: { instructions: string; images?: AiImage[]; structure?: unknown; model?: string; maxTokens?: number }): Promise<T>
   text(opts: { instructions: string; model?: string }): Promise<string>
   /** Durable, named LLM actors. `create` writes a declaration down; `run` works. */
   agents: AgentsHandle

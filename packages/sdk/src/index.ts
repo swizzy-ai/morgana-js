@@ -380,6 +380,7 @@ export type {
   AuthHandle,
   ServerAuthHandle,
   AiHandle,
+  AiImage,
   ActionsHandle,
   EmitHandle,
   LogHandle,
