@@ -65,11 +65,13 @@ export class Make {
 
   // ---- appearance ----
 
-  /** Apply a named appearance from the theme. */
-  appearance(name: string): this {
-    const describe = this.t.appearances[name]
-    if (!describe) throw new Error(`[helpers] No appearance "${name}" in theme "${this.t.name}". Add it with theme(...).appearance('${name}', make => …).`)
-    describe(this)
+  /** Apply named appearances from the theme, in order: `.appearance('card')`, `.appearance('btn', 'btnPrimary')`. */
+  appearance(...names: string[]): this {
+    for (const name of names) {
+      const describe = this.t.appearances[name]
+      if (!describe) throw new Error(`[helpers] No appearance "${name}" in theme "${this.t.name}". Add it with theme(...).appearance('${name}', make => …).`)
+      describe(this)
+    }
     return this
   }
 

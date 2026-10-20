@@ -56,6 +56,8 @@ export class Theme {
   private readonly tokens: Record<string, ModeValue> = {}
 
   private pointReader: Points = STANDARD_POINTS
+  /** SVG icons by name, registered for every page this theme paints. */
+  readonly iconSet: Record<string, string> = {}
 
   constructor(readonly name: string) {}
 
@@ -69,6 +71,12 @@ export class Theme {
     const reader = points({ basis, words })
     for (const kind of Object.keys(basis)) reader.basis(kind as keyof PointBasis)   // a wrong unit says so here
     this.pointReader = reader
+    return this
+  }
+
+  /** Icons the pages can use by name: `.icons({ arrow: '<svg…>' })`. Registered once per build. */
+  icons(set: Record<string, string>): this {
+    Object.assign(this.iconSet, set)
     return this
   }
 

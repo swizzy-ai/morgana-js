@@ -54,11 +54,11 @@
       ],
       "params": [
         {
-          "name": "name",
-          "takes": "text"
+          "name": "names",
+          "takes": "value"
         }
       ],
-      "doc": "Apply a named appearance from the theme."
+      "doc": "Apply named appearances from the theme, in order: `.appearance('card')`, `.appearance('btn', 'btnPrimary')`."
     },
     "appears": {
       "say": [

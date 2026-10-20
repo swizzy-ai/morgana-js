@@ -21,7 +21,7 @@ export { Make, type Appearance, type Leaving } from './make'
 export { SetTo } from './set'
 export { Theme, theme } from './theme'
 export { Animation, Move, type Animate, type Trigger } from './animate'
-export { Bricks, type CellLooks } from './bricks'
+export { Bricks, type CellLooks, type RailLooks } from './bricks'
 export { duration, type Duration, type Speed } from './time'
 // Points: one fixed, standard way to say an amount ('2 points', 'a little', '3 hairs').
 export { points, type Points, type PointKind, type PointBasis } from '@studiomorgana/points'
@@ -207,6 +207,9 @@ export function helpers(ctx: ClientContext, look: Theme = theme('default')): Ver
   // (compile lane), so `theme: name` on a page paints <body> and follows mode.
   const themes = (ctx.ui as unknown as { themes?: { define(name: string, spec: unknown): void } }).themes
   if (look.hasRoles && themes && !inBrowserNow()) themes.define(look.name, look.spec())
+  // The theme's icons, registered once per build (compile lane).
+  const icons = (ctx.ui as unknown as { icons?: { define(name: string, def: { kind: 'svg'; svg: string }): void } }).icons
+  if (icons && !inBrowserNow()) for (const [name, svg] of Object.entries(look.iconSet)) icons.define(name, { kind: 'svg', svg })
 
   const create = new Proxy({} as Creators, {
     get(_, key: string) {

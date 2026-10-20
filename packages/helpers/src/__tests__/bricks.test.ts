@@ -98,4 +98,38 @@ describe('Bricks', () => {
     expect(log).toContain('create:list:log')
     expect(log.some((l) => l.startsWith('fill:') && l.endsWith(':log'))).toBe(true)
   })
+
+  it('onlyWhile takes several things at once', () => {
+    const { verbs, log, made } = fakeVerbs()
+    const a = made('box', 'a')
+    const b = made('box', 'b')
+    new Bricks(verbs).onlyWhile([a, b], 'authStep', ['code', 'name'])
+    expect(log.filter((l) => l.startsWith('hidden:'))).toHaveLength(2)
+    expect(log.filter((l) => l === 'while:make:node:authStep')).toHaveLength(2)
+  })
+
+  it('cells give each caption its label look', () => {
+    const { verbs, log } = fakeVerbs()
+    new Bricks(verbs).cells({} as never, [['m-time', 'Time', 'meter.time']])
+    expect(log).toContain('appearance:make:node:cap')
+    expect(log).toContain('set textFrom:meter.time')
+  })
+
+  it('segmented lights a key by its own state value when it differs from the id', () => {
+    const { verbs, log } = fakeVerbs()
+    const keys = new Bricks(verbs).segmented({} as never, 'device', [['dev-desktop', 'Desktop', 'desktop'], ['dev-phone', 'Phone', 'phone']])
+    expect(keys).toHaveLength(2)
+    expect(log).toContain('create:button:dev-desktop')
+    expect(log.filter((l) => l === 'while:make:node:device')).toHaveLength(2)
+  })
+
+  it('rail makes one step per value: bar, label shown only while current', () => {
+    const { verbs, log } = fakeVerbs()
+    new Bricks(verbs).rail({} as never, 'view', [['pick', 'Pick'], ['brief', 'Brief'], ['done', 'Done']])
+    for (const id of ['rail', 'rail-pick', 'rail-pick-bar', 'rail-pick-label', 'rail-brief', 'rail-done-label']) expect(log.some((l) => l.endsWith(`:${id}`))).toBe(true)
+    // Every step's bar is lit while current; the first two also look done while a later step is current.
+    expect(log.filter((l) => l === 'appearance:make:node:railBarOn')).toHaveLength(3)
+    expect(log.filter((l) => l === 'appearance:make:node:railBarDone')).toHaveLength(2)
+    expect(log.filter((l) => l.startsWith('hidden:'))).toHaveLength(3)
+  })
 })
