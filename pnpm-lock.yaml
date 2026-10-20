@@ -99,6 +99,31 @@ importers:
         specifier: ~5.8.2
         version: 5.8.3
 
+  examples/water-world:
+    dependencies:
+      '@studiomorgana/helpers':
+        specifier: workspace:^
+        version: link:../../packages/helpers
+      '@studiomorgana/media':
+        specifier: workspace:^
+        version: link:../../packages/media
+      '@studiomorgana/sdk':
+        specifier: workspace:^
+        version: link:../../packages/sdk
+      '@studiomorgana/world':
+        specifier: workspace:^
+        version: link:../../packages/world
+    devDependencies:
+      '@studiomorgana/cli':
+        specifier: workspace:^
+        version: link:../../packages/morgana-cli
+      '@studiomorgana/sdk-compile':
+        specifier: workspace:^
+        version: link:../../packages/sdk-compile
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+
   packages/assets:
     dependencies:
       '@studiomorgana/sdk':
@@ -164,6 +189,18 @@ importers:
       '@types/node':
         specifier: ^22.14.0
         version: 22.20.5
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
+
+  packages/media:
+    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
@@ -310,6 +347,22 @@ importers:
       '@types/node':
         specifier: ^22.14.0
         version: 22.20.5
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
+      typescript:
+        specifier: ~5.8.2
+        version: 5.8.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
+
+  packages/world:
+    dependencies:
+      '@studiomorgana/media':
+        specifier: workspace:^
+        version: link:../media
+    devDependencies:
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.28)(typescript@5.8.3)
