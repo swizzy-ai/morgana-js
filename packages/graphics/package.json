@@ -1,0 +1,11 @@
+{
+  "name": "@studiomorgana/graphics",
+  "version": "0.1.0",
+  "description": "Morgana graphics: a canvas on the page, base 2D and 3D objects placed in it, a clock and keys.",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "files": ["src"],
+  "morgana": { "uiObjects": "src/objects" },
+  "dependencies": { "@studiomorgana/sdk": "workspace:*" },
+  "license": "MIT"
+}

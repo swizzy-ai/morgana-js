@@ -140,6 +140,21 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@types/node@22.20.5)(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2))
 
+  packages/game:
+    dependencies:
+      '@studiomorgana/graphics':
+        specifier: workspace:*
+        version: link:../graphics
+      '@studiomorgana/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+
+  packages/graphics:
+    dependencies:
+      '@studiomorgana/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+
   packages/helpers:
     dependencies:
       '@studiomorgana/points':

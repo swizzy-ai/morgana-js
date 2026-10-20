@@ -63,9 +63,10 @@ export function objectSources(dir: string, libraries: string[] = []): Array<{ fi
     } catch {
       throw new Error(`library "${lib}" (morgana.config libraries) is not installed — npm install ${lib}`)
     }
-    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8')) as { morgana?: { objects?: string[] } }
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8')) as { morgana?: { objects?: string[]; uiObjects?: string } }
     const entries = pkg.morgana?.objects ?? []
-    if (!entries.length) throw new Error(`library "${lib}" declares no objects (package.json "morgana": { "objects": [...] })`)
+    // A library may bring only UI objects (`morgana.uiObjects`, custom-objects.ts).
+    if (!entries.length && !pkg.morgana?.uiObjects) throw new Error(`library "${lib}" declares no objects (package.json "morgana": { "objects": [...] } or { "uiObjects": "<folder>" })`)
     for (const rel of entries) out.push({ file: path.join(path.dirname(pkgFile), rel), library: lib })
   }
   return out

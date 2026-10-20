@@ -25,6 +25,8 @@ import type { CustomObjectDecl } from './ir'
 import { compileServerObjects, objectKey, objectTypesDts, type CompiledServerObject } from './objects-compile'
 
 export interface GenerateTypesOptions {
+  /** The config's `libraries`: packages that bring their own objects. */
+  libraries?: string[]
   dir: string
   actionsDirs?: string[]
   /** Font names from `config.fonts` — become the only valid `family` values. */
@@ -178,7 +180,7 @@ export function refreshProjectTypes(
 
   let customObjects: string[] = []
   attempt('custom object', () => {
-    const decls = discoverCustomObjects(dir, [])
+    const decls = discoverCustomObjects(dir, [], opts.libraries ?? [])
     customObjects = decls.map((d) => objectKey(d.name))
     if (writeIfChanged(path.join(dir, '.morgana', 'ui.d.ts'), uiTypesDts(dir, decls))) written.push('.morgana/ui.d.ts')
   })
@@ -203,7 +205,7 @@ export async function generateTypes(opts: GenerateTypesOptions): Promise<Generat
   const scan = scanProject({ dir: opts.dir, actionsDirs: opts.actionsDirs })
   const libraries = (scan.config as { libraries?: string[] }).libraries ?? []
   const objects = await compileServerObjects(opts.dir, libraries, warnings)
-  const r = refreshProjectTypes({ ...opts, fonts: Object.keys(scan.config.fonts ?? {}) }, objects, warnings)
+  const r = refreshProjectTypes({ ...opts, libraries, fonts: Object.keys(scan.config.fonts ?? {}) }, objects, warnings)
 
   return {
     actions: r.registry?.entries.map((e) => e.name) ?? [],

@@ -1,0 +1,11 @@
+{
+  "name": "@studiomorgana/game",
+  "version": "0.1.0",
+  "description": "Morgana game: players, walls and fields of grass on a graphics canvas, with input, collisions and game events.",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./package.json": "./package.json" },
+  "files": ["src"],
+  "morgana": { "uiObjects": "src/objects" },
+  "dependencies": { "@studiomorgana/graphics": "workspace:*", "@studiomorgana/sdk": "workspace:*" },
+  "license": "MIT"
+}

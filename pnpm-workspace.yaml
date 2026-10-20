@@ -12,6 +12,8 @@
 packages:
   - packages/points
   - packages/media
+  - packages/graphics
+  - packages/game
   - packages/sdk
   - packages/helpers
   - packages/assets

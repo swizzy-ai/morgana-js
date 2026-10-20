@@ -13,6 +13,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { bundleCustomObjectModules, loadCustomObjectDefinition } from './bundle'
 import type { CustomObjectDecl } from './ir'
 import type { CustomObjectDefinition } from '@studiomorgana/sdk'
@@ -217,11 +218,36 @@ export async function loadCustomObjectDefinitions(
  * legal — it is simply not a component. Only complain if it looks like it meant
  * to be one.
  */
-export function discoverCustomObjects(dir: string, warnings: string[] = []): CustomObjectDecl[] {
+/**
+ * A library's own custom objects: the folder its package.json names under
+ * `morgana.uiObjects` (`"morgana": { "uiObjects": "src/objects" }`), for
+ * every package the config lists in `libraries`. Project objects come after,
+ * so a project can replace a library object by declaring the same name.
+ */
+export function libraryObjectDirs(dir: string, libraries: string[] = []): string[] {
+  const require_ = createRequire(path.join(dir, 'package.json'))
+  const out: string[] = []
+  for (const lib of libraries) {
+    let pkgFile: string
+    try {
+      pkgFile = require_.resolve(`${lib}/package.json`)
+    } catch {
+      continue // server-objects.ts reports a missing library by name
+    }
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf8')) as { morgana?: { uiObjects?: string } }
+    const rel = pkg.morgana?.uiObjects
+    if (!rel) continue
+    const root = path.join(path.dirname(pkgFile), rel)
+    if (fs.existsSync(root)) out.push(root)
+  }
+  return out
+}
+
+export function discoverCustomObjects(dir: string, warnings: string[] = [], libraries: string[] = []): CustomObjectDecl[] {
   const decls: CustomObjectDecl[] = []
   const claimedBy = new Map<string, string>()
 
-  for (const root of customObjectDirs(dir)) {
+  for (const root of [...libraryObjectDirs(dir, libraries), ...customObjectDirs(dir)]) {
     for (const file of listModuleFiles(root)) {
       const rel = path.relative(dir, file).split(path.sep).join('/')
       const src = read(file)

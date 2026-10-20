@@ -240,7 +240,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   // Discovery reads the serializable parts from source; loading evaluates the
   // module in Node so its `define` is callable.
   const customWarnings: string[] = []
-  const discovered = discoverCustomObjects(dir, customWarnings)
+  const discovered = discoverCustomObjects(dir, customWarnings, (scan.config as { libraries?: string[] }).libraries ?? [])
   for (const decl of discovered) ir.customObjects.set(decl.name, decl)
   let customObjects: Map<string, CustomObjectDefinition> = new Map()
   if (discovered.length) {
@@ -396,7 +396,7 @@ export async function compileProject(opts: CompileOptions): Promise<CompileResul
   const serverObjects = await compileServerObjects(dir, (scan.config as { libraries?: string[] }).libraries ?? [], warnings)
   ir.serverObjects = browserObjectMeta(serverObjects)
   // Every build refreshes the project types, so the editor never lags the code.
-  refreshProjectTypes({ dir, actionsDirs: opts.actionsDirs, fonts: Object.keys(scan.config.fonts ?? {}) }, serverObjects, warnings)
+  refreshProjectTypes({ dir, actionsDirs: opts.actionsDirs, libraries: (scan.config as { libraries?: string[] }).libraries ?? [], fonts: Object.keys(scan.config.fonts ?? {}) }, serverObjects, warnings)
 
   const bindingErrors: string[] = []
   const objectErrors: string[] = []
