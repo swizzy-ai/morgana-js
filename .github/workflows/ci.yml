@@ -53,7 +53,14 @@ jobs:
         # is gitignored and absent from a clean checkout. `pnpm -r` also runs
         # packages concurrently, so a pre-hook that rebuilt a shared dependency
         # would delete it out from under another package's tests.
-        run: pnpm -r run build
+        # The packages first; then install again, offline, so pnpm links the
+        # `morgana` command into the examples — on a clean checkout the CLI's
+        # dist/ didn't exist yet at install, so there was nothing to link and
+        # every example's `morgana build` failed with "morgana: not found".
+        run: |
+          pnpm -r --filter "./packages/**" run build
+          pnpm install --frozen-lockfile --offline
+          pnpm -r --filter "./examples/**" run build
 
       - name: Typecheck
         run: pnpm -r run typecheck
