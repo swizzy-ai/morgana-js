@@ -138,6 +138,48 @@ export const COMMANDS = {
     },
   },
 
+  docs: {
+    describe: "generate the project's docs: storyboard, API, events, objects, data",
+    usage: 'morgana docs [--dir <path>] [--out <dir>] [--url <running app>] [--no-shots]',
+    flags: {
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      out: { type: 'string', short: 'o', describe: 'where to write (default dist/docs)' },
+      url: { type: 'string', describe: 'a running app to photograph the screens from (default: localhost:4317 if it answers)' },
+      shots: { type: 'boolean', describe: 'photograph the storyboard (--no-shots to skip)' },
+    },
+    async run(args, { str, bool }) {
+      const { docs } = await import('./commands/docs.mjs')
+      await docs({ dir: str(args, 'dir') || process.cwd(), out: str(args, 'out'), url: str(args, 'url'), shots: bool(args, 'shots', true) })
+    },
+  },
+
+  demo: {
+    describe: 'record demo videos of the app for Reels, TikTok and Shorts (morgana.demos.json)',
+    usage: 'morgana demo [name…] [--all] [--list] [--skip 2,4] [--only 1-3] [--format 9:16|4:5|1:1|16:9] [--audio <file>] [--no-audio] [--from-storyboard] [--stills] [--url <app>]',
+    flags: {
+      dir: { type: 'string', short: 'd', describe: 'project directory' },
+      all: { type: 'boolean', describe: 'record every demo' },
+      list: { type: 'boolean', describe: 'show the scenes, numbered' },
+      skip: { type: 'string', describe: 'leave these scenes out: 2,4 or 2-3' },
+      only: { type: 'string', describe: 'keep just these scenes' },
+      format: { type: 'string', describe: '9:16 (default), 4:5, 1:1 or 16:9' },
+      audio: { type: 'string', describe: 'music or a voice-over to lay under it (--no-audio: none)' },
+      'from-storyboard': { type: 'boolean', describe: 'one demo of every storyboard screen' },
+      stills: { type: 'boolean', describe: 'also write each scene’s last frame' },
+      url: { type: 'string', describe: 'the running app (default: localhost:4317 if it answers)' },
+      out: { type: 'string', short: 'o', describe: 'where to write (default dist/demos)' },
+    },
+    async run(args, { str, bool }) {
+      const { demo } = await import('./commands/demo.mjs')
+      await demo({
+        dir: str(args, 'dir') || process.cwd(), names: args.positionals, all: bool(args, 'all'), list: bool(args, 'list'),
+        skip: str(args, 'skip'), only: str(args, 'only'), format: str(args, 'format'), audio: str(args, 'audio'),
+        noAudio: args.values.audio === false, fromStoryboard: bool(args, 'from-storyboard'), stills: bool(args, 'stills'),
+        url: str(args, 'url'), out: str(args, 'out'),
+      })
+    },
+  },
+
   spec: {
     describe: 'print the API surface — server objects, ctx, ui kinds, events, …',
     usage: 'morgana spec [topic] [--all] [--json]',

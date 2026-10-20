@@ -83,11 +83,24 @@ if (!fs.existsSync(dist)) {
 }
 
 const manifest = readJson('manifest.json')
-const serverApis = readJsonSafe('server/apis.json', [])
 // Desktop http routes live in their own partition so the cloud never sees
 // them, but this host serves both — the installed app is a full host.
-const desktopApis = readJsonSafe('desktop/apis.json', [])
-const apis = [...serverApis, ...desktopApis]
+const readApis = () => [...readJsonSafe('server/apis.json', []), ...readJsonSafe('desktop/apis.json', [])]
+const apis = readApis()
+// A route added while dev runs is served after the rebuild that declares it:
+// the table is read again whenever the build rewrites it.
+let apisStamp = 0
+const currentApis = () => {
+  let stamp = 0
+  for (const f of ['server/apis.json', 'desktop/apis.json']) {
+    try { stamp = Math.max(stamp, fs.statSync(path.join(dist, f)).mtimeMs) } catch { /* not built */ }
+  }
+  if (stamp !== apisStamp) {
+    apisStamp = stamp
+    apis.splice(0, apis.length, ...readApis())
+  }
+  return apis
+}
 const triggers = readJsonSafe('server/triggers.json', [])
 const stores = readJsonSafe('server/stores.json', [])
 // Public vars ship in the manifest; private vars (secrets) come from
@@ -353,6 +366,12 @@ function sendCaptured(res, captured, result) {
   const status = captured.status ?? 200
   const headers = { 'cache-control': 'no-store', ...(captured.headers ?? {}) }
   const body = captured.body !== undefined ? captured.body : { success: true, data: { result } }
+  // Bytes (a PDF, an image from ctx.server.files) go out as they are.
+  if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
+    headers['content-type'] = captured.contentType ?? headers['content-type'] ?? 'application/octet-stream'
+    res.writeHead(status, headers)
+    return res.end(Buffer.from(body instanceof ArrayBuffer ? new Uint8Array(body) : body))
+  }
   if (typeof body === 'string') {
     headers['content-type'] = captured.contentType ?? headers['content-type'] ?? 'text/plain; charset=utf-8'
     res.writeHead(status, headers)
@@ -444,6 +463,30 @@ const server = http.createServer(async (req, res) => {
     return send(res, r.status, r.body)
   }
 
+  // 0. the project's docs, generated from this build and photographed from this server
+  if (pathname === '/_morgana/docs' || pathname.startsWith('/_morgana/docs/')) {
+    const out = path.join(dataDir, 'docs')
+    const rest = pathname.slice('/_morgana/docs'.length).replace(/^\/+/, '')
+    try {
+      if (!rest) {
+        if (!pathname.endsWith('/')) {
+          res.writeHead(302, { location: '/_morgana/docs/' + url.search })
+          return res.end()
+        }
+        const { writeDocs } = await import('./docs.mjs')
+        const shots = url.searchParams.get('shots') !== '0'
+        await writeDocs({ dir, out, url: shots ? `http://${req.headers.host}` : undefined, shots })
+      }
+      const file = path.resolve(out, rest || 'index.html')
+      if (!file.startsWith(path.resolve(out)) || !fs.existsSync(file)) return send(res, 404, 'Not found')
+      const type = { '.png': 'image/png', '.jpg': 'image/jpeg', '.mp4': 'video/mp4', '.webm': 'video/webm' }[path.extname(file)] ?? 'text/html; charset=utf-8'
+      res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' })
+      return res.end(fs.readFileSync(file))
+    } catch (err) {
+      return send(res, 500, `Docs failed: ${String(err?.message ?? err)}`)
+    }
+  }
+
   // 1. http routes declared in morgana.config.ts, from dist/server/apis.json
   if (
     !pathname.startsWith('/assets/') &&
@@ -452,7 +495,7 @@ const server = http.createServer(async (req, res) => {
     !pathname.startsWith('/api/') &&
     !pathname.startsWith('/apps/')
   ) {
-    for (const route of apis) {
+    for (const route of currentApis()) {
       if (route.method !== req.method) continue
       const params = matchRoute(route.path, pathname)
       if (!params) continue
