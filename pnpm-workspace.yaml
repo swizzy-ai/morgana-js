@@ -11,6 +11,7 @@
 # eroding. ci.yml fails if the worker is ever committed or referenced.
 packages:
   - packages/points
+  - packages/media
   - packages/sdk
   - packages/helpers
   - packages/assets

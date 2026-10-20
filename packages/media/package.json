@@ -1,0 +1,50 @@
+{
+  "name": "@studiomorgana/media",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Morgana Media core: pieces, generators with handle trees, ranges and words, seeds, style, and the difference check that keeps two pieces from coming out alike. No dependencies.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/media"
+  },
+  "keywords": [
+    "media",
+    "procedural",
+    "generators",
+    "seeds",
+    "godtongue",
+    "morgana"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  }
+}
