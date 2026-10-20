@@ -1,20 +1,17 @@
 /**
- * No two alike: a fingerprint of a resolved piece, how far two pieces are
- * from each other, and drawing again until a new piece is far enough from
- * what came before.
+ * No two alike: a fingerprint of an object's props, how far two are from each
+ * other, and drawing again until new props are far enough from earlier ones.
  */
 import { rgb, toHsl } from './colour'
-import type { Handles, Values } from './handles'
-import type { Generator, PieceSpec, ResolvedPiece } from './piece'
-import { resolvePiece } from './piece'
+import { resolve, type Ask, type Handles, type Values } from './handles'
 import { childSeed, newSeed } from './random'
 
-/** Every value as a number in 0–1, by handle path. */
+/** Every value as a number in 0–1, by prop path. */
 export type Fingerprint = Record<string, number>
 
 function walk(handles: Handles, values: Values, prefix: string, out: Fingerprint) {
   for (const [name, h] of Object.entries(handles)) {
-    const at = `${prefix}.${name}`
+    const at = prefix ? `${prefix}.${name}` : name
     const v = values[name]
     if (h.kind === 'group') { walk(h.handles, (v ?? {}) as Values, at, out); continue }
     if (h.kind === 'number' && typeof v === 'number') out[at] = h.max > h.min ? (v - h.min) / (h.max - h.min) : 0
@@ -29,21 +26,14 @@ function walk(handles: Handles, values: Values, prefix: string, out: Fingerprint
   }
 }
 
-/** A piece's fingerprint. Nodes are keyed by kind and their order within it, so ids don't matter. */
-export function fingerprint(piece: ResolvedPiece, generators: Generator[]): Fingerprint {
+/** An object's fingerprint: its props, each placed in 0–1 within its range. */
+export function fingerprint(handles: Handles, values: Values): Fingerprint {
   const out: Fingerprint = {}
-  const seen = new Map<string, number>()
-  for (const n of piece.nodes) {
-    const g = generators.find((x) => x.kind === n.kind)
-    if (!g) continue
-    const i = seen.get(n.kind) ?? 0
-    seen.set(n.kind, i + 1)
-    walk(g.handles, n.values, `${n.kind}${i}`, out)
-  }
+  walk(handles, values, '', out)
   return out
 }
 
-/** How different two fingerprints are: 0 (the same) to about 0.4 (as different as random pieces get). Root mean square over shared paths. */
+/** How different two fingerprints are: 0 (the same) to about 0.4 (as different as random draws get). Root mean square over shared props. */
 export function distance(a: Fingerprint, b: Fingerprint): number {
   let sum = 0, n = 0
   for (const k of Object.keys(a)) {
@@ -58,28 +48,28 @@ export function distance(a: Fingerprint, b: Fingerprint): number {
 }
 
 export interface Distinct {
-  piece: ResolvedPiece
+  values: Values
+  seed: string
   fingerprint: Fingerprint
-  /** How far it is from the nearest earlier piece (1 when there were none). */
+  /** How far it is from the nearest earlier draw (1 when there were none). */
   nearest: number
   /** How many seeds were tried. */
   tries: number
 }
 
 /**
- * Resolve a piece whose fingerprint is at least `min` from every earlier one.
- * A pinned seed is honoured as it is: someone asked for that exact piece.
+ * Props whose fingerprint is at least `min` from every earlier one. A pinned
+ * seed is honoured as it is: someone asked for that exact object.
  */
-export function resolveDistinct(spec: PieceSpec, generators: Generator[], earlier: Fingerprint[] = [], { min = 0.12, tries = 12 } = {}): Distinct {
-  const base = spec.seed ?? newSeed()
+export function resolveDistinct(handles: Handles, ask: Ask = {}, earlier: Fingerprint[] = [], { seed, min = 0.12, tries = 12 }: { seed?: string; min?: number; tries?: number } = {}): Distinct {
+  const base = seed ?? newSeed()
   let best: Distinct | null = null
-  for (let i = 0; i < (spec.seed ? 1 : tries); i++) {
-    const seed = i === 0 ? base : childSeed(base, `again-${i}`)
-    const piece = resolvePiece(spec, generators, seed)
-    if (spec.seed) piece.pinned = true
-    const fp = fingerprint(piece, generators)
+  for (let i = 0; i < (seed ? 1 : tries); i++) {
+    const s = i === 0 ? base : childSeed(base, `again-${i}`)
+    const { values } = resolve(handles, ask, s)
+    const fp = fingerprint(handles, values)
     const nearest = earlier.length ? Math.min(...earlier.map((e) => distance(fp, e))) : 1
-    const d: Distinct = { piece, fingerprint: fp, nearest, tries: i + 1 }
+    const d: Distinct = { values, seed: s, fingerprint: fp, nearest, tries: i + 1 }
     if (!best || nearest > best.nearest) best = d
     if (nearest >= min) return d
   }
