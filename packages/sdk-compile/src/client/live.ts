@@ -65,6 +65,11 @@ export function bootLive(deps: LiveDeps): void {
     try { return keep === 'device' ? localStorage : sessionStorage } catch { return null }
   }
   const storageKey = (key: string): string => `morgana:${page}:${key}`
+  // Each key's value before the address or storage touched it: what "unchanged" means
+  // for the address, also on a page whose own start values don't list the key.
+  const booted = deps.readState()
+  const startOf: Record<string, unknown> = {}
+  for (const key of Object.keys(decls)) startOf[key] = key in initial ? initial[key] : getPath(booted, key)
   const restored: Record<string, unknown> = {}
   for (const [key, d] of Object.entries(decls)) {
     if (d.keep) {
@@ -119,7 +124,7 @@ export function bootLive(deps: LiveDeps): void {
     const now = deps.readState()
     for (const [key, d] of addressed) {
       const v = getPath(now, key)
-      if (v === undefined || v === null || v === '' || v === initial[key]) url.searchParams.delete(d.address as string)
+      if (v === undefined || v === null || v === '' || v === startOf[key]) url.searchParams.delete(d.address as string)
       else url.searchParams.set(d.address as string, String(v))
     }
     if (url.href !== location.href) history.replaceState(history.state, '', url)
@@ -130,7 +135,7 @@ export function bootLive(deps: LiveDeps): void {
     window.addEventListener('popstate', () => {
       const q = new URLSearchParams(location.search)
       const patch: Record<string, unknown> = {}
-      for (const [key, d] of addressed) patch[key] = q.has(d.address as string) ? coerce(key, q.get(d.address as string) as string) : initial[key]
+      for (const [key, d] of addressed) patch[key] = q.has(d.address as string) ? coerce(key, q.get(d.address as string) as string) : startOf[key]
       deps.commitMany(patch)
     })
   }
@@ -257,9 +262,11 @@ export function bootLive(deps: LiveDeps): void {
   // ── files: dragged onto an object that accepts them, or picked ──
   const fileList = (files: FileList | null | undefined) =>
     Array.from(files ?? []).map((f) => {
-      let preview: string | undefined
-      try { if (/^image\//.test(f.type)) preview = URL.createObjectURL(f) } catch { /* no preview */ }
-      return { name: f.name, size: f.size, type: f.type, ...(preview ? { preview } : {}) }
+      // `url` reads the file itself (`await fetch(file.url)`); `preview` is set for images.
+      let url: string | undefined
+      try { url = URL.createObjectURL(f) } catch { /* no url */ }
+      const preview = url && /^image\//.test(f.type) ? url : undefined
+      return { name: f.name, size: f.size, type: f.type, ...(url ? { url } : {}), ...(preview ? { preview } : {}) }
     })
   const isFileDrag = (e: DragEvent): boolean => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')
   const zoneOf = (e: Event): HTMLElement | null => (e.target as Element | null)?.closest?.<HTMLElement>('[data-accepts-files]') ?? null
