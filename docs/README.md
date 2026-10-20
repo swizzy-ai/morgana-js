@@ -24,6 +24,7 @@ and typechecks — so the snippets compile.
 | 11 | [Designing an app](11-designing-an-app.md) | The order to plan in: actions, events, UI objects, server, then server objects |
 | 12 | [Plugins and artifacts](12-plugins.md) | `@studiomorgana/assets`, references like `asset:coin`, `morgana artifacts`, step-by-step deploy, writing a plugin |
 | 13 | [Points](13-points.md) | one standard way to say an amount: `'2 points'`, `a little`, `3 hairs`, the point basis, `make.points` |
+| 14 | [Docs, PDFs and demo videos](14-docs-pdf-and-demos.md) | `ctx.server.pdf`, `morgana docs` (storyboard, API, events), `morgana demo` (videos for Reels, TikTok, Shorts) |
 
 ## The docs explain; `morgana spec` lists
 
