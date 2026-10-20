@@ -1,0 +1,55 @@
+{
+  "name": "@studiomorgana/world",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Worlds from words: ocean, sky, islands and mist as generators with full handles, compiled to one WebGL2 shader; live, rendered, or one HTML file.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SwizzyAI/morgana-js.git",
+    "directory": "packages/world"
+  },
+  "keywords": [
+    "world",
+    "ocean",
+    "procedural",
+    "webgl",
+    "shader",
+    "godtongue",
+    "morgana"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "vocabulary.json"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup && node scripts/vocabulary.mjs",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "~5.8.2",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@studiomorgana/media": "workspace:^"
+  }
+}

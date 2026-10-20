@@ -1,0 +1,795 @@
+{
+  "package": "@studiomorgana/world",
+  "generators": [
+    {
+      "kind": "ocean",
+      "nouns": [
+        "ocean",
+        "sea",
+        "water",
+        "waves"
+      ],
+      "doc": "Open water: waves and swell, colour by depth, foam, glints, tide.",
+      "max": 1,
+      "words": [
+        "glassy",
+        "calm",
+        "gentle",
+        "choppy",
+        "rough",
+        "stormy",
+        "big swell",
+        "whitecaps",
+        "tropical",
+        "turquoise",
+        "emerald",
+        "arctic",
+        "inky",
+        "deep blue",
+        "high tide",
+        "low tide"
+      ],
+      "handles": {
+        "waves": {
+          "kind": "group",
+          "doc": "The wind waves",
+          "handles": {
+            "height": {
+              "kind": "number",
+              "min": 0.02,
+              "max": 6,
+              "default": 0.9,
+              "unit": "m",
+              "doc": "Height of the wind waves"
+            },
+            "length": {
+              "kind": "number",
+              "min": 4,
+              "max": 120,
+              "default": 30,
+              "unit": "m",
+              "doc": "Distance between crests"
+            },
+            "choppiness": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.45,
+              "doc": "Rounded (0) to sharp, choppy crests (1)"
+            },
+            "direction": {
+              "kind": "number",
+              "min": 0,
+              "max": 360,
+              "default": 200,
+              "unit": "°",
+              "doc": "Where the waves travel toward"
+            },
+            "octaves": {
+              "kind": "number",
+              "min": 3,
+              "max": 7,
+              "default": 5,
+              "int": true,
+              "doc": "Layers of smaller waves on the big ones"
+            }
+          }
+        },
+        "swell": {
+          "kind": "group",
+          "doc": "Long, slow swell from far away",
+          "handles": {
+            "height": {
+              "kind": "number",
+              "min": 0,
+              "max": 4,
+              "default": 0.5,
+              "unit": "m"
+            },
+            "length": {
+              "kind": "number",
+              "min": 40,
+              "max": 320,
+              "default": 140,
+              "unit": "m"
+            },
+            "direction": {
+              "kind": "number",
+              "min": 0,
+              "max": 360,
+              "default": 180,
+              "unit": "°"
+            }
+          }
+        },
+        "wind": {
+          "kind": "group",
+          "doc": "The wind",
+          "handles": {
+            "speed": {
+              "kind": "number",
+              "min": 0.2,
+              "max": 3,
+              "default": 1,
+              "doc": "How fast the waves move, relative to real water"
+            }
+          }
+        },
+        "colour": {
+          "kind": "group",
+          "doc": "Colours of the water",
+          "handles": {
+            "deep": {
+              "kind": "colour",
+              "default": "#0a3446",
+              "doc": "Open, deep water"
+            },
+            "shallow": {
+              "kind": "colour",
+              "default": "#1f9c96",
+              "doc": "Over sand and reef"
+            },
+            "scatter": {
+              "kind": "colour",
+              "default": "#2e8c7c",
+              "doc": "Light through the wave crests"
+            },
+            "foam": {
+              "kind": "colour",
+              "default": "#eef3f1"
+            }
+          }
+        },
+        "surface": {
+          "kind": "group",
+          "doc": "How it catches light",
+          "handles": {
+            "roughness": {
+              "kind": "number",
+              "min": 0.05,
+              "max": 1,
+              "default": 0.35,
+              "doc": "Mirror-like (0) to rough (1): the size of the sun’s glint"
+            },
+            "reflection": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.75,
+              "doc": "How much sky it reflects"
+            },
+            "clarity": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.5,
+              "doc": "How far you see into it, over sand"
+            }
+          }
+        },
+        "foam": {
+          "kind": "group",
+          "doc": "Foam",
+          "handles": {
+            "amount": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.25,
+              "doc": "Whitecaps on the crests"
+            },
+            "crest": {
+              "kind": "number",
+              "min": 0.3,
+              "max": 0.95,
+              "default": 0.65,
+              "doc": "How high a crest must be to break"
+            },
+            "shore": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.6,
+              "doc": "Foam where water meets land"
+            }
+          }
+        },
+        "tide": {
+          "kind": "number",
+          "min": -2,
+          "max": 2,
+          "default": 0,
+          "unit": "m",
+          "doc": "Water level"
+        }
+      }
+    },
+    {
+      "kind": "sky",
+      "nouns": [
+        "sky",
+        "sun",
+        "clouds",
+        "light"
+      ],
+      "doc": "The sky and its light: sun, colours, clouds, stars.",
+      "max": 1,
+      "words": [
+        "dawn",
+        "sunrise",
+        "morning",
+        "noon",
+        "afternoon",
+        "golden hour",
+        "sunset",
+        "dusk",
+        "twilight",
+        "moonlit",
+        "night",
+        "clear",
+        "a few clouds",
+        "cloudy",
+        "overcast",
+        "stormy",
+        "wispy",
+        "puffy",
+        "big sun"
+      ],
+      "handles": {
+        "sun": {
+          "kind": "group",
+          "doc": "The sun (or moon)",
+          "handles": {
+            "elevation": {
+              "kind": "number",
+              "min": -6,
+              "max": 75,
+              "default": 24,
+              "unit": "°",
+              "doc": "Height above the horizon"
+            },
+            "bearing": {
+              "kind": "number",
+              "min": -90,
+              "max": 90,
+              "default": 0,
+              "unit": "°",
+              "doc": "Where it is, seen from the camera: 0 ahead, 90 to the right"
+            },
+            "size": {
+              "kind": "number",
+              "min": 0.4,
+              "max": 4,
+              "default": 1,
+              "doc": "Size of the disc and its glow"
+            },
+            "colour": {
+              "kind": "colour",
+              "default": "#fff1d6"
+            },
+            "strength": {
+              "kind": "number",
+              "min": 0.3,
+              "max": 3,
+              "default": 1.4
+            }
+          }
+        },
+        "colour": {
+          "kind": "group",
+          "doc": "Colours of the sky",
+          "handles": {
+            "zenith": {
+              "kind": "colour",
+              "default": "#2c66ad",
+              "doc": "Straight up"
+            },
+            "horizon": {
+              "kind": "colour",
+              "default": "#b9d3ea",
+              "doc": "At the horizon"
+            },
+            "glow": {
+              "kind": "colour",
+              "default": "#ffb468",
+              "doc": "Around the sun"
+            }
+          }
+        },
+        "clouds": {
+          "kind": "group",
+          "doc": "Clouds",
+          "handles": {
+            "amount": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.35,
+              "doc": "Clear (0) to overcast (1)"
+            },
+            "scale": {
+              "kind": "number",
+              "min": 0.3,
+              "max": 3,
+              "default": 1,
+              "doc": "Small, many (high) to large, few (low)"
+            },
+            "softness": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.5
+            },
+            "stretch": {
+              "kind": "number",
+              "min": 1,
+              "max": 6,
+              "default": 1.4,
+              "doc": "Puffs (1) to long streaks (6)"
+            },
+            "colour": {
+              "kind": "colour",
+              "default": "#ffffff"
+            },
+            "speed": {
+              "kind": "number",
+              "min": 0,
+              "max": 2,
+              "default": 0.4
+            },
+            "shadowed": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.5,
+              "doc": "How dark their undersides are"
+            }
+          }
+        },
+        "stars": {
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "doc": "Stars at night (night words turn them on)"
+        },
+        "exposure": {
+          "kind": "number",
+          "min": 0.5,
+          "max": 1.8,
+          "default": 1
+        }
+      }
+    },
+    {
+      "kind": "island",
+      "nouns": [
+        "island",
+        "islands",
+        "isle",
+        "isles",
+        "rock",
+        "rocks",
+        "islet",
+        "islets"
+      ],
+      "doc": "An island: its outline, height and profile, terrain, cliffs, shore and life.",
+      "max": 4,
+      "words": [
+        "rocky",
+        "sandy",
+        "lush",
+        "tropical",
+        "barren",
+        "volcanic",
+        "snowy",
+        "tall",
+        "low",
+        "flat",
+        "mesa",
+        "spire",
+        "small",
+        "tiny",
+        "large",
+        "big",
+        "huge",
+        "long",
+        "crescent",
+        "jagged",
+        "round",
+        "twin",
+        "cliffs",
+        "sheer cliffs",
+        "to the north",
+        "to the north-east",
+        "to the east",
+        "to the south-east",
+        "to the south",
+        "to the south-west",
+        "to the west",
+        "to the north-west",
+        "ahead",
+        "far",
+        "distant",
+        "on the horizon",
+        "close",
+        "near"
+      ],
+      "handles": {
+        "place": {
+          "kind": "group",
+          "doc": "Where it is",
+          "handles": {
+            "bearing": {
+              "kind": "number",
+              "min": -40,
+              "max": 40,
+              "default": 0,
+              "unit": "°",
+              "doc": "Direction from the start: 0 north, 90 east"
+            },
+            "distance": {
+              "kind": "number",
+              "min": 250,
+              "max": 7000,
+              "default": 1800,
+              "unit": "m"
+            }
+          }
+        },
+        "shape": {
+          "kind": "group",
+          "doc": "Its outline",
+          "handles": {
+            "size": {
+              "kind": "number",
+              "min": 60,
+              "max": 1600,
+              "default": 420,
+              "unit": "m",
+              "doc": "Radius"
+            },
+            "outline": {
+              "kind": "choice",
+              "options": [
+                "round",
+                "long",
+                "crescent",
+                "jagged",
+                "twin"
+              ],
+              "default": "round"
+            },
+            "stretch": {
+              "kind": "number",
+              "min": 1,
+              "max": 3.5,
+              "default": 1.6,
+              "doc": "How long a long island is"
+            },
+            "bays": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.45,
+              "doc": "Smooth coast (0) to deep bays and headlands (1)"
+            },
+            "turn": {
+              "kind": "number",
+              "min": 0,
+              "max": 360,
+              "default": 0,
+              "unit": "°",
+              "doc": "Which way it lies"
+            },
+            "lean": {
+              "kind": "number",
+              "min": -1,
+              "max": 1,
+              "default": 0,
+              "doc": "Higher on one side than the other"
+            }
+          }
+        },
+        "height": {
+          "kind": "group",
+          "doc": "How high, and how it rises",
+          "handles": {
+            "peak": {
+              "kind": "number",
+              "min": 8,
+              "max": 900,
+              "default": 120,
+              "unit": "m"
+            },
+            "peaks": {
+              "kind": "number",
+              "min": 1,
+              "max": 4,
+              "default": 2,
+              "int": true,
+              "doc": "Number of summits"
+            },
+            "profile": {
+              "kind": "choice",
+              "options": [
+                "rolling",
+                "volcanic",
+                "mesa",
+                "spire",
+                "flat"
+              ],
+              "default": "rolling"
+            }
+          }
+        },
+        "terrain": {
+          "kind": "group",
+          "doc": "Its ground",
+          "handles": {
+            "ridges": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.5,
+              "doc": "Smooth (0) to ridged and folded (1)"
+            },
+            "erosion": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.4,
+              "doc": "Gullies cut by rain"
+            },
+            "roughness": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.45
+            }
+          }
+        },
+        "cliffs": {
+          "kind": "group",
+          "doc": "Cliffs",
+          "handles": {
+            "height": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.25,
+              "doc": "None (0) to sheer walls at the sea (1)"
+            },
+            "side": {
+              "kind": "number",
+              "min": 0,
+              "max": 360,
+              "default": 0,
+              "unit": "°",
+              "doc": "Which side faces the cliffs"
+            },
+            "spread": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.5,
+              "doc": "One side only (0) to all round (1)"
+            }
+          }
+        },
+        "shore": {
+          "kind": "group",
+          "doc": "Where it meets the sea",
+          "handles": {
+            "beach": {
+              "kind": "number",
+              "min": 0,
+              "max": 80,
+              "default": 18,
+              "unit": "m",
+              "doc": "Width of the beaches"
+            },
+            "reef": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.25,
+              "doc": "A shallow reef ring"
+            }
+          }
+        },
+        "materials": {
+          "kind": "group",
+          "doc": "What it’s made of",
+          "handles": {
+            "sand": {
+              "kind": "colour",
+              "default": "#d8c49b"
+            },
+            "grass": {
+              "kind": "colour",
+              "default": "#557a36"
+            },
+            "rock": {
+              "kind": "colour",
+              "default": "#776d63"
+            },
+            "snow": {
+              "kind": "colour",
+              "default": "#f2f5f7"
+            },
+            "snowline": {
+              "kind": "number",
+              "min": 0.5,
+              "max": 1.1,
+              "default": 0.95,
+              "doc": "Snow above this share of the peak (1.1: none)"
+            }
+          }
+        },
+        "life": {
+          "kind": "group",
+          "doc": "Plants",
+          "handles": {
+            "vegetation": {
+              "kind": "number",
+              "min": 0,
+              "max": 1,
+              "default": 0.55,
+              "doc": "Bare (0) to covered (1)"
+            },
+            "treeline": {
+              "kind": "number",
+              "min": 0.2,
+              "max": 1,
+              "default": 0.75,
+              "doc": "Plants up to this share of the peak"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "mist",
+      "nouns": [
+        "mist",
+        "fog",
+        "haze"
+      ],
+      "doc": "Mist low on the water and haze in the distance.",
+      "max": 1,
+      "words": [
+        "low",
+        "thick",
+        "light",
+        "hazy",
+        "misty",
+        "foggy",
+        "clear air"
+      ],
+      "handles": {
+        "amount": {
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.2,
+          "doc": "Mist on the water"
+        },
+        "height": {
+          "kind": "number",
+          "min": 2,
+          "max": 200,
+          "default": 30,
+          "unit": "m",
+          "doc": "How high it reaches"
+        },
+        "haze": {
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.3,
+          "doc": "How far you see: clear (0) to hazy (1)"
+        },
+        "colour": {
+          "kind": "colour",
+          "default": "#cfd9e2",
+          "doc": "Mixed with the light of the sky"
+        }
+      }
+    },
+    {
+      "kind": "camera",
+      "nouns": [
+        "camera",
+        "view",
+        "shot"
+      ],
+      "doc": "Where we look from, and how we move.",
+      "max": 1,
+      "words": [
+        "skims",
+        "skims the waves",
+        "drifts",
+        "rises",
+        "orbits",
+        "pushes",
+        "still",
+        "toward the sun",
+        "into the sun",
+        "at the islands",
+        "low",
+        "high",
+        "aerial",
+        "wide",
+        "tele",
+        "from a boat"
+      ],
+      "handles": {
+        "height": {
+          "kind": "number",
+          "min": 1.5,
+          "max": 300,
+          "default": 6,
+          "unit": "m"
+        },
+        "face": {
+          "kind": "choice",
+          "options": [
+            "islands",
+            "sun",
+            "north"
+          ],
+          "default": "islands",
+          "doc": "What it looks toward"
+        },
+        "tilt": {
+          "kind": "number",
+          "min": -25,
+          "max": 15,
+          "default": -1.5,
+          "unit": "°",
+          "doc": "Up or down"
+        },
+        "lens": {
+          "kind": "number",
+          "min": 20,
+          "max": 90,
+          "default": 50,
+          "unit": "°",
+          "doc": "Field of view: tele (20) to wide (90)"
+        },
+        "move": {
+          "kind": "choice",
+          "options": [
+            "still",
+            "skims",
+            "drifts",
+            "rises",
+            "orbits",
+            "pushes"
+          ],
+          "default": "drifts"
+        },
+        "speed": {
+          "kind": "number",
+          "min": 0,
+          "max": 40,
+          "default": 6,
+          "unit": "m/s"
+        },
+        "sway": {
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.25,
+          "doc": "A boat’s bob"
+        },
+        "handheld": {
+          "kind": "flag",
+          "default": false,
+          "doc": "A little shake"
+        }
+      }
+    }
+  ]
+}
