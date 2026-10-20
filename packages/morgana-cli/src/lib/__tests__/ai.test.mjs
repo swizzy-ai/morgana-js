@@ -24,6 +24,8 @@ const ENV_KEYS = [
   'MORGANA_TOKEN',
   'OPENAI_API_KEY',
   'ANTHROPIC_API_KEY',
+  // Where `morgana login` keeps its token: a test never reads this machine's real one.
+  'MORGANA_HOME',
 ]
 
 /**
@@ -128,18 +130,18 @@ describe('fileStore', () => {
 })
 
 describe('local ctx.ai', () => {
-  it('refuses every agent method by name when no provider is configured', async () => {
+  it('refuses every agent method by name when the machine is not signed in to the Morgana cloud', async () => {
     // Every method is async, so a refusal is a rejected promise rather than a
     // throw. Asserted as one, because `expect(fn).toThrow()` would pass here for
     // the wrong reason: the function returns a promise, it never throws.
-    await withEnv({}, async () => {
+    await withEnv({ MORGANA_HOME: tempDir() }, async () => {
       const ai = await buildAi({ enabledActions: [], runAction: async () => null, dataDir: tempDir(), channels: noChannels, log: () => {} })
       expect(ai.models.text).toBeTruthy()
-      await expect(ai.agents.create('mary', { instruction: 'x' })).rejects.toThrow(/MORGANA_URL/)
-      await expect(ai.agents.list()).rejects.toThrow(/MORGANA_URL/)
-      await expect(ai.tools.register('listTasks')).rejects.toThrow(/MORGANA_URL/)
-      await expect(ai.generateText({ instructions: 'hi' })).rejects.toThrow(/MORGANA_URL/)
-      await expect(ai.generateObject({ instructions: 'hi' })).rejects.toThrow(/MORGANA_URL/)
+      await expect(ai.agents.create('mary', { instruction: 'x' })).rejects.toThrow(/morgana login/)
+      await expect(ai.agents.list()).rejects.toThrow(/morgana login/)
+      await expect(ai.tools.register('listTasks')).rejects.toThrow(/morgana login/)
+      await expect(ai.generateText({ instructions: 'hi' })).rejects.toThrow(/morgana login/)
+      await expect(ai.generateObject({ instructions: 'hi' })).rejects.toThrow(/morgana login/)
     })
   })
 

@@ -83,10 +83,37 @@ export function fileStore(file) {
  * transport is an interface — it knows how to send, not where it sends. The raw
  * `generateText` path needs the address; the agent loop does not.
  */
-function localProvider() {
-  const config = providerFromEnv(process.env)
+/**
+ * Where `ctx.ai` gets its model in `morgana dev`.
+ *
+ * By default, the Morgana cloud: the same server `morgana deploy` talks to
+ * (`MORGANA_URL`, else the default backend), with the token `morgana login`
+ * saved for it. So a signed-in machine has working models with nothing to set,
+ * and local runs use the deployed inference path.
+ *
+ * `MORGANA_LLM_URL` / `MORGANA_TOKEN` / `MORGANA_LLM_KEY` override the address
+ * and token; `MORGANA_LLM_PROVIDER` (openai, anthropic) uses that provider's key.
+ */
+export async function localProvider(env = process.env) {
+  const settings = { ...env }
+  const name = String(settings.MORGANA_LLM_PROVIDER ?? 'morgana').trim().toLowerCase()
+  let signedIn = true
+  if (name === 'morgana') {
+    const { resolveTarget } = await import('../commands/deploy.mjs')
+    const { readCredentials } = await import('../commands/login.mjs')
+    const base = String(settings.MORGANA_LLM_URL ?? '').trim().replace(/\/+$/, '') || resolveTarget({ url: settings.MORGANA_URL }).base
+    settings.MORGANA_LLM_URL = base
+    if (!settings.MORGANA_LLM_KEY && !settings.MORGANA_TOKEN) {
+      const stored = readCredentials()[base]?.token
+      if (stored) settings.MORGANA_LLM_KEY = stored
+      // On the default cloud, no token means no models: say so before any call.
+      // A server named in the environment decides for itself (a 401 says the same).
+      else if (!String(env.MORGANA_LLM_URL ?? env.MORGANA_URL ?? '').trim()) signedIn = false
+    }
+  }
+  const config = providerFromEnv(settings)
   try {
-    return { transport: resolveTransport(config), config }
+    return { transport: resolveTransport(config), config, signedIn }
   } catch {
     return null
   }
@@ -167,6 +194,7 @@ async function generate({ baseUrl, token }, { instructions, system, model, maxTo
       ...(typeof maxTokens === 'number' && maxTokens > 0 ? { max_tokens : maxTokens } : {}),
     }),
   })
+  if (res.status === 401) throw new Error(token ? `${baseUrl} didn't accept this machine's token: run \`morgana login\` again.` : NOT_SIGNED_IN)
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
     throw new Error(`the Morgana LLM route answered ${res.status}${detail ? `: ${detail.slice(0, 300)}` : ''}`)
@@ -179,6 +207,10 @@ const NO_PROVIDER =
   'no model provider is configured. Set MORGANA_URL (plus MORGANA_TOKEN unless this ' +
   'machine has a session), or MORGANA_LLM_PROVIDER with the matching key — the same ' +
   'variables the deploy command already reads.'
+
+const NOT_SIGNED_IN =
+  'models in `morgana dev` come from the Morgana cloud, and this machine isn\'t signed in: ' +
+  'run `morgana login` once (or set MORGANA_TOKEN).'
 
 /**
  * Strip markdown fences and slice to the outermost JSON value.
@@ -237,14 +269,17 @@ const WIZARD_METHODS = ['run', 'resume', 'approve', 'deny', 'get', 'list', 'has'
  * property it has on the cloud.
  */
 export async function buildAi({ enabledActions, runAction, dataDir, channels, log }) {
-  const provider = localProvider()
+  const provider = await localProvider()
   const agents = await loadAgents()
+  // Why models can't be used here, if they can't: no provider at all, or the
+  // Morgana cloud with no login on this machine (refused here, not by a 401).
+  const unusable = !provider ? NO_PROVIDER : provider.signedIn === false ? NOT_SIGNED_IN : null
 
   const generateText = async (opts) => {
     if (typeof opts?.instructions !== 'string' || !opts.instructions.trim()) {
       throw new Error('ctx.ai.generateText requires { instructions }')
     }
-    if (!provider) throw new Error(NO_PROVIDER)
+    if (unusable) throw new Error(unusable)
     return generate(provider.config, opts)
   }
 
@@ -252,7 +287,7 @@ export async function buildAi({ enabledActions, runAction, dataDir, channels, lo
     if (typeof opts?.instructions !== 'string' || !opts.instructions.trim()) {
       throw new Error('ctx.ai.generateObject requires { instructions }')
     }
-    if (!provider) throw new Error(NO_PROVIDER)
+    if (unusable) throw new Error(unusable)
 
     const attempts = Math.max(1, Math.min(opts.maxAttempts ?? 3, 5))
     const shape =
@@ -270,8 +305,8 @@ export async function buildAi({ enabledActions, runAction, dataDir, channels, lo
   }
 
   let surface
-  if (!provider || !agents) {
-    const reason = !provider ? NO_PROVIDER : NOT_BUILT
+  if (unusable || !agents) {
+    const reason = unusable ?? NOT_BUILT
     surface = {
       agents: refusing(AGENT_METHODS, `ctx.ai.agents is unavailable — ${reason}`),
       tools: refusing(TOOL_METHODS, `ctx.ai.tools is unavailable — ${reason}`),
